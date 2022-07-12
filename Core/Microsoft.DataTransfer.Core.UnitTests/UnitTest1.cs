@@ -1,10 +1,13 @@
-namespace Microsoft.DataTransfer.Core.UnitTests;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-public class UnitTest1
+namespace Microsoft.DataTransfer.Core.UnitTests
 {
-    [Fact]
-    public void Test1()
+    [TestClass]
+    public class UnitTest1
     {
-
+        [TestMethod]
+        public void TestMethod1()
+        {
+        }
     }
 }
