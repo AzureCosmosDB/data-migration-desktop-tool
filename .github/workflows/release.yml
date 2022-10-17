@@ -16,7 +16,7 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v2
       - name: Build Windows x64 package
-        working-directory: core/microsoft.datatransfer.core
+        working-directory: ./core/microsoft.datatransfer.core
         run: |
           dotnet publish \
           --configuration release \
@@ -35,7 +35,7 @@ jobs:
           name: windows-package
           path: core/microsoft.datatransfer.core/win/cosmos-migrate.exe
       - name: Build macOS x64 package
-        working-directory: core/microsoft.datatransfer.core
+        working-directory: ./core/microsoft.datatransfer.core
         run: |
           dotnet publish \
           --configuration release \
