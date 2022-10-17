@@ -28,7 +28,7 @@ jobs:
         run: |
           mv win-pkg/cosmos-migrate.exe cosmos-migrate-${{ github.ref_name }}-win-x64.exe
           mv mac-pkg/cosmos-migrate cosmos-migrate-${{ github.ref_name }}-mac-x64
-          mv lin-pkg/cosmos-migrate cosmos-migrate-${{ github.ref_name }}-linux-x64
+          mv lnx-pkg/cosmos-migrate cosmos-migrate-${{ github.ref_name }}-linux-x64
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
