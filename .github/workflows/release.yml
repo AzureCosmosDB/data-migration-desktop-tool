@@ -18,7 +18,7 @@ jobs:
       - name: Build Windows x64 package
         run: |
           dotnet publish \
-          Core\Microsoft.DataTransfer.Core\Microsoft.DataTransfer.Core.csproj \
+          Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
           --configuration release \
           --output win \
           --self-contained true \
@@ -37,7 +37,7 @@ jobs:
       - name: Build macOS x64 package
         run: |
           dotnet publish \
-          Core\Microsoft.DataTransfer.Core\Microsoft.DataTransfer.Core.csproj \
+          Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
           --configuration release \
           --output mac \
           --self-contained true \
