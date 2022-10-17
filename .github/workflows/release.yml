@@ -33,9 +33,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            cosmos-migrate-win-x64.exe
-            mac-pkg/cosmos-migrate
-            lin-pkg/cosmos-migrate
+            cosmos-migrate-${{ github.ref_name }}-win-x64.exe
+            cosmos-migrate-${{ github.ref_name }}-mac-x64
+            cosmos-migrate-${{ github.ref_name }}-linux-x64
   build-package:
     name: Build self-contained executables
     runs-on: ubuntu-latest
