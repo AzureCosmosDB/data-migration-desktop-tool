@@ -1,0 +1,41 @@
+name: Release desktop binaries
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - releases/[0-9]+.[0-9]+.[0-9]+
+jobs:
+  buildpackage:
+    strategy:
+      matrix:
+        target:
+        - win-x64
+        - linux-x64
+        - osx-x64
+    name: Build .NET packaged executables
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:7.0
+    steps:
+    - name: Check .NET version
+      run: dotnet --version
+    - name: Checkout source code
+      uses: actions/checkout@v2
+    - name: Build Windows x64 package
+      run: |
+        dotnet publish \
+        --configuration release \
+        --output win \
+        --self-contained true \
+        --runtime {{ matrix.target }} \
+        -p:PublishSingleFile=true \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=true \
+        -p:PublishTrimmed=true \
+        -p:AssemblyName=cosmos-migrate
+    - name: Upload packages
+      uses: actions/upload-artifact@v3
+      with:
+        name: {{ matrix.target }}
+        path: {{ matrix.target }}/
