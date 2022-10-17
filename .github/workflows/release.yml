@@ -7,14 +7,14 @@ on:
       - releases/[0-9]+.[0-9]+.[0-9]+
 jobs:
   buildpackage:
-    name: Build .NET packaged executables
+    name: Build self-contained executables
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/dotnet/sdk:7.0
     steps:
       - name: Check .NET version
         run: dotnet --version
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build Windows x64 package
         run: |
           dotnet publish \
@@ -53,3 +53,22 @@ jobs:
         with:
           name: mac-package
           path: mac/cosmos-migrate
+      - name: Build Linux x64 package
+        run: |
+          dotnet publish \
+          Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
+          --configuration release \
+          --output linux \
+          --self-contained true \
+          --runtime linux-x64 \
+          -p:PublishSingleFile=true \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=true \
+          -p:PublishTrimmed=true \
+          -p:AssemblyName=cosmos-migrate
+      - name: Upload macOS package
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-package
+          path: linux/cosmos-migrate

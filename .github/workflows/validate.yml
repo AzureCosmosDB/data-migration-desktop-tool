@@ -1,8 +1,5 @@
 name: Validate all .NET projects
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -19,4 +16,4 @@ jobs:
       - name: Build project
         run: dotnet build
       - name: Run unit tests
-        run: dotnet test --verbosity normal
+        run: dotnet test --logger "console;verbosity=detailed"
