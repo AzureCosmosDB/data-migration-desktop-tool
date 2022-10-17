@@ -2,52 +2,54 @@ name: Release desktop binaries
 on:
   push:
     branches:
-    - main
+      - main
     tags:
-    - releases/[0-9]+.[0-9]+.[0-9]+
+      - releases/[0-9]+.[0-9]+.[0-9]+
 jobs:
   buildpackage:
     name: Build .NET packaged executables
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/dotnet/sdk:7.0
     steps:
-    - name: Check .NET version
-      run: dotnet --version
-    - name: Checkout source code
-      uses: actions/checkout@v2
-    - name: Build Windows x64 package
-      run: |
-        dotnet publish \
-        --configuration release \
-        --output win \
-        --self-contained true \
-        --runtime win-x64 \
-        -p:PublishSingleFile=true \
-        -p:DebugType=embedded \
-        -p:EnableCompressionInSingleFile=true \
-        -p:PublishReadyToRun=true \
-        -p:PublishTrimmed=true \
-        -p:AssemblyName=cosmos-migrate
-    - name: Upload Windows package
-      uses: actions/upload-artifact@v3
-      with:
-        name: windows-package
-        path: win/cosmos-migrate.exe
-    - name: Build macOS x64 package
-      run: |
-        dotnet publish \
-        --configuration release \
-        --output mac \
-        --self-contained true \
-        --runtime osx-x64 \
-        -p:PublishSingleFile=true \
-        -p:DebugType=embedded \
-        -p:EnableCompressionInSingleFile=true \
-        -p:PublishReadyToRun=true \
-        -p:PublishTrimmed=true \
-        -p:AssemblyName=cosmos-migrate
-    - name: Upload macOS package
-      uses: actions/upload-artifact@v3
-      with:
-        name: mac-package
-        path: mac/cosmos-migrate
+      - name: Check .NET version
+        run: dotnet --version
+      - name: Checkout source code
+        uses: actions/checkout@v2
+      - name: Build Windows x64 package
+        working-directory: core/microsoft.datatransfer.core
+        run: |
+          dotnet publish \
+          --configuration release \
+          --output win \
+          --self-contained true \
+          --runtime win-x64 \
+          -p:PublishSingleFile=true \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=true \
+          -p:PublishTrimmed=true \
+          -p:AssemblyName=cosmos-migrate
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-package
+          path: core/microsoft.datatransfer.core/win/cosmos-migrate.exe
+      - name: Build macOS x64 package
+        working-directory: core/microsoft.datatransfer.core
+        run: |
+          dotnet publish \
+          --configuration release \
+          --output mac \
+          --self-contained true \
+          --runtime osx-x64 \
+          -p:PublishSingleFile=true \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=true \
+          -p:PublishTrimmed=true \
+          -p:AssemblyName=cosmos-migrate
+      - name: Upload macOS package
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac-package
+          path: core/microsoft.datatransfer.core/mac/cosmos-migrate
