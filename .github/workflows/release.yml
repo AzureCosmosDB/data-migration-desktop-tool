@@ -1,0 +1,107 @@
+name: Release desktop binaries
+on: 
+  release:
+    types:
+      - published
+jobs:
+  github-release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    needs: build-package
+    steps:
+      - name: Download Windows x64 package
+        uses: actions/download-artifact@v3
+        with:
+          name: windows-package
+          path: win-pkg/
+      - name: Download macOS x64 package
+        uses: actions/download-artifact@v3
+        with:
+          name: mac-package
+          path: mac-pkg/
+      - name: Download Linux x64 package
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-package
+          path: lnx-pkg/
+      - name: Rename output files
+        run: |
+          mv win-pkg/cosmos-migrate.exe cosmos-migrate-${{ github.ref_name }}-win-x64.exe
+          mv mac-pkg/cosmos-migrate cosmos-migrate-${{ github.ref_name }}-mac-x64
+          mv lnx-pkg/cosmos-migrate cosmos-migrate-${{ github.ref_name }}-linux-x64
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            cosmos-migrate-${{ github.ref_name }}-win-x64.exe
+            cosmos-migrate-${{ github.ref_name }}-mac-x64
+            cosmos-migrate-${{ github.ref_name }}-linux-x64
+  build-package:
+    name: Build self-contained executables
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:7.0
+    steps:
+      - name: Check .NET version
+        run: dotnet --version
+      - name: Checkout source code
+        uses: actions/checkout@v3
+      - name: Build Windows x64 package
+        run: |
+          dotnet publish \
+          Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
+          --configuration release \
+          --output win \
+          --self-contained true \
+          --runtime win-x64 \
+          -p:PublishSingleFile=true \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=true \
+          -p:PublishTrimmed=true \
+          -p:Version=${{ github.ref_name }} \
+          -p:AssemblyName=cosmos-migrate
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-package
+          path: win/cosmos-migrate.exe
+      - name: Build macOS x64 package
+        run: |
+          dotnet publish \
+          Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
+          --configuration release \
+          --output mac \
+          --self-contained true \
+          --runtime osx-x64 \
+          -p:PublishSingleFile=true \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=true \
+          -p:PublishTrimmed=true \
+          -p:Version=${{ github.ref_name }} \
+          -p:AssemblyName=cosmos-migrate
+      - name: Upload macOS package
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac-package
+          path: mac/cosmos-migrate
+      - name: Build Linux x64 package
+        run: |
+          dotnet publish \
+          Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
+          --configuration release \
+          --output linux \
+          --self-contained true \
+          --runtime linux-x64 \
+          -p:PublishSingleFile=true \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=true \
+          -p:PublishTrimmed=true \
+          -p:Version=${{ github.ref_name }} \
+          -p:AssemblyName=cosmos-migrate
+      - name: Upload Linux package
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-package
+          path: linux/cosmos-migrate

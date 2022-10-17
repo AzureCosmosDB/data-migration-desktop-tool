@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{8DECE46D-CDEE-42BE-B789-E3C68C4E5642}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.DataTransfer.Core", "Core\Microsoft.DataTransfer.Core\Microsoft.DataTransfer.Core.csproj", "{69D5A539-6627-46FD-8628-B3BD2E4D3FB7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.DataTransfer.Core.UnitTests", "Core\Microsoft.DataTransfer.Core.UnitTests\Microsoft.DataTransfer.Core.UnitTests.csproj", "{5ECD1B63-E4CA-435E-8104-5E495467A507}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{69D5A539-6627-46FD-8628-B3BD2E4D3FB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69D5A539-6627-46FD-8628-B3BD2E4D3FB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69D5A539-6627-46FD-8628-B3BD2E4D3FB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69D5A539-6627-46FD-8628-B3BD2E4D3FB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5ECD1B63-E4CA-435E-8104-5E495467A507}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5ECD1B63-E4CA-435E-8104-5E495467A507}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5ECD1B63-E4CA-435E-8104-5E495467A507}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5ECD1B63-E4CA-435E-8104-5E495467A507}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{69D5A539-6627-46FD-8628-B3BD2E4D3FB7} = {8DECE46D-CDEE-42BE-B789-E3C68C4E5642}
+		{5ECD1B63-E4CA-435E-8104-5E495467A507} = {8DECE46D-CDEE-42BE-B789-E3C68C4E5642}
+	EndGlobalSection
+EndGlobal
