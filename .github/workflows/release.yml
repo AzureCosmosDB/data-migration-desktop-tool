@@ -1,5 +1,8 @@
 name: Release desktop binaries
-on: release
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
 jobs:
   github-release:
     name: Create GitHub release
