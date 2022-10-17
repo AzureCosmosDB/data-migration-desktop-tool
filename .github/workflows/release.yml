@@ -18,9 +18,9 @@ jobs:
       - name: Build Windows x64 package
         run: |
           dotnet publish \
-          core/microsoft.datatransfer.core/microsoft.datatransfer.core.csproj \
+          Core\Microsoft.DataTransfer.Core\Microsoft.DataTransfer.Core.csproj \
           --configuration release \
-          --output ./win \
+          --output win \
           --self-contained true \
           --runtime win-x64 \
           -p:PublishSingleFile=true \
@@ -33,13 +33,13 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: windows-package
-          path: ./win/cosmos-migrate.exe
+          path: win/cosmos-migrate.exe
       - name: Build macOS x64 package
         run: |
           dotnet publish \
-          core/microsoft.datatransfer.core/microsoft.datatransfer.core.csproj \
+          Core\Microsoft.DataTransfer.Core\Microsoft.DataTransfer.Core.csproj \
           --configuration release \
-          --output ./mac \
+          --output mac \
           --self-contained true \
           --runtime osx-x64 \
           -p:PublishSingleFile=true \
@@ -52,4 +52,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: mac-package
-          path: ./mac/cosmos-migrate
+          path: mac/cosmos-migrate
