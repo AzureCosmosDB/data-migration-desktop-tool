@@ -1,5 +1,8 @@
 name: Release desktop binaries
-on: release
+on: 
+  release:
+    types:
+      - published
 jobs:
   github-release:
     name: Create GitHub release
