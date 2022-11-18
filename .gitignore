@@ -160,6 +160,12 @@ _ReSharper*/
 *.[Rr]e[Ss]harper
 *.DotSettings.user
 
+# JustCode is a .NET coding addin-in
+.JustCode
+
+# CodeRush is a .NET coding addin-in
+.cr
+
 # TeamCity is a build add-in
 _TeamCity*
 
@@ -421,3 +427,9 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,visualstudiocode
+# Visual Studio data
+.vs/
+
+
+# macOS .DS_Store
+**/.DS_Store
