@@ -22,7 +22,7 @@
     },
     "JSON URI->Cosmos": {
       "commandName": "Project",
-      "commandLineArgs": "--source json --sink cosmos-nosql --JsonSourceSettings:FilePath=https://raw.githubusercontent.com/Azure/azure-documentdb-datamigrationtool/main/Extensions/Json/Microsoft.DataTransfer.JsonExtension.UnitTests/Data/ArraysTypesNesting.json --SinkSettingsPath=c:\\temp\\CosmosSinkSettings.json"
+      "commandLineArgs": "--source json --sink cosmos-nosql --JsonSourceSettings:FilePath=https://raw.githubusercontent.com/AzureCosmosDB/data-migration-desktop-tool/feature/cosmos-configuration/Extensions/Json/Microsoft.DataTransfer.JsonExtension.UnitTests/Data/ArraysTypesNesting.json --SinkSettingsPath=c:\\temp\\CosmosSinkSettings.json"
     }
   }
 }

@@ -63,7 +63,7 @@ namespace Microsoft.DataTransfer.JsonExtension.UnitTests
             var input = new JsonDataSourceExtension();
             var output = new JsonDataSinkExtension();
 
-            const string urlIn = "https://raw.githubusercontent.com/Azure/azure-documentdb-datamigrationtool/main/Extensions/Json/Microsoft.DataTransfer.JsonExtension.UnitTests/Data/ArraysTypesNesting.json";
+            const string urlIn = "https://raw.githubusercontent.com/AzureCosmosDB/data-migration-desktop-tool/feature/cosmos-configuration/Extensions/Json/Microsoft.DataTransfer.JsonExtension.UnitTests/Data/ArraysTypesNesting.json";
             const string compareFile = "Data/ArraysTypesNesting.json";
             const string fileOut = $"{nameof(WriteAsync_fromReadAsync_ProducesIdenticalFile)}_out.json";
             
