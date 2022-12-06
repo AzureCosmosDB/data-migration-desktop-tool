@@ -13,7 +13,7 @@ namespace Microsoft.DataTransfer.CosmosExtension
         [Required]
         public string? Container { get; set; }
 
-        public string? PartitionKey { get; set; }
+        public string? PartitionKeyValue { get; set; }
 
         public string? Query { get; set; }
 
