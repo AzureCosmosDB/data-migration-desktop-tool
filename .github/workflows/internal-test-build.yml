@@ -28,7 +28,7 @@ jobs:
           -p:EnableCompressionInSingleFile=true \
           -p:PublishReadyToRun=true \
           -p:PublishTrimmed=true \
-          -p:Version=${{ github.ref_name }} \
+          -p:Version=0.0.${{ github.run_number }} \
           -p:AssemblyName=cosmos-migrate
       - name: Upload Windows package
         uses: actions/upload-artifact@v3
@@ -48,7 +48,7 @@ jobs:
           -p:EnableCompressionInSingleFile=true \
           -p:PublishReadyToRun=true \
           -p:PublishTrimmed=true \
-          -p:Version=${{ github.ref_name }} \
+          -p:Version=0.0.${{ github.run_number }} \
           -p:AssemblyName=cosmos-migrate
       - name: Upload macOS package
         uses: actions/upload-artifact@v3
@@ -68,7 +68,7 @@ jobs:
           -p:EnableCompressionInSingleFile=true \
           -p:PublishReadyToRun=true \
           -p:PublishTrimmed=true \
-          -p:Version=${{ github.ref_name }} \
+          -p:Version=0.0.${{ github.run_number }} \
           -p:AssemblyName=cosmos-migrate
       - name: Upload Linux package
         uses: actions/upload-artifact@v3
