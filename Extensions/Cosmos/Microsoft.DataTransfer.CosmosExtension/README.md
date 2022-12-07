@@ -9,7 +9,7 @@ Source and sink settings both require multiple parameters to specify and provide
 - `Database`
 - `Container`
 
-Source supports an optional `IncludeMetadataFields` parameter (`false` by default) to enable inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`.
+Source supports an optional `IncludeMetadataFields` parameter (`false` by default) to enable inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`. An optional PartitionKeyValue setting allows for filtering to a single partition. The optional Query setting allows further filtering using a Cosmos SQL statement.
 
 ### Source
 
@@ -18,7 +18,9 @@ Source supports an optional `IncludeMetadataFields` parameter (`false` by defaul
     "ConnectionString": "AccountEndpoint=https://...",
     "Database":"myDb",
     "Container":"myContainer",
-    "IncludeMetadataFields": false
+    "IncludeMetadataFields": false,
+    "PartitionKeyValue":"123",
+    "Query":"SELECT * FROM c WHERE c.category='event'"
 }
 ```
 

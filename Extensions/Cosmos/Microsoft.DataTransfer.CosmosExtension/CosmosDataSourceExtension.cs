@@ -27,9 +27,9 @@ namespace Microsoft.DataTransfer.CosmosExtension
 
             var container = client.GetContainer(settings.Database, settings.Container);
             var requestOptions = new QueryRequestOptions();
-            if (!string.IsNullOrEmpty(settings.PartitionKey))
+            if (!string.IsNullOrEmpty(settings.PartitionKeyValue))
             {
-                requestOptions.PartitionKey = new PartitionKey(settings.PartitionKey);
+                requestOptions.PartitionKey = new PartitionKey(settings.PartitionKeyValue);
             }
 
             logger.LogInformation("Reading from {Database}.{Container}", settings.Database, settings.Container);
