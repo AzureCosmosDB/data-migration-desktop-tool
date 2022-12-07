@@ -1,5 +1,7 @@
 {
-    "Database":"myDb",
-    "Container":"myContainer",
-    "IncludeMetadataFields": false
+  "Database": "myDb",
+  "Container": "myContainer",
+  "IncludeMetadataFields": false,
+  "PartitionKeyValue": "123",
+  "Query": "SELECT * FROM c WHERE c.category='event'"
 }
