@@ -118,6 +118,76 @@ jobs:
           -p:PublishReadyToRun=false \
           -p:PublishTrimmed=false \
           -p:Version=0.0.${{ github.run_number }}
+      - name: Build macOS x64 Cosmos Extension
+        run: |
+          dotnet publish \
+          Extensions/Cosmos/Microsoft.DataTransfer.CosmosExtension/Microsoft.DataTransfer.CosmosExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime osx-x64 \
+          -p:PublishSingleFile=false \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
+      - name: Build macOS x64 JSON Extension
+        run: |
+          dotnet publish \
+          Extensions/Json/Microsoft.DataTransfer.JsonExtension/Microsoft.DataTransfer.JsonExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime osx-x64 \
+          -p:PublishSingleFile=false \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
+      - name: Build macOS x64 Azure Table Extension
+        run: |
+          dotnet publish \
+          Extensions/AzureTableAPI/Microsoft.DataTransfer.AzureTableAPIExtension/Microsoft.DataTransfer.AzureTableAPIExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime osx-x64 \
+          -p:PublishSingleFile=false \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
+      - name: Build macOS x64 Mongo Extension
+        run: |
+          dotnet publish \
+          Extensions/Mongo/Microsoft.DataTransfer.MongoExtension/Microsoft.DataTransfer.MongoExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime osx-x64 \
+          -p:PublishSingleFile=false \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
+      - name: Build macOS x64 SQL Server Extension
+        run: |
+          dotnet publish \
+          Extensions/SqlServer/Microsoft.DataTransfer.SqlServerExtension/Microsoft.DataTransfer.SqlServerExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime osx-x64 \
+          -p:PublishSingleFile=false \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
       - name: Upload macOS package
         uses: actions/upload-artifact@v3
         with:
@@ -132,6 +202,76 @@ jobs:
           --self-contained true \
           --runtime linux-x64 \
           -p:PublishSingleFile=true \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
+      - name: Build Linux x64 Cosmos Extension
+        run: |
+          dotnet publish \
+          Extensions/Cosmos/Microsoft.DataTransfer.CosmosExtension/Microsoft.DataTransfer.CosmosExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime linux-x64 \
+          -p:PublishSingleFile=false \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
+      - name: Build Linux x64 JSON Extension
+        run: |
+          dotnet publish \
+          Extensions/Json/Microsoft.DataTransfer.JsonExtension/Microsoft.DataTransfer.JsonExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime linux-x64 \
+          -p:PublishSingleFile=false \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
+      - name: Build Linux x64 Azure Table Extension
+        run: |
+          dotnet publish \
+          Extensions/AzureTableAPI/Microsoft.DataTransfer.AzureTableAPIExtension/Microsoft.DataTransfer.AzureTableAPIExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime linux-x64 \
+          -p:PublishSingleFile=false \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
+      - name: Build Linux x64 Mongo Extension
+        run: |
+          dotnet publish \
+          Extensions/Mongo/Microsoft.DataTransfer.MongoExtension/Microsoft.DataTransfer.MongoExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime linux-x64 \
+          -p:PublishSingleFile=false \
+          -p:DebugType=embedded \
+          -p:EnableCompressionInSingleFile=true \
+          -p:PublishReadyToRun=false \
+          -p:PublishTrimmed=false \
+          -p:Version=0.0.${{ github.run_number }}
+      - name: Build Linux x64 SQL Server Extension
+        run: |
+          dotnet publish \
+          Extensions/SqlServer/Microsoft.DataTransfer.SqlServerExtension/Microsoft.DataTransfer.SqlServerExtension.csproj \
+          --configuration release \
+          --output win/Extensions \
+          --self-contained false \
+          --runtime linux-x64 \
+          -p:PublishSingleFile=false \
           -p:DebugType=embedded \
           -p:EnableCompressionInSingleFile=true \
           -p:PublishReadyToRun=false \
