@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.Composition.Hosting;
+using System.Reflection;
 using Microsoft.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,11 +28,9 @@ class Program
         var hostingProcess = host.RunAsync();
 
         var catalog = new AggregateCatalog();
-        if (!Directory.Exists("Extensions"))
-        {
-            Directory.CreateDirectory("Extensions");
-        }
-        catalog.Catalogs.Add(new DirectoryCatalog("Extensions", "*Extension.dll"));
+        string extensionsPath = GetExtensionFolderPath(configuration, log);
+        log.LogInformation("Loading extensions from {ExtensionsPath}", extensionsPath);
+        catalog.Catalogs.Add(new DirectoryCatalog(extensionsPath, "*Extension.dll"));
         var container = new CompositionContainer(catalog);
 
         var sources = LoadExtensions<IDataSourceExtension>(container);
@@ -55,6 +54,37 @@ class Program
 
         await host.StopAsync();
         await hostingProcess;
+    }
+
+    private static string GetExtensionFolderPath(IConfiguration configuration, ILogger logger)
+    {
+        var configPath = configuration.GetValue<string>("ExtensionsPath");
+        if (!string.IsNullOrWhiteSpace(configPath))
+        {
+            try
+            {
+                var fullPath = Path.GetFullPath(configPath);
+                if (!Directory.Exists(fullPath))
+                {
+                    Directory.CreateDirectory(fullPath);
+                }
+
+                return fullPath;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Configured path {ExtensionsPath} is invalid. Using default instead.", configPath);
+            }
+        }
+
+        var exeFolder = AppContext.BaseDirectory;
+        var path = Path.Combine(exeFolder, "Extensions");
+        var di = new DirectoryInfo(path);
+        if (!di.Exists)
+        {
+            di.Create();
+        }
+        return di.FullName;
     }
 
     private static List<T> LoadExtensions<T>(CompositionContainer container)
