@@ -123,7 +123,7 @@ jobs:
           dotnet publish \
           Extensions/Cosmos/Microsoft.DataTransfer.CosmosExtension/Microsoft.DataTransfer.CosmosExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output mac/Extensions \
           --self-contained false \
           --runtime osx-x64 \
           -p:PublishSingleFile=false \
@@ -137,7 +137,7 @@ jobs:
           dotnet publish \
           Extensions/Json/Microsoft.DataTransfer.JsonExtension/Microsoft.DataTransfer.JsonExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output mac/Extensions \
           --self-contained false \
           --runtime osx-x64 \
           -p:PublishSingleFile=false \
@@ -151,7 +151,7 @@ jobs:
           dotnet publish \
           Extensions/AzureTableAPI/Microsoft.DataTransfer.AzureTableAPIExtension/Microsoft.DataTransfer.AzureTableAPIExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output mac/Extensions \
           --self-contained false \
           --runtime osx-x64 \
           -p:PublishSingleFile=false \
@@ -165,7 +165,7 @@ jobs:
           dotnet publish \
           Extensions/Mongo/Microsoft.DataTransfer.MongoExtension/Microsoft.DataTransfer.MongoExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output mac/Extensions \
           --self-contained false \
           --runtime osx-x64 \
           -p:PublishSingleFile=false \
@@ -179,7 +179,7 @@ jobs:
           dotnet publish \
           Extensions/SqlServer/Microsoft.DataTransfer.SqlServerExtension/Microsoft.DataTransfer.SqlServerExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output mac/Extensions \
           --self-contained false \
           --runtime osx-x64 \
           -p:PublishSingleFile=false \
@@ -212,7 +212,7 @@ jobs:
           dotnet publish \
           Extensions/Cosmos/Microsoft.DataTransfer.CosmosExtension/Microsoft.DataTransfer.CosmosExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output linux/Extensions \
           --self-contained false \
           --runtime linux-x64 \
           -p:PublishSingleFile=false \
@@ -226,7 +226,7 @@ jobs:
           dotnet publish \
           Extensions/Json/Microsoft.DataTransfer.JsonExtension/Microsoft.DataTransfer.JsonExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output linux/Extensions \
           --self-contained false \
           --runtime linux-x64 \
           -p:PublishSingleFile=false \
@@ -240,7 +240,7 @@ jobs:
           dotnet publish \
           Extensions/AzureTableAPI/Microsoft.DataTransfer.AzureTableAPIExtension/Microsoft.DataTransfer.AzureTableAPIExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output linux/Extensions \
           --self-contained false \
           --runtime linux-x64 \
           -p:PublishSingleFile=false \
@@ -254,7 +254,7 @@ jobs:
           dotnet publish \
           Extensions/Mongo/Microsoft.DataTransfer.MongoExtension/Microsoft.DataTransfer.MongoExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output linux/Extensions \
           --self-contained false \
           --runtime linux-x64 \
           -p:PublishSingleFile=false \
@@ -268,7 +268,7 @@ jobs:
           dotnet publish \
           Extensions/SqlServer/Microsoft.DataTransfer.SqlServerExtension/Microsoft.DataTransfer.SqlServerExtension.csproj \
           --configuration release \
-          --output win/Extensions \
+          --output linux/Extensions \
           --self-contained false \
           --runtime linux-x64 \
           -p:PublishSingleFile=false \
