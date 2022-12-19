@@ -1,178 +1,60 @@
-﻿using System.ComponentModel.Composition.Hosting;
-using System.Reflection;
-using Microsoft.DataTransfer.Interfaces;
+﻿using System.CommandLine;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using System.CommandLine.Builder;
+using System.CommandLine.Hosting;
+using System.CommandLine.Parsing;
+using System.CommandLine.Help;
 
 namespace Microsoft.DataTransfer.Core;
 
 class Program
 {
-    public static async Task Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
-        using IHost host = Host.CreateDefaultBuilder(args)
-            .ConfigureAppConfiguration(cfg =>
+        var rootCommand = new RootCommand("Azure data migration tool") { TreatUnmatchedTokensAsErrors = false };
+        rootCommand.AddCommand(new RunCommand());
+        rootCommand.AddCommand(new ListCommand());
+
+        var cmdlineBuilder = new CommandLineBuilder(rootCommand);
+
+        var parser = cmdlineBuilder.UseHost(_ => Host.CreateDefaultBuilder(args),
+            builder =>
             {
-                cfg.AddUserSecrets<Program>();
+                builder.ConfigureAppConfiguration(cfg =>
+                {
+                    cfg.AddUserSecrets<Program>();
+                }).ConfigureServices((hostContext, services) =>
+                {
+                    services.AddTransient<ExtensionLoader>();
+                })
+                    .UseCommandHandler<RunCommand, RunCommand.CommandHandler>()
+                    .UseCommandHandler<ListCommand, ListCommand.CommandHandler>();
             })
-            .Build();
+            .UseHelp(AddAdditionalArgumentsHelp)
+            .UseDefaults().Build();
 
-        IConfiguration configuration = host.Services.GetRequiredService<IConfiguration>();
-        var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
-        var log = loggerFactory.CreateLogger<Program>();
-
-        var options = configuration.Get<DataTransferOptions>();
-
-        var hostingProcess = host.RunAsync();
-
-        var catalog = new AggregateCatalog();
-        string extensionsPath = GetExtensionFolderPath(configuration, log);
-        log.LogInformation("Loading extensions from {ExtensionsPath}", extensionsPath);
-        catalog.Catalogs.Add(new DirectoryCatalog(extensionsPath, "*Extension.dll"));
-        var container = new CompositionContainer(catalog);
-
-        var sources = LoadExtensions<IDataSourceExtension>(container);
-        var sinks = LoadExtensions<IDataSinkExtension>(container);
-
-        log.LogInformation("{TotalExtensionCount} Extensions Loaded", sources.Count + sinks.Count);
-
-        var source = GetExtensionSelection(options.Source, sources, "Source");
-        var sourceConfig = BuildSettingsConfiguration(configuration, options.SourceSettingsPath, $"{source.DisplayName}SourceSettings", options.Source == null);
-
-        var sink = GetExtensionSelection(options.Sink, sinks, "Sink");
-        var sinkConfig = BuildSettingsConfiguration(configuration, options.SinkSettingsPath, $"{sink.DisplayName}SinkSettings", options.Sink == null);
-
-        var data = source.ReadAsync(sourceConfig, loggerFactory.CreateLogger(source.GetType().Name));
-        await sink.WriteAsync(data, sinkConfig, source, loggerFactory.CreateLogger(sink.GetType().Name));
-
-        log.LogInformation("Done");
-
-        Console.WriteLine("Enter to Quit...");
-        Console.ReadLine();
-
-        await host.StopAsync();
-        await hostingProcess;
+        return await parser.InvokeAsync(args);
     }
 
-    private static string GetExtensionFolderPath(IConfiguration configuration, ILogger logger)
+    private static void AddAdditionalArgumentsHelp(HelpContext helpContext)
     {
-        var configPath = configuration.GetValue<string>("ExtensionsPath");
-        if (!string.IsNullOrWhiteSpace(configPath))
+        helpContext.HelpBuilder.CustomizeLayout(_ =>
         {
-            try
+            var layout = HelpBuilder.Default.GetLayout().ToList();
+            layout.Remove(HelpBuilder.Default.AdditionalArgumentsSection());
+            if (helpContext.Command.GetType() == typeof(RunCommand))
             {
-                var fullPath = Path.GetFullPath(configPath);
-                if (!Directory.Exists(fullPath))
+                layout.Add(ctx =>
                 {
-                    Directory.CreateDirectory(fullPath);
-                }
-
-                return fullPath;
+                    ctx.Output.WriteLine("Additional Arguments:");
+                    ctx.Output.WriteLine("  Extension specific settings can be provided as additional arguments in the form:");
+                    ctx.HelpBuilder.WriteColumns(new List<TwoColumnHelpRow> { new("--<extension><Source|Sink>Settings:<name> <value>", "ex: --JsonSourceSettings:FilePath MyDataFile.json") }.AsReadOnly(), ctx);
+                });
             }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Configured path {ExtensionsPath} is invalid. Using default instead.", configPath);
-            }
-        }
 
-        var exeFolder = AppContext.BaseDirectory;
-        var path = Path.Combine(exeFolder, "Extensions");
-        var di = new DirectoryInfo(path);
-        if (!di.Exists)
-        {
-            di.Create();
-        }
-        return di.FullName;
-    }
-
-    private static List<T> LoadExtensions<T>(CompositionContainer container)
-        where T : class, IDataTransferExtension
-    {
-        var sources = new List<T>();
-
-        foreach (var exportedExtension in container.GetExports<T>())
-        {
-            sources.Add(exportedExtension.Value);
-        }
-
-        return sources;
-    }
-
-    private static T GetExtensionSelection<T>(string? selectionName, List<T> extensions, string inputPrompt) 
-        where T : class, IDataTransferExtension
-    {
-        if (!string.IsNullOrWhiteSpace(selectionName))
-        {
-            var extension = extensions.FirstOrDefault(s => selectionName.Equals(s.DisplayName, StringComparison.OrdinalIgnoreCase));
-            if (extension != null)
-            {
-                Console.WriteLine($"Using {extension.DisplayName} {inputPrompt}");
-                return extension;
-            }
-        }
-
-        Console.WriteLine($"Select {inputPrompt}");
-        for (var index = 0; index < extensions.Count; index++)
-        {
-            var extension = extensions[index];
-            Console.WriteLine($"{index + 1}:{extension.DisplayName}");
-        }
-
-        string? selection = "";
-        int input;
-        while (!int.TryParse(selection, out input) || input > extensions.Count)
-        {
-            selection = Console.ReadLine();
-        }
-
-        return extensions[input - 1];
-    }
-
-    private static IConfiguration BuildSettingsConfiguration(IConfiguration configuration, string? settingsPath, string configSection, bool promptForFile)
-    {
-        IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-        if (!string.IsNullOrEmpty(settingsPath))
-        {
-            configurationBuilder = configurationBuilder.AddJsonFile(settingsPath);
-        }
-        else if (promptForFile)
-        {
-            Console.Write($"Load settings from a file? (y/n):");
-            var response = Console.ReadLine();
-            if (IsYesResponse(response))
-            {
-                Console.Write("Path to file: ");
-                var path = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(path))
-                {
-                    configurationBuilder = configurationBuilder.AddJsonFile(path);
-                }
-            }
-            else
-            {
-                Console.Write($"Configuration section to read settings? (default={configSection}):");
-                response = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(response))
-                {
-                    configSection = response;
-                }
-            }
-        }
-
-        return configurationBuilder
-            .AddConfiguration(configuration.GetSection(configSection))
-            .Build();
-    }
-
-    private static bool IsYesResponse(string? response)
-    {
-        if (response?.Equals("y", StringComparison.CurrentCultureIgnoreCase) == true)
-            return true;
-        if (response?.Equals("yes", StringComparison.CurrentCultureIgnoreCase) == true)
-            return true;
-
-        return false;
+            return layout;
+        });
     }
 }
