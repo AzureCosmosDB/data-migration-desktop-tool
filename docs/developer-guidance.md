@@ -69,14 +69,14 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
 1. Each extension contains a README document that outlines configuration for the data migration. In this case, locate the configuration for [JSON (Source)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Json/Microsoft.DataTransfer.JsonExtension) and [Cosmos DB (Sink)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Cosmos/Microsoft.DataTransfer.CosmosExtension).
 
-2. In the Visual Studio Solution Explorer, expand the **Microsoft.Data.Transfer.Core** project, and open **appsettings.json**. This file provides an example outline of the settings file structure. Using the documentation linked above, configure the **JsonSourceSettings** and **CosmosSinkSettings** sections. Ensure the **FilePath** setting is the location where the sample data is extracted. The ConnectionString setting can be found on the Cosmos DB Emulator **Quickstart** screen as the **Primary Connection String**. Save the file.
+2. In the Visual Studio Solution Explorer, expand the **Microsoft.Data.Transfer.Core** project, and open **appsettings.json**. This file provides an example outline of the settings file structure. Using the documentation linked above, configure the **JsonSourceSettings** and **Cosmos-NoSqlSinkSettings** sections. Ensure the **FilePath** setting is the location where the sample data is extracted. The ConnectionString setting can be found on the Cosmos DB Emulator **Quickstart** screen as the **Primary Connection String**. Save the file.
 
     ```json
     {
         "JSONSourceSettings": {
             "FilePath": "C:\\btcdata\\simple_json.json"
         },
-        "CosmosSinkSettings": {
+        "Cosmos-NoSqlSinkSettings": {
             "ConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDj...",
             "Database": "datamigration",
             "Container": "btcdata",
@@ -97,7 +97,7 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
     ![The Data Migration application displays with a menu prompt for Source.](media/app_source_prompt.png "Select Source")
 
-5. The application will then prompt for a **Sink**, choose **Cosmos**. When prompted to load settings from a file enter `n` and press <kbd>Enter</kbd>. The application provides the ability to configure extensions in a separate file versus having them located in the **appsettings.json** file. When a separate file is not specified, the settings are read from **appsettings.json**. When prompted to provide the Configuration section name, press <kbd>Enter</kbd> to accept the default: **CosmosSinkSettings**.
+5. The application will then prompt for a **Sink**, choose **Cosmos-nosql**. When prompted to load settings from a file enter `n` and press <kbd>Enter</kbd>. The application provides the ability to configure extensions in a separate file versus having them located in the **appsettings.json** file. When a separate file is not specified, the settings are read from **appsettings.json**. When prompted to provide the Configuration section name, press <kbd>Enter</kbd> to accept the default: **Cosmos-NoSqlSinkSettings**.
 
     ![The Data migration application displays with a menu prompt for Sink.](media/app_sink_prompt.png "Select Sink")
 
