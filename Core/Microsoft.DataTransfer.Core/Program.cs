@@ -6,6 +6,8 @@ using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Parsing;
 using System.CommandLine.Help;
+using Microsoft.Extensions.Logging;
+using System.CommandLine.IO;
 
 namespace Microsoft.DataTransfer.Core;
 
@@ -16,6 +18,22 @@ class Program
         var rootCommand = new RootCommand("Azure data migration tool") { TreatUnmatchedTokensAsErrors = false };
         rootCommand.AddCommand(new RunCommand());
         rootCommand.AddCommand(new ListCommand());
+        rootCommand.SetHandler(async ctx =>
+        {
+            var host = ctx.GetHost();
+            var logger = host.Services.GetService<ILoggerFactory>();
+            var config = host.Services.GetService<IConfiguration>();
+            var loader = host.Services.GetService<ExtensionLoader>();
+            if (loader == null || config == null || logger == null)
+            {
+                ctx.Console.Error.WriteLine("Missing required command");
+            }
+            else
+            {
+                var handler = new RunCommand.CommandHandler(loader, config, logger);
+                await handler.InvokeAsync(ctx);
+            }
+        });
 
         var cmdlineBuilder = new CommandLineBuilder(rootCommand);
 
@@ -44,10 +62,17 @@ class Program
         {
             var layout = HelpBuilder.Default.GetLayout().ToList();
             layout.Remove(HelpBuilder.Default.AdditionalArgumentsSection());
-            if (helpContext.Command.GetType() == typeof(RunCommand))
+            bool runCommand = helpContext.Command.GetType() == typeof(RunCommand);
+            bool rootCommand = helpContext.Command.GetType() == typeof(RootCommand);
+            if (runCommand || rootCommand)
             {
                 layout.Add(ctx =>
                 {
+                    if (rootCommand)
+                    {
+                        ctx.Output.WriteLine();
+                    }
+
                     ctx.Output.WriteLine("Additional Arguments:");
                     ctx.Output.WriteLine("  Extension specific settings can be provided as additional arguments in the form:");
                     ctx.HelpBuilder.WriteColumns(new List<TwoColumnHelpRow> { new("--<extension><Source|Sink>Settings:<name> <value>", "ex: --JsonSourceSettings:FilePath MyDataFile.json") }.AsReadOnly(), ctx);

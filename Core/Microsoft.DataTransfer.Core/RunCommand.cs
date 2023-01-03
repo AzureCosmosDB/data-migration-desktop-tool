@@ -30,6 +30,8 @@ namespace Microsoft.DataTransfer.Core
             AddOption(sinkOption);
             AddOption(sinkSettingsOption);
 
+            AddAlias("<default>");
+
             TreatUnmatchedTokensAsErrors = false;
 
             // TODO: load extensions to use in completions
@@ -64,6 +66,8 @@ namespace Microsoft.DataTransfer.Core
 
             public async Task<int> InvokeAsync(InvocationContext context)
             {
+                CancellationToken cancellationToken = context.GetCancellationToken();
+
                 var configuredOptions = _configuration.Get<DataTransferOptions>();
                 var options = new DataTransferOptions
                 {
@@ -79,29 +83,37 @@ namespace Microsoft.DataTransfer.Core
                 var sources = _extensionLoader.LoadExtensions<IDataSourceExtension>(container);
                 var sinks = _extensionLoader.LoadExtensions<IDataSinkExtension>(container);
 
-                var source = GetExtensionSelection(options.Source, sources, "Source");
-                var sourceConfig = BuildSettingsConfiguration(_configuration, options.SourceSettingsPath, $"{source.DisplayName}SourceSettings", options.Source == null);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var source = GetExtensionSelection(options.Source, sources, "Source", cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                var sourceConfig = BuildSettingsConfiguration(_configuration, options.SourceSettingsPath, $"{source.DisplayName}SourceSettings", options.Source == null, cancellationToken);
                 _logger.LogDebug("Loaded {SettingCount} settings for source {SourceName}:\n\t\t{SettingList}", 
                     sourceConfig.AsEnumerable().Count(), 
                     source.DisplayName, 
                     string.Join("\n\t\t", sourceConfig.AsEnumerable().Select(kvp => kvp.Key)));
 
-                var sink = GetExtensionSelection(options.Sink, sinks, "Sink");
-                var sinkConfig = BuildSettingsConfiguration(_configuration, options.SinkSettingsPath, $"{sink.DisplayName}SinkSettings", options.Sink == null);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var sink = GetExtensionSelection(options.Sink, sinks, "Sink", cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                var sinkConfig = BuildSettingsConfiguration(_configuration, options.SinkSettingsPath, $"{sink.DisplayName}SinkSettings", options.Sink == null, cancellationToken);
                 _logger.LogDebug("Loaded {SettingCount} settings for source {SinkName}:\n\t\t{SettingsList}", 
                     sinkConfig.AsEnumerable().Count(), 
                     sink.DisplayName,
                     string.Join("\n\t\t", sinkConfig.AsEnumerable().Select(kvp => kvp.Key)));
 
-                var data = source.ReadAsync(sourceConfig, _loggerFactory.CreateLogger(source.GetType().Name));
-                await sink.WriteAsync(data, sinkConfig, source, _loggerFactory.CreateLogger(sink.GetType().Name));
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var data = source.ReadAsync(sourceConfig, _loggerFactory.CreateLogger(source.GetType().Name), cancellationToken);
+                await sink.WriteAsync(data, sinkConfig, source, _loggerFactory.CreateLogger(sink.GetType().Name), cancellationToken);
 
                 _logger.LogInformation("Done");
 
                 return 0;
             }
 
-            private static T GetExtensionSelection<T>(string? selectionName, List<T> extensions, string inputPrompt)
+            private static T GetExtensionSelection<T>(string? selectionName, List<T> extensions, string inputPrompt, CancellationToken cancellationToken)
                 where T : class, IDataTransferExtension
             {
                 if (!string.IsNullOrWhiteSpace(selectionName))
@@ -125,6 +137,7 @@ namespace Microsoft.DataTransfer.Core
                 int input;
                 while (!int.TryParse(selection, out input) || input > extensions.Count)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     selection = Console.ReadLine();
                 }
 
@@ -133,7 +146,7 @@ namespace Microsoft.DataTransfer.Core
                 return selected;
             }
 
-            private static IConfiguration BuildSettingsConfiguration(IConfiguration configuration, string? settingsPath, string configSection, bool promptForFile)
+            private static IConfiguration BuildSettingsConfiguration(IConfiguration configuration, string? settingsPath, string configSection, bool promptForFile, CancellationToken cancellationToken)
             {
                 IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
                 if (!string.IsNullOrEmpty(settingsPath))
@@ -144,10 +157,12 @@ namespace Microsoft.DataTransfer.Core
                 {
                     Console.Write($"Load settings from a file? (y/n):");
                     var response = Console.ReadLine();
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (IsYesResponse(response))
                     {
                         Console.Write("Path to file: ");
                         var path = Console.ReadLine();
+                        cancellationToken.ThrowIfCancellationRequested();
                         if (!string.IsNullOrWhiteSpace(path))
                         {
                             configurationBuilder = configurationBuilder.AddJsonFile(path);

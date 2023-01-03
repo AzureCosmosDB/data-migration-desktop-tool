@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>c7432a3a-5dc1-4e86-a1f0-b2363bf5c77f</UserSecretsId>
     <PackageId>datatransfer-core</PackageId>
-    <AssemblyName>cosmos-migrate</AssemblyName>
+    <AssemblyName>dmt</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="migrationsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
