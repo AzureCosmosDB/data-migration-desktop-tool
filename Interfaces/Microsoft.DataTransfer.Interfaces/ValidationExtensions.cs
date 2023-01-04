@@ -4,8 +4,15 @@ namespace Microsoft.DataTransfer.Interfaces;
 
 public static class ValidationExtensions
 {
-    public static IEnumerable<string?> GetValidationErrors(this IDataExtensionSettings settings)
+    public static IEnumerable<string?> GetValidationErrors<T>(this T? settings)
+        where T : class, IDataExtensionSettings, new()
     {
+        if (settings == null)
+        {
+            yield return $"Missing settings of type {typeof(T).Name}";
+            settings = new T();
+        }
+
         var context = new ValidationContext(settings, serviceProvider: null, items: null);
         var results = new List<ValidationResult>();
         Validator.TryValidateObject(settings, context, results, true);
@@ -15,12 +22,13 @@ public static class ValidationExtensions
         }
     }
 
-    public static void Validate(this IDataExtensionSettings settings)
+    public static void Validate<T>(this T? settings) 
+        where T : class, IDataExtensionSettings, new()
     {
         var validationErrors = settings.GetValidationErrors().ToList();
         if (validationErrors.Any())
         {
-            throw new AggregateException($"Configuration for {settings.GetType().Name} is invalid", validationErrors.Select(s => new Exception(s)));
+            throw new AggregateException($"Configuration for {typeof(T).Name} is invalid", validationErrors.Select(s => new Exception(s)));
         }
     }
 }

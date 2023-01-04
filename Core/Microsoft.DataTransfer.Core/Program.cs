@@ -18,6 +18,9 @@ class Program
         var rootCommand = new RootCommand("Azure data migration tool") { TreatUnmatchedTokensAsErrors = false };
         rootCommand.AddCommand(new RunCommand());
         rootCommand.AddCommand(new ListCommand());
+
+        // execute Run if no command provided
+        RunCommand.AddRunOptions(rootCommand);
         rootCommand.SetHandler(async ctx =>
         {
             var host = ctx.GetHost();
@@ -30,7 +33,12 @@ class Program
             }
             else
             {
-                var handler = new RunCommand.CommandHandler(loader, config, logger);
+                var handler = new RunCommand.CommandHandler(loader, config, logger)
+                {
+                    Source = ctx.BindingContext.ParseResult.GetValueForOption(rootCommand.Options.ElementAt(0)) as string,
+                    Sink = ctx.BindingContext.ParseResult.GetValueForOption(rootCommand.Options.ElementAt(1)) as string,
+                    Settings = ctx.BindingContext.ParseResult.GetValueForOption(rootCommand.Options.ElementAt(2)) as FileInfo
+                };
                 await handler.InvokeAsync(ctx);
             }
         });
@@ -75,7 +83,7 @@ class Program
 
                     ctx.Output.WriteLine("Additional Arguments:");
                     ctx.Output.WriteLine("  Extension specific settings can be provided as additional arguments in the form:");
-                    ctx.HelpBuilder.WriteColumns(new List<TwoColumnHelpRow> { new("--<extension><Source|Sink>Settings:<name> <value>", "ex: --JsonSourceSettings:FilePath MyDataFile.json") }.AsReadOnly(), ctx);
+                    ctx.HelpBuilder.WriteColumns(new List<TwoColumnHelpRow> { new("--<Source|Sink>Settings:<name> <value>", "ex: --SourceSettings:FilePath MyDataFile.json") }.AsReadOnly(), ctx);
                 });
             }
 

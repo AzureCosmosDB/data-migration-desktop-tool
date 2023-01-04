@@ -4,6 +4,5 @@ public class DataTransferOptions
 {
     public string? Source { get; set; }
     public string? Sink { get; set; }
-    public string? SourceSettingsPath { get; set; }
-    public string? SinkSettingsPath { get; set; }
+    public string? SettingsPath { get; set; }
 }

@@ -6,23 +6,23 @@
     },
     "JSON->Cosmos": {
       "commandName": "Project",
-      "commandLineArgs": "run -from json --sink cosmos-nosql --source-settings c:\\temp\\JsonSourceSettings.json --sink-settings c:\\temp\\CosmosSinkSettings.json"
+      "commandLineArgs": "run -from json --sink cosmos-nosql --settings c:\\temp\\Json-CosmosSettings.json"
     },
     "Cosmos->JSON": {
       "commandName": "Project",
-      "commandLineArgs": "run --source cosmos-nosql --sink json --source-settings=c:\\temp\\CosmosSourceSettings.json --sink-settings=c:\\temp\\JsonSinkSettings.json"
+      "commandLineArgs": "--source cosmos-nosql --sink json --settings=c:\\temp\\Cosmos-JsonSettings.json"
     },
     "SqlServer->Cosmos": {
       "commandName": "Project",
-      "commandLineArgs": "run --source sqlServer --sink cosmos-nosql --source-settings=c:\\temp\\SqlSourceSettings.json --sink-settings=c:\\temp\\CosmosSinkSettings.json"
+      "commandLineArgs": "run --source sqlServer --sink cosmos-nosql --settings=c:\\temp\\Sql-CosmosSettings.json"
     },
     "JSON->SqlServer": {
       "commandName": "Project",
-      "commandLineArgs": "run --source json --sink sqlServer --JsonSourceSettings:FilePath=c:\\temp\\test-json-sql-in.json --SinkSettingsPath=c:\\temp\\SqlSinkSettings.json"
+      "commandLineArgs": "run --source json --sink sqlServer --SourceSettings:FilePath=c:\\temp\\test-json-sql-in.json --SettingsPath=c:\\temp\\Json-SqlSettings.json"
     },
     "JSON URI->Cosmos": {
       "commandName": "Project",
-      "commandLineArgs": "run --source json --sink cosmos-nosql --JsonSourceSettings:FilePath=https://raw.githubusercontent.com/AzureCosmosDB/data-migration-desktop-tool/feature/cosmos-configuration/Extensions/Json/Microsoft.DataTransfer.JsonExtension.UnitTests/Data/ArraysTypesNesting.json --SinkSettingsPath=c:\\temp\\CosmosSinkSettings.json"
+      "commandLineArgs": "--source json --sink cosmos-nosql --SourceSettings:FilePath=https://raw.githubusercontent.com/AzureCosmosDB/data-migration-desktop-tool/feature/cosmos-configuration/Extensions/Json/Microsoft.DataTransfer.JsonExtension.UnitTests/Data/ArraysTypesNesting.json --SettingsPath=c:\\temp\\CosmosSinkSettings.json"
     }
   }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.ComponentModel.Composition.Hosting;
@@ -12,23 +13,7 @@ namespace Microsoft.DataTransfer.Core
         public RunCommand()
             : base("run", "Runs data transfer operation using selected source and sink")
         {
-            var sourceOption = new Option<string?>(
-                aliases: new[]{ "--source", "-from" },
-                description: "The extension to read data.");
-            var sourceSettingsOption = new Option<FileInfo?>(
-                aliases: new[] { "--source-settings" },
-                description: "The source settings file.");
-            var sinkOption = new Option<string?>(
-                aliases: new[] { "--sink", "-to" },
-                description: "The extension to write data.");
-            var sinkSettingsOption = new Option<FileInfo?>(
-                aliases: new[] { "--sink-settings" },
-                description: "The sink settings file.");
-
-            AddOption(sourceOption);
-            AddOption(sourceSettingsOption);
-            AddOption(sinkOption);
-            AddOption(sinkSettingsOption);
+            AddRunOptions(this);
 
             AddAlias("<default>");
 
@@ -37,6 +22,23 @@ namespace Microsoft.DataTransfer.Core
             // TODO: load extensions to use in completions
             //sourceOption.AddCompletions(ExtensionLoader.GetExtensionSourceNames());
             //sinkOption.AddCompletions(ExtensionLoader.GetExtensionSinkNames());
+        }
+
+        public static void AddRunOptions(Command command)
+        {
+            var sourceOption = new Option<string?>(
+                aliases: new[] { "--source", "-from" },
+                description: "The extension to read data.");
+            var sinkOption = new Option<string?>(
+                aliases: new[] { "--sink", "-to" },
+                description: "The extension to write data.");
+            var settingsOption = new Option<FileInfo?>(
+                aliases: new[] { "--settings" },
+                description: "The settings file. (default: migrationsettings.json)");
+
+            command.AddOption(sourceOption);
+            command.AddOption(sinkOption);
+            command.AddOption(settingsOption);
         }
 
         public class CommandHandler : ICommandHandler
@@ -48,8 +50,7 @@ namespace Microsoft.DataTransfer.Core
 
             public string? Source { get; set; }
             public string? Sink { get; set; }
-            public FileInfo? SourceSettings { get; set; }
-            public FileInfo? SinkSettings { get; set; }
+            public FileInfo? Settings { get; set; }
 
             public CommandHandler(ExtensionLoader extensionLoader, IConfiguration configuration, ILoggerFactory loggerFactory)
             {
@@ -69,14 +70,13 @@ namespace Microsoft.DataTransfer.Core
                 CancellationToken cancellationToken = context.GetCancellationToken();
 
                 var configuredOptions = _configuration.Get<DataTransferOptions>();
-                var options = new DataTransferOptions
-                {
-                    Source = Source ?? configuredOptions.Source,
-                    Sink = Sink ?? configuredOptions.Sink,
-                    SinkSettingsPath = SinkSettings?.FullName ?? configuredOptions.SinkSettingsPath,
-                    SourceSettingsPath = SourceSettings?.FullName ?? configuredOptions.SourceSettingsPath,
-                };
+                var combinedConfig = BuildSettingsConfiguration(_configuration,
+                    Settings?.FullName ?? configuredOptions.SettingsPath,
+                    string.IsNullOrEmpty(Source ?? configuredOptions.Source) && string.IsNullOrEmpty(Sink ?? configuredOptions.Sink),
+                    cancellationToken);
 
+                var options = combinedConfig.Get<DataTransferOptions>();
+                
                 string extensionsPath = _extensionLoader.GetExtensionFolderPath();
                 CompositionContainer container = _extensionLoader.BuildExtensionCatalog(extensionsPath);
 
@@ -85,30 +85,36 @@ namespace Microsoft.DataTransfer.Core
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var source = GetExtensionSelection(options.Source, sources, "Source", cancellationToken);
+                var source = GetExtensionSelection(Source ?? options.Source, sources, "Source", cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
-                var sourceConfig = BuildSettingsConfiguration(_configuration, options.SourceSettingsPath, $"{source.DisplayName}SourceSettings", options.Source == null, cancellationToken);
+                var sink = GetExtensionSelection(Sink ?? options.Sink, sinks, "Sink", cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                var sourceConfig = combinedConfig.GetSection("SourceSettings");
+                var sinkConfig = combinedConfig.GetSection("SinkSettings");
                 _logger.LogDebug("Loaded {SettingCount} settings for source {SourceName}:\n\t\t{SettingList}", 
                     sourceConfig.AsEnumerable().Count(), 
                     source.DisplayName, 
                     string.Join("\n\t\t", sourceConfig.AsEnumerable().Select(kvp => kvp.Key)));
 
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var sink = GetExtensionSelection(options.Sink, sinks, "Sink", cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
-                var sinkConfig = BuildSettingsConfiguration(_configuration, options.SinkSettingsPath, $"{sink.DisplayName}SinkSettings", options.Sink == null, cancellationToken);
-                _logger.LogDebug("Loaded {SettingCount} settings for source {SinkName}:\n\t\t{SettingsList}", 
+                _logger.LogDebug("Loaded {SettingCount} settings for sink {SinkName}:\n\t\t{SettingsList}", 
                     sinkConfig.AsEnumerable().Count(), 
                     sink.DisplayName,
                     string.Join("\n\t\t", sinkConfig.AsEnumerable().Select(kvp => kvp.Key)));
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var data = source.ReadAsync(sourceConfig, _loggerFactory.CreateLogger(source.GetType().Name), cancellationToken);
-                await sink.WriteAsync(data, sinkConfig, source, _loggerFactory.CreateLogger(sink.GetType().Name), cancellationToken);
+                try
+                {
+                    var data = source.ReadAsync(sourceConfig, _loggerFactory.CreateLogger(source.GetType().Name), cancellationToken);
+                    await sink.WriteAsync(data, sinkConfig, source, _loggerFactory.CreateLogger(sink.GetType().Name), cancellationToken);
 
-                _logger.LogInformation("Done");
+                    _logger.LogInformation("Data transfer complete");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Data transfer failed");
+                }
 
                 return 0;
             }
@@ -146,41 +152,28 @@ namespace Microsoft.DataTransfer.Core
                 return selected;
             }
 
-            private static IConfiguration BuildSettingsConfiguration(IConfiguration configuration, string? settingsPath, string configSection, bool promptForFile, CancellationToken cancellationToken)
+            private IConfiguration BuildSettingsConfiguration(IConfiguration configuration, string? settingsPath, bool promptForFile, CancellationToken cancellationToken)
             {
                 IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-                if (!string.IsNullOrEmpty(settingsPath))
+                if (!string.IsNullOrEmpty(settingsPath) && File.Exists(settingsPath))
                 {
+                    _logger.LogInformation("Settings loading from file at configured path '{FilePath}'.", settingsPath);
                     configurationBuilder = configurationBuilder.AddJsonFile(settingsPath);
                 }
                 else if (promptForFile)
                 {
-                    Console.Write($"Load settings from a file? (y/n):");
-                    var response = Console.ReadLine();
+                    Console.Write("Path to settings file? (leave empty to skip): ");
+                    var path = Console.ReadLine();
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (IsYesResponse(response))
+                    if (!string.IsNullOrWhiteSpace(path))
                     {
-                        Console.Write("Path to file: ");
-                        var path = Console.ReadLine();
-                        cancellationToken.ThrowIfCancellationRequested();
-                        if (!string.IsNullOrWhiteSpace(path))
-                        {
-                            configurationBuilder = configurationBuilder.AddJsonFile(path);
-                        }
-                    }
-                    else
-                    {
-                        Console.Write($"Configuration section to read settings? (default={configSection}):");
-                        response = Console.ReadLine();
-                        if (!string.IsNullOrWhiteSpace(response))
-                        {
-                            configSection = response;
-                        }
+                        _logger.LogInformation("Settings loading from file at entered path '{FilePath}'.", settingsPath);
+                        configurationBuilder = configurationBuilder.AddJsonFile(path);
                     }
                 }
 
                 return configurationBuilder
-                    .AddConfiguration(configuration.GetSection(configSection))
+                    .AddConfiguration(configuration)
                     .Build();
             }
 
