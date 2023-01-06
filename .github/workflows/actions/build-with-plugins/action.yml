@@ -17,7 +17,7 @@ runs:
       shell: bash
       run: |
         dotnet publish \
-        Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
+        Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj \
         --configuration release \
         --output ${{ inputs.platform-short }} \
         --self-contained true \
@@ -32,7 +32,7 @@ runs:
       shell: bash
       run: |
         dotnet publish \
-        Extensions/Cosmos/Microsoft.DataTransfer.CosmosExtension/Microsoft.DataTransfer.CosmosExtension.csproj \
+        Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension/Cosmos.DataTransfer.CosmosExtension.csproj \
         --configuration release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \
@@ -47,7 +47,7 @@ runs:
       shell: bash
       run: |
         dotnet publish \
-        Extensions/Json/Microsoft.DataTransfer.JsonExtension/Microsoft.DataTransfer.JsonExtension.csproj \
+        Extensions/Json/Cosmos.DataTransfer.JsonExtension/Cosmos.DataTransfer.JsonExtension.csproj \
         --configuration release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \
@@ -62,7 +62,7 @@ runs:
       shell: bash
       run: |
         dotnet publish \
-        Extensions/AzureTableAPI/Microsoft.DataTransfer.AzureTableAPIExtension/Microsoft.DataTransfer.AzureTableAPIExtension.csproj \
+        Extensions/AzureTableAPI/Cosmos.DataTransfer.AzureTableAPIExtension/Cosmos.DataTransfer.AzureTableAPIExtension.csproj \
         --configuration release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \
@@ -77,7 +77,7 @@ runs:
       shell: bash
       run: |
         dotnet publish \
-        Extensions/Mongo/Microsoft.DataTransfer.MongoExtension/Microsoft.DataTransfer.MongoExtension.csproj \
+        Extensions/Mongo/Cosmos.DataTransfer.MongoExtension/Cosmos.DataTransfer.MongoExtension.csproj \
         --configuration release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \
@@ -92,7 +92,7 @@ runs:
       shell: bash
       run: |
         dotnet publish \
-        Extensions/SqlServer/Microsoft.DataTransfer.SqlServerExtension/Microsoft.DataTransfer.SqlServerExtension.csproj \
+        Extensions/SqlServer/Cosmos.DataTransfer.SqlServerExtension/Cosmos.DataTransfer.SqlServerExtension.csproj \
         --configuration release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \

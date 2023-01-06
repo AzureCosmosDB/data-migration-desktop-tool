@@ -3,19 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31919.166
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.Core", "Core\Microsoft.DataTransfer.Core\Microsoft.DataTransfer.Core.csproj", "{A164C7E5-E6FB-43B3-85B1-C67FFDFE330A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.Core", "Core\Cosmos.DataTransfer.Core\Cosmos.DataTransfer.Core.csproj", "{A164C7E5-E6FB-43B3-85B1-C67FFDFE330A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.Interfaces", "Interfaces\Microsoft.DataTransfer.Interfaces\Microsoft.DataTransfer.Interfaces.csproj", "{2A3EE681-C7CD-4062-913B-737E6265CEF7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.Interfaces", "Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj", "{2A3EE681-C7CD-4062-913B-737E6265CEF7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.Core.UnitTests", "Core\Microsoft.DataTransfer.Core.UnitTests\Microsoft.DataTransfer.Core.UnitTests.csproj", "{7339C831-B668-4CF9-951C-E2F4AE951996}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.Core.UnitTests", "Core\Cosmos.DataTransfer.Core.UnitTests\Cosmos.DataTransfer.Core.UnitTests.csproj", "{7339C831-B668-4CF9-951C-E2F4AE951996}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", "{A8A1CEAB-2D82-460C-9B86-74ABD17CD201}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.JsonExtension", "Extensions\Json\Microsoft.DataTransfer.JsonExtension\Microsoft.DataTransfer.JsonExtension.csproj", "{55355690-D898-4C75-818A-72655DB4495A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.JsonExtension", "Extensions\Json\Cosmos.DataTransfer.JsonExtension\Cosmos.DataTransfer.JsonExtension.csproj", "{55355690-D898-4C75-818A-72655DB4495A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.CosmosExtension", "Extensions\Cosmos\Microsoft.DataTransfer.CosmosExtension\Microsoft.DataTransfer.CosmosExtension.csproj", "{688F9479-06FF-4B8F-9294-369D549C78FD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.CosmosExtension", "Extensions\Cosmos\Cosmos.DataTransfer.CosmosExtension\Cosmos.DataTransfer.CosmosExtension.csproj", "{688F9479-06FF-4B8F-9294-369D549C78FD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.AzureTableAPIExtension", "Extensions\AzureTableAPI\Microsoft.DataTransfer.AzureTableAPIExtension\Microsoft.DataTransfer.AzureTableAPIExtension.csproj", "{CA03961C-4330-4ED9-963A-3B63FBC08ABB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.AzureTableAPIExtension", "Extensions\AzureTableAPI\Cosmos.DataTransfer.AzureTableAPIExtension\Cosmos.DataTransfer.AzureTableAPIExtension.csproj", "{CA03961C-4330-4ED9-963A-3B63FBC08ABB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cosmos", "Cosmos", "{D0475879-F47F-4D12-9A43-812043CFFD22}"
 EndProject
@@ -23,20 +23,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Json", "Json", "{84E51D21-F
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AzureTableAPI", "AzureTableAPI", "{CB41F880-D0A5-42C1-9571-479CF7E54D82}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.AzureTableAPIExtension.UnitTests", "Extensions\AzureTableAPI\Microsoft.DataTransfer.AzureTableAPIExtension.UnitTests\Microsoft.DataTransfer.AzureTableAPIExtension.UnitTests.csproj", "{F31FADBA-BC78-4839-A9F5-8861695EC95E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.AzureTableAPIExtension.UnitTests", "Extensions\AzureTableAPI\Cosmos.DataTransfer.AzureTableAPIExtension.UnitTests\Cosmos.DataTransfer.AzureTableAPIExtension.UnitTests.csproj", "{F31FADBA-BC78-4839-A9F5-8861695EC95E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mongo", "Mongo", "{F18E789A-D32D-48D3-B75F-1196D7215F74}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.MongoExtension", "Extensions\Mongo\Microsoft.DataTransfer.MongoExtension\Microsoft.DataTransfer.MongoExtension.csproj", "{F6EAC33B-9F7D-433B-9328-622FB8938C24}"
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.JsonExtension.UnitTests", "Extensions\Json\Microsoft.DataTransfer.JsonExtension.UnitTests\Microsoft.DataTransfer.JsonExtension.UnitTests.csproj", "{ED1E375E-A5A3-47EA-A7D5-07344C7E152F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.MongoExtension", "Extensions\Mongo\Cosmos.DataTransfer.MongoExtension\Cosmos.DataTransfer.MongoExtension.csproj", "{F6EAC33B-9F7D-433B-9328-622FB8938C24}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.CosmosExtension.UnitTests", "Extensions\Cosmos\Microsoft.DataTransfer.CosmosExtension.UnitTests\Microsoft.DataTransfer.CosmosExtension.UnitTests.csproj", "{C7A3910D-A7F6-4767-9A7A-19CFA4CCB7A8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.JsonExtension.UnitTests", "Extensions\Json\Cosmos.DataTransfer.JsonExtension.UnitTests\Cosmos.DataTransfer.JsonExtension.UnitTests.csproj", "{ED1E375E-A5A3-47EA-A7D5-07344C7E152F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.CosmosExtension.UnitTests", "Extensions\Cosmos\Cosmos.DataTransfer.CosmosExtension.UnitTests\Cosmos.DataTransfer.CosmosExtension.UnitTests.csproj", "{C7A3910D-A7F6-4767-9A7A-19CFA4CCB7A8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SqlServer", "SqlServer", "{2F075279-E8B0-4A6E-A8D9-2058B7DEC671}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.SqlServerExtension", "Extensions\SqlServer\Microsoft.DataTransfer.SqlServerExtension\Microsoft.DataTransfer.SqlServerExtension.csproj", "{7A020621-77E6-4DD1-B230-50A46B4BB2B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.SqlServerExtension", "Extensions\SqlServer\Cosmos.DataTransfer.SqlServerExtension\Cosmos.DataTransfer.SqlServerExtension.csproj", "{7A020621-77E6-4DD1-B230-50A46B4BB2B1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DataTransfer.SqlServerExtension.UnitTests", "Extensions\SqlServer\Microsoft.DataTransfer.SqlServerExtension.UnitTests\Microsoft.DataTransfer.SqlServerExtension.UnitTests.csproj", "{3E4C4ABF-D8C2-4997-A719-E756483C8D63}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.SqlServerExtension.UnitTests", "Extensions\SqlServer\Cosmos.DataTransfer.SqlServerExtension.UnitTests\Cosmos.DataTransfer.SqlServerExtension.UnitTests.csproj", "{3E4C4ABF-D8C2-4997-A719-E756483C8D63}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
