@@ -26,16 +26,16 @@ jobs:
           path: lnx-pkg/
       - name: Rename output files
         run: |
-          mv win-pkg/cosmos-migrate.exe cosmos-migrate-${{ github.ref_name }}-win-x64.exe
-          mv mac-pkg/cosmos-migrate cosmos-migrate-${{ github.ref_name }}-mac-x64
-          mv lnx-pkg/cosmos-migrate cosmos-migrate-${{ github.ref_name }}-linux-x64
+          mv win-pkg/dmt.exe dmt-${{ github.ref_name }}-win-x64.exe
+          mv mac-pkg/dmt dmt-${{ github.ref_name }}-mac-x64
+          mv lnx-pkg/dmt dmt-${{ github.ref_name }}-linux-x64
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            cosmos-migrate-${{ github.ref_name }}-win-x64.exe
-            cosmos-migrate-${{ github.ref_name }}-mac-x64
-            cosmos-migrate-${{ github.ref_name }}-linux-x64
+            dmt-${{ github.ref_name }}-win-x64.exe
+            dmt-${{ github.ref_name }}-mac-x64
+            dmt-${{ github.ref_name }}-linux-x64
   build-package:
     name: Build self-contained executables
     runs-on: ubuntu-latest
@@ -45,63 +45,24 @@ jobs:
         run: dotnet --version
       - name: Checkout source code
         uses: actions/checkout@v3
-      - name: Build Windows x64 package
-        run: |
-          dotnet publish \
-          Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
-          --configuration release \
-          --output win \
-          --self-contained true \
-          --runtime win-x64 \
-          -p:PublishSingleFile=true \
-          -p:DebugType=embedded \
-          -p:EnableCompressionInSingleFile=true \
-          -p:PublishReadyToRun=true \
-          -p:PublishTrimmed=true \
-          -p:Version=${{ github.ref_name }} \
-          -p:AssemblyName=cosmos-migrate
-      - name: Upload Windows package
-        uses: actions/upload-artifact@v3
+      - name: Execute Action build-with-plugins for Windows
+        uses: ./actions/build-with-plugins
+        id: build-with-plugins-win
         with:
-          name: windows-package
-          path: win/cosmos-migrate.exe
-      - name: Build macOS x64 package
-        run: |
-          dotnet publish \
-          Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
-          --configuration release \
-          --output mac \
-          --self-contained true \
-          --runtime osx-x64 \
-          -p:PublishSingleFile=true \
-          -p:DebugType=embedded \
-          -p:EnableCompressionInSingleFile=true \
-          -p:PublishReadyToRun=true \
-          -p:PublishTrimmed=true \
-          -p:Version=${{ github.ref_name }} \
-          -p:AssemblyName=cosmos-migrate
-      - name: Upload macOS package
-        uses: actions/upload-artifact@v3
+          platform: windows
+          platform-short: win
+          runtime: win-x64
+      - name: Execute Action build-with-plugins for MacOS
+        uses: ./actions/build-with-plugins
+        id: build-with-plugins-mac
         with:
-          name: mac-package
-          path: mac/cosmos-migrate
-      - name: Build Linux x64 package
-        run: |
-          dotnet publish \
-          Core/Microsoft.DataTransfer.Core/Microsoft.DataTransfer.Core.csproj \
-          --configuration release \
-          --output linux \
-          --self-contained true \
-          --runtime linux-x64 \
-          -p:PublishSingleFile=true \
-          -p:DebugType=embedded \
-          -p:EnableCompressionInSingleFile=true \
-          -p:PublishReadyToRun=true \
-          -p:PublishTrimmed=true \
-          -p:Version=${{ github.ref_name }} \
-          -p:AssemblyName=cosmos-migrate
-      - name: Upload Linux package
-        uses: actions/upload-artifact@v3
+          platform: mac
+          platform-short: mac
+          runtime: osx-x64
+      - name: Execute Action build-with-plugins for Linux
+        uses: ./actions/build-with-plugins
+        id: build-with-plugins-linux
         with:
-          name: linux-package
-          path: linux/cosmos-migrate
+          platform: linux
+          platform-short: linux
+          runtime: linux-x64

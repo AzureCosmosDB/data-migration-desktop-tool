@@ -1,0 +1,110 @@
+name: build-with-plugins
+description: Build desktop binaries
+inputs:
+  platform:
+    description: General target platform name (windows)
+    required: true
+  platform-short:
+    description: General target platform short name (win)
+    required: true
+  runtime:
+    description: Target platform runtime (win-x64)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build Core app package
+      shell: bash
+      run: |
+        dotnet publish \
+        Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj \
+        --configuration release \
+        --output ${{ inputs.platform-short }} \
+        --self-contained true \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=true \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=0.0.${{ github.run_number }}
+    - name: Build Cosmos Extension
+      shell: bash
+      run: |
+        dotnet publish \
+        Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension/Cosmos.DataTransfer.CosmosExtension.csproj \
+        --configuration release \
+        --output ${{ inputs.platform-short }}/Extensions \
+        --self-contained false \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=false \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=0.0.${{ github.run_number }}
+    - name: Build JSON Extension
+      shell: bash
+      run: |
+        dotnet publish \
+        Extensions/Json/Cosmos.DataTransfer.JsonExtension/Cosmos.DataTransfer.JsonExtension.csproj \
+        --configuration release \
+        --output ${{ inputs.platform-short }}/Extensions \
+        --self-contained false \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=false \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=0.0.${{ github.run_number }}
+    - name: Build Azure Table Extension
+      shell: bash
+      run: |
+        dotnet publish \
+        Extensions/AzureTableAPI/Cosmos.DataTransfer.AzureTableAPIExtension/Cosmos.DataTransfer.AzureTableAPIExtension.csproj \
+        --configuration release \
+        --output ${{ inputs.platform-short }}/Extensions \
+        --self-contained false \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=false \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=0.0.${{ github.run_number }}
+    - name: Build Mongo Extension
+      shell: bash
+      run: |
+        dotnet publish \
+        Extensions/Mongo/Cosmos.DataTransfer.MongoExtension/Cosmos.DataTransfer.MongoExtension.csproj \
+        --configuration release \
+        --output ${{ inputs.platform-short }}/Extensions \
+        --self-contained false \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=false \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=0.0.${{ github.run_number }}
+    - name: Build SQL Server Extension
+      shell: bash
+      run: |
+        dotnet publish \
+        Extensions/SqlServer/Cosmos.DataTransfer.SqlServerExtension/Cosmos.DataTransfer.SqlServerExtension.csproj \
+        --configuration release \
+        --output ${{ inputs.platform-short }}/Extensions \
+        --self-contained false \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=false \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=0.0.${{ github.run_number }}
+    - name: Upload package
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.platform }}-package
+        path: ${{ inputs.platform-short }}/
