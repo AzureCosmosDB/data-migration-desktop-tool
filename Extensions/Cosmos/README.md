@@ -14,7 +14,7 @@ Source supports an optional `IncludeMetadataFields` parameter (`false` by defaul
 ### Source
 
 ```json
-"CosmosSourceSettings": {
+{
     "ConnectionString": "AccountEndpoint=https://...",
     "Database":"myDb",
     "Container":"myContainer",
@@ -29,7 +29,7 @@ Sink requires an additional `PartitionKeyPath` parameter which is used when crea
 ### Sink
 
 ```json
-"CosmosSinkSettings": {
+{
     "ConnectionString": "AccountEndpoint=https://...",
     "Database":"myDb",
     "Container":"myContainer",

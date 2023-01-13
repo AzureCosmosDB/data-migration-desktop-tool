@@ -9,7 +9,7 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
 ### Source
 
 ```json
-"MongoSourceSettings": {
+{
     "ConnectionString": "",
     "DatabaseName: "",
     "Collection": ""
@@ -19,7 +19,7 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
 ### Sink
 
 ```json
-"MongoSinkSettings": {
+{
     "ConnectionString": "",
     "DatabaseName: "",
     "Collection": "",

@@ -25,7 +25,7 @@ To access the archived version of the tool, navigate to the [**Archive branch**]
     - [Task 1: Provision a sample database and container using the Azure Cosmos DB Emulator as the destination(sink)](#task-1-provision-a-sample-database-and-container-using-the-azure-cosmos-db-emulator-as-the-destinationsink)
     - [Task 2: Prepare JSON source documents](#task-2-prepare-json-source-documents)
     - [Task 3: Setup the data migration configuration](#task-3-setup-the-data-migration-configuration)
-  - [Tutorial: Using the command line](#tutorial-using-the-command-line)
+  - [Using the command line](#using-the-command-line)
   - [Creating Extensions](#creating-extensions)
   - [Extension documentation](#extension-documentation)
 
@@ -104,14 +104,14 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
 1. Each extension contains a README document that outlines configuration for the data migration. In this case, locate the configuration for [JSON (Source)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Json/Cosmos.DataTransfer.JsonExtension) and [Cosmos DB (Sink)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension).
 
-2. In the Visual Studio Solution Explorer, expand the **Microsoft.Data.Transfer.Core** project, and open **appsettings.json**. This file provides an example outline of the settings file structure. Using the documentation linked above, configure the **JsonSourceSettings** and **Cosmos-NoSqlSinkSettings** sections. Ensure the **FilePath** setting is the location where the sample data is extracted. The ConnectionString setting can be found on the Cosmos DB Emulator **Quickstart** screen as the **Primary Connection String**. Save the file.
+2. In the Visual Studio Solution Explorer, expand the **Microsoft.Data.Transfer.Core** project, and open **migrationsettings.json**. This file provides an example outline of the settings file structure. Using the documentation linked above, configure the **JsonSourceSettings** and **Cosmos-NoSqlSinkSettings** sections. Ensure the **FilePath** setting is the location where the sample data is extracted. The ConnectionString setting can be found on the Cosmos DB Emulator **Quickstart** screen as the **Primary Connection String**. Save the file.
 
     ```json
     {
-        "JSONSourceSettings": {
+        "SourceSettings": {            
             "FilePath": "C:\\btcdata\\simple_json.json"
         },
-        "Cosmos-NoSqlSinkSettings": {
+        "SinkSettings": {
             "ConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDj...",
             "Database": "datamigration",
             "Container": "btcdata",
@@ -126,21 +126,74 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
 3. Ensure the **Cosmos.DataTransfer.Core** project is set as the startup project then press <kbd>F5</kbd> to run the application.
 
-4. The application will load the provided extensions, then prompt for a **Source**. Select **JSON**. When prompted to load settings from a file enter `n` and press <kbd>Enter</kbd>. The application provides the ability to configure extensions in a separate file versus having them located in the **appsettings.json** file. When a separate file is not specified, the settings are read from **appsettings.json**. When prompted to provide the Configuration section name, press <kbd>Enter</kbd> to accept the default: **JSONSourceSettings**.
+4. The application will load the provided extensions, then prompt for a **Source**. Select **JSON**. When prompted to load settings from a file enter `n` and press <kbd>Enter</kbd>. The application provides the ability to configure extensions in a separate file versus having them located in the **migrationsettings.json** file. When a separate file is not specified, the settings are read from **migrationsettings.json**. When prompted to provide the Configuration section name, press <kbd>Enter</kbd> to accept the default: **JSONSourceSettings**.
 
     ![The Data Migration application displays with a menu prompt for Source.](media/app_source_prompt.png "Select Source")
 
-5. The application will then prompt for a **Sink**, choose **Cosmos-nosql**. When prompted to load settings from a file enter `n` and press <kbd>Enter</kbd>. The application provides the ability to configure extensions in a separate file versus having them located in the **appsettings.json** file. When a separate file is not specified, the settings are read from **appsettings.json**. When prompted to provide the Configuration section name, press <kbd>Enter</kbd> to accept the default: **Cosmos-NoSqlSinkSettings**.
+    >**Note**: Alternatively, to avoid this prompt add the **Source** property to the configuration with the value **Json** (matching the **DisplayName** property of the extension)
+
+5. The application will then prompt for a **Sink**, choose **Cosmos-nosql**. When prompted to load settings from a file enter `n` and press <kbd>Enter</kbd>. The application provides the ability to configure extensions in a separate file versus having them located in the **migrationsettings.json** file. When a separate file is not specified, the settings are read from **migrationsettings.json**. When prompted to provide the Configuration section name, press <kbd>Enter</kbd> to accept the default: **Cosmos-NoSqlSinkSettings**.
 
     ![The Data migration application displays with a menu prompt for Sink.](media/app_sink_prompt.png "Select Sink")
+
+    >**Note**: Alternatively, to avoid this prompt add the **Sink** property to the configuration with the value **Cosmos-nosql** (matching the **DisplayName** property of the extension)
 
 6. The application then performs the data migration. After a few moments the process will indicate **Done.**.
 
     ![The Data migration application displays with the full output of the migration including the Done message.](media/app_final.png "Data Migration completes")
 
-## Tutorial: Using the command line
+Example of `migrationsettings.json` with **Source** and **Sink** configured.
 
+```json
+{
+  "Source": "JSON",
+  "Sink": "Cosmos-nosql",
+  "SourceSettings": {
+    "FilePath": "C:\\btcdata\\simple_json.json"
+  },
+  "SinkSettings": {
+    "ConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDj...",
+    "Database": "datamigration",
+    "Container": "btcdata",
+    "PartitionKeyPath": "/id",
+    "RecreateContainer": false,
+    "IncludeMetadataFields": false
+  }
+}
+```
 
+## Using the command line
+
+1. Ensure the project is [built](#build-the-solution). 
+
+2. The **Extensions** folder contains the plug-ins available for use in the migration. Each extension is located in a folder with the name of the data source. For example, the Cosmos DB extension is located in the folder **Cosmos**. Before running the application, you can open the **Extensions** folder and remove any folders for the extensions that are not required for the migration.
+
+3. In the root of the build folder, locate the **migrationsettings.json** and update settings as documented in the (Extension documentation)(#extension-documentation). Example file (similar to tutorial above):
+
+    ```json
+    {
+        "Source": "JSON",
+        "Sink": "Cosmos-nosql",
+        "SourceSettings": {
+            "FilePath": "C:\\btcdata\\simple_json.json"
+        },
+        "SinkSettings": {
+            "ConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDj...",
+            "Database": "datamigration",
+            "Container": "btcdata",
+            "PartitionKeyPath": "/id",
+            "RecreateContainer": false,
+            "IncludeMetadataFields": false
+        }
+    }
+    ```
+
+4. Execute the program using the following command:
+
+    ```bash
+    dmt.exe
+    ```
+> **Note**: Use the `--settings` option with a file path to specify a different settings file (overriding the default **migrationsettings.json** file). This facilitates automating running of different migration jobs in a programmatic loop.
 
 ## Creating Extensions
 
