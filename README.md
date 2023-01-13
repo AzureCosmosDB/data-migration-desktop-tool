@@ -128,7 +128,7 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
 3. Ensure the **Cosmos.DataTransfer.Core** project is set as the startup project then press <kbd>F5</kbd> to run the application.
 
-4. The application then performs the data migration. After a few moments the process will indicate **Done.**.
+4. The application then performs the data migration. After a few moments the process will indicate **Data transfer complete.** or **Data transfer failed**.
 
 >**Note**: The `Source` and `Sink` properties should match the **DisplayName** set in the code for the extensions.
 
