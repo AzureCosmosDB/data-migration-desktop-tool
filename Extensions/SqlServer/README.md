@@ -2,6 +2,8 @@
 
 The SQL Server data transfer extension provides source and sink capabilities for reading from and writing to table data in SQL Server. Hierarchical data is not fully supported but the Sink extension will write a nested object from a hierarchical source (i.e. JSON, Cosmos) into a SQL column as a JSON string.
 
+> **Note**: When specifying the SQL Server extension as the Source or Sink property in configuration, utilize the name **SqlServer**.
+
 ## Settings
 
 Source and sink settings both require a `ConnectionString` parameter.

@@ -108,7 +108,9 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
     ```json
     {
-        "SourceSettings": {            
+        "Source": "JSON",
+        "Sink": "Cosmos-nosql",
+        "SourceSettings": {
             "FilePath": "C:\\btcdata\\simple_json.json"
         },
         "SinkSettings": {
@@ -126,41 +128,9 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
 3. Ensure the **Cosmos.DataTransfer.Core** project is set as the startup project then press <kbd>F5</kbd> to run the application.
 
-4. The application will load the provided extensions, then prompt for a **Source**. Select **JSON**. When prompted to load settings from a file enter `n` and press <kbd>Enter</kbd>. The application provides the ability to configure extensions in a separate file versus having them located in the **migrationsettings.json** file. When a separate file is not specified, the settings are read from **migrationsettings.json**. When prompted to provide the Configuration section name, press <kbd>Enter</kbd> to accept the default: **JSONSourceSettings**.
+4. The application then performs the data migration. After a few moments the process will indicate **Done.**.
 
-    ![The Data Migration application displays with a menu prompt for Source.](media/app_source_prompt.png "Select Source")
-
-    >**Note**: Alternatively, to avoid this prompt add the **Source** property to the configuration with the value **Json** (matching the **DisplayName** property of the extension)
-
-5. The application will then prompt for a **Sink**, choose **Cosmos-nosql**. When prompted to load settings from a file enter `n` and press <kbd>Enter</kbd>. The application provides the ability to configure extensions in a separate file versus having them located in the **migrationsettings.json** file. When a separate file is not specified, the settings are read from **migrationsettings.json**. When prompted to provide the Configuration section name, press <kbd>Enter</kbd> to accept the default: **Cosmos-NoSqlSinkSettings**.
-
-    ![The Data migration application displays with a menu prompt for Sink.](media/app_sink_prompt.png "Select Sink")
-
-    >**Note**: Alternatively, to avoid this prompt add the **Sink** property to the configuration with the value **Cosmos-nosql** (matching the **DisplayName** property of the extension)
-
-6. The application then performs the data migration. After a few moments the process will indicate **Done.**.
-
-    ![The Data migration application displays with the full output of the migration including the Done message.](media/app_final.png "Data Migration completes")
-
-Example of `migrationsettings.json` with **Source** and **Sink** configured.
-
-```json
-{
-  "Source": "JSON",
-  "Sink": "Cosmos-nosql",
-  "SourceSettings": {
-    "FilePath": "C:\\btcdata\\simple_json.json"
-  },
-  "SinkSettings": {
-    "ConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDj...",
-    "Database": "datamigration",
-    "Container": "btcdata",
-    "PartitionKeyPath": "/id",
-    "RecreateContainer": false,
-    "IncludeMetadataFields": false
-  }
-}
-```
+>**Note**: The `Source` and `Sink` properties should match the **DisplayName** set in the code for the extensions.
 
 ## Using the command line
 
