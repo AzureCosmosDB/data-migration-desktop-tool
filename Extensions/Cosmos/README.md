@@ -2,6 +2,8 @@
 
 The Cosmos data transfer extension provides source and sink capabilities for reading from and writing to containers in Cosmos DB using the Core (SQL) API. Source and sink both support string, number, and boolean property values, arrays, and hierarchical nested object structures.
 
+> **Note**: When specifying the JSON extension as the Source or Sink property in configuration, utilize the name **Cosmos-nosql**.
+
 ## Settings
 
 Source and sink settings both require multiple parameters to specify and provide access to the data location within a Cosmos DB account: 
@@ -14,7 +16,7 @@ Source supports an optional `IncludeMetadataFields` parameter (`false` by defaul
 ### Source
 
 ```json
-"CosmosSourceSettings": {
+{
     "ConnectionString": "AccountEndpoint=https://...",
     "Database":"myDb",
     "Container":"myContainer",
@@ -29,7 +31,7 @@ Sink requires an additional `PartitionKeyPath` parameter which is used when crea
 ### Sink
 
 ```json
-"CosmosSinkSettings": {
+{
     "ConnectionString": "AccountEndpoint=https://...",
     "Database":"myDb",
     "Container":"myContainer",

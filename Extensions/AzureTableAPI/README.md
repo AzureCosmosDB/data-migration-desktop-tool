@@ -2,6 +2,8 @@
 
 This extension is built to facilitate both a data Source and Sink for the migration tool to be able to read and write to Azure Table API. This covers both the Azure Storage Table API and Azure Cosmos DB Table API, since they both adhere to the same API spec.
 
+> **Note**: When specifying the AzureTableAPI extension as the Source or Sink property in configuration, utilize the name **AzureTableAPI**.
+> 
 ## Configuration Settings
 
 The AzureTableAPI has a couple required and optional settings for configuring the connection to the Table API you are connecting to. This applies to both Azure Storage Table API and Azure Cosmos DB Table API.
