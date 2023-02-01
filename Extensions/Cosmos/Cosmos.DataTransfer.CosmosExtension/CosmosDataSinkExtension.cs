@@ -74,15 +74,15 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             Container? container = await database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, cancellationToken: cancellationToken);
 
-            int insertCount = 0;
+            int addedCount = 0;
 
             var timer = Stopwatch.StartNew();
             void ReportCount(int i)
             {
-                insertCount += i;
-                if (insertCount % 500 == 0)
+                addedCount += i;
+                if (addedCount % 500 == 0)
                 {
-                    logger.LogInformation("{InsertCount} records added after {TotalSeconds}s", insertCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
+                    logger.LogInformation("{AddedCount} records added after {TotalSeconds}s", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
                 }
             }
 
@@ -91,15 +91,13 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
             await foreach (var batch in batches.WithCancellation(cancellationToken))
             {
-                var insertTasks = settings.InsertStreams
-                    ? batch.Select(item => InsertItemStreamAsync(container, item, settings.PartitionKeyPath, retry, logger, cancellationToken)).ToList()
-                    : batch.Select(item => InsertItemAsync(container, item, retry, logger, cancellationToken)).ToList();
+                var addTasks = batch.Select(item => AddItemAsync(container, item, settings.PartitionKeyPath, settings.WriteMode, retry, logger, cancellationToken)).ToList();
 
-                var results = await Task.WhenAll(insertTasks);
+                var results = await Task.WhenAll(addTasks);
                 ReportCount(results.Sum());
             }
 
-            logger.LogInformation("Added {InsertCount} total records in {TotalSeconds}s", insertCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
+            logger.LogInformation("Added {AddedCount} total records in {TotalSeconds}s", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
         }
 
         private static AsyncRetryPolicy GetRetryPolicy(int maxRetryCount, int initialRetryDuration)
@@ -115,10 +113,27 @@ namespace Cosmos.DataTransfer.CosmosExtension
             return retryPolicy;
         }
 
-        private static Task<int> InsertItemAsync(Container container, ExpandoObject item, AsyncRetryPolicy retryPolicy, ILogger logger, CancellationToken cancellationToken)
+        private static Task<int> AddItemAsync(Container container, ExpandoObject item, string? partitionKeyPath, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger, CancellationToken cancellationToken)
         {
-            logger.LogTrace("Inserting item {Id}", GetPropertyValue(item, "id"));
-            var task = retryPolicy.ExecuteAsync(() => container.CreateItemAsync(item, cancellationToken: cancellationToken))
+            logger.LogTrace("Adding item {Id}", GetPropertyValue(item, "id"));
+            var task = retryPolicy.ExecuteAsync(() =>
+                {
+                    switch (mode)
+                    {
+                        case DataWriteMode.InsertStream:
+                            ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
+                            return container.CreateItemStreamAsync(CreateItemStream(item), new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken);
+                        case DataWriteMode.Insert:
+                            return container.CreateItemAsync(item, cancellationToken: cancellationToken);
+                        case DataWriteMode.UpsertStream:
+                            ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
+                            return container.UpsertItemStreamAsync(CreateItemStream(item), new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken);
+                        case DataWriteMode.Upsert:
+                            return container.UpsertItemAsync(item, cancellationToken: cancellationToken);
+                    }
+
+                    throw new ArgumentOutOfRangeException(nameof(mode), $"Invalid data write mode specified: {mode}");
+                })
                 .ContinueWith(t =>
                 {
                     if (t.IsCompletedSuccessfully)
@@ -136,31 +151,10 @@ namespace Cosmos.DataTransfer.CosmosExtension
             return task;
         }
 
-        private static Task<int> InsertItemStreamAsync(Container container, ExpandoObject item, string? partitionKeyPath, AsyncRetryPolicy retryPolicy, ILogger logger, CancellationToken cancellationToken)
+        private static MemoryStream CreateItemStream(ExpandoObject item)
         {
-            if (partitionKeyPath == null)
-                throw new ArgumentNullException(nameof(partitionKeyPath));
-
-            logger.LogTrace("Inserting item {Id}", GetPropertyValue(item, "id"));
             var json = JsonConvert.SerializeObject(item);
-
-            var ms = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            var task = retryPolicy.ExecuteAsync(() => container.CreateItemStreamAsync(ms, new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken))
-                .ContinueWith(t =>
-                {
-                    if (t.IsCompletedSuccessfully)
-                    {
-                        return 1;
-                    }
-
-                    if (t.IsFaulted)
-                    {
-                        logger.LogWarning(t.Exception, "Error adding record: {ErrorMessage}", t.Exception?.Message);
-                    }
-
-                    return 0;
-                }, cancellationToken);
-            return task;
+            return new MemoryStream(Encoding.UTF8.GetBytes(json));
         }
 
         private static string? GetPropertyValue(ExpandoObject item, string propertyName)
