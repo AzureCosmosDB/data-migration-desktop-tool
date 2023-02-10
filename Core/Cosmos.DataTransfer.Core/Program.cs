@@ -26,7 +26,7 @@ class Program
             var host = ctx.GetHost();
             var logger = host.Services.GetService<ILoggerFactory>();
             var config = host.Services.GetService<IConfiguration>();
-            var loader = host.Services.GetService<ExtensionLoader>();
+            var loader = host.Services.GetService<IExtensionLoader>();
             if (loader == null || config == null || logger == null)
             {
                 ctx.Console.Error.WriteLine("Missing required command");
@@ -53,7 +53,7 @@ class Program
                     cfg.AddUserSecrets<Program>();
                 }).ConfigureServices((hostContext, services) =>
                 {
-                    services.AddTransient<ExtensionLoader>();
+                    services.AddTransient<IExtensionLoader, ExtensionLoader>();
                 })
                     .UseCommandHandler<RunCommand, RunCommand.CommandHandler>()
                     .UseCommandHandler<ListCommand, ListCommand.CommandHandler>();

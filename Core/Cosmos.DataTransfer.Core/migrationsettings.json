@@ -4,5 +4,19 @@
   "SourceSettings": {
   },
   "SinkSettings": {
-  }
+  },
+  "Operations": [
+    //{
+    //  "SourceSettings": {
+    //  },
+    //  "SinkSettings": {
+    //  }
+    //},
+    //{
+    //  "SourceSettings": {
+    //  },
+    //  "SinkSettings": {
+    //  }
+    //}
+  ]
 }

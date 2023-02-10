@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Cosmos.DataTransfer.Core
 {
-    public class ExtensionLoader
+    public class ExtensionLoader : IExtensionLoader
     {
         private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
