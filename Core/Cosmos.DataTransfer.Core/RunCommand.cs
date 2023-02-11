@@ -43,7 +43,7 @@ namespace Cosmos.DataTransfer.Core
         public class CommandHandler : ICommandHandler
         {
             private readonly ILogger<CommandHandler> _logger;
-            private readonly ExtensionLoader _extensionLoader;
+            private readonly IExtensionLoader _extensionLoader;
             private readonly IConfiguration _configuration;
             private readonly ILoggerFactory _loggerFactory;
 
@@ -51,7 +51,7 @@ namespace Cosmos.DataTransfer.Core
             public string? Sink { get; set; }
             public FileInfo? Settings { get; set; }
 
-            public CommandHandler(ExtensionLoader extensionLoader, IConfiguration configuration, ILoggerFactory loggerFactory)
+            public CommandHandler(IExtensionLoader extensionLoader, IConfiguration configuration, ILoggerFactory loggerFactory)
             {
                 _logger = loggerFactory.CreateLogger<CommandHandler>();
                 _extensionLoader = extensionLoader;
@@ -68,14 +68,14 @@ namespace Cosmos.DataTransfer.Core
             {
                 CancellationToken cancellationToken = context.GetCancellationToken();
 
-                var configuredOptions = _configuration.Get<DataTransferOptions>();
+                var configuredOptions = _configuration.Get<DataTransferOptions>() ?? new DataTransferOptions();
                 var combinedConfig = BuildSettingsConfiguration(_configuration,
                     Settings?.FullName ?? configuredOptions.SettingsPath,
                     string.IsNullOrEmpty(Source ?? configuredOptions.Source) && string.IsNullOrEmpty(Sink ?? configuredOptions.Sink),
                     cancellationToken);
 
                 var options = combinedConfig.Get<DataTransferOptions>();
-                
+
                 string extensionsPath = _extensionLoader.GetExtensionFolderPath();
                 CompositionContainer container = _extensionLoader.BuildExtensionCatalog(extensionsPath);
 
@@ -88,16 +88,41 @@ namespace Cosmos.DataTransfer.Core
                 cancellationToken.ThrowIfCancellationRequested();
                 var sink = GetExtensionSelection(Sink ?? options.Sink, sinks, "Sink", cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
-                
+
                 var sourceConfig = combinedConfig.GetSection("SourceSettings");
                 var sinkConfig = combinedConfig.GetSection("SinkSettings");
-                _logger.LogDebug("Loaded {SettingCount} settings for source {SourceName}:\n\t\t{SettingList}", 
-                    sourceConfig.AsEnumerable().Count(), 
-                    source.DisplayName, 
+                var operationConfigs = combinedConfig.GetSection("Operations");
+                var operations = operationConfigs?.GetChildren().ToList();
+                if (operations?.Any() == true)
+                {
+                    foreach (var operationConfig in operations)
+                    {
+                        var operationSource = operationConfig.GetSection("SourceSettings");
+                        var operationSink = operationConfig.GetSection("SinkSettings");
+                        await ExecuteDataTransferOperation(source, 
+                                  operationSource.Exists() ? operationSource : sourceConfig, 
+                                  sink, 
+                                  operationSink.Exists() ? operationSink : sinkConfig, 
+                                  cancellationToken);
+                    }
+                }
+                else
+                {
+                    await ExecuteDataTransferOperation(source, sourceConfig, sink, sinkConfig, cancellationToken);
+                }
+
+                return 0;
+            }
+
+            private async Task ExecuteDataTransferOperation(IDataSourceExtension source, IConfigurationSection sourceConfig, IDataSinkExtension sink, IConfigurationSection sinkConfig, CancellationToken cancellationToken)
+            {
+                _logger.LogDebug("Loaded {SettingCount} settings for source {SourceName}:\n\t\t{SettingList}",
+                    sourceConfig.AsEnumerable().Count(),
+                    source.DisplayName,
                     string.Join("\n\t\t", sourceConfig.AsEnumerable().Select(kvp => kvp.Key)));
 
-                _logger.LogDebug("Loaded {SettingCount} settings for sink {SinkName}:\n\t\t{SettingsList}", 
-                    sinkConfig.AsEnumerable().Count(), 
+                _logger.LogDebug("Loaded {SettingCount} settings for sink {SinkName}:\n\t\t{SettingsList}",
+                    sinkConfig.AsEnumerable().Count(),
                     sink.DisplayName,
                     string.Join("\n\t\t", sinkConfig.AsEnumerable().Select(kvp => kvp.Key)));
 
@@ -114,8 +139,6 @@ namespace Cosmos.DataTransfer.Core
                 {
                     _logger.LogError(ex, "Data transfer failed");
                 }
-
-                return 0;
             }
 
             private static T GetExtensionSelection<T>(string? selectionName, List<T> extensions, string inputPrompt, CancellationToken cancellationToken)

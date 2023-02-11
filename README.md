@@ -104,7 +104,7 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
 1. Each extension contains a README document that outlines configuration for the data migration. In this case, locate the configuration for [JSON (Source)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Json/Cosmos.DataTransfer.JsonExtension) and [Cosmos DB (Sink)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension).
 
-2. In the Visual Studio Solution Explorer, expand the **Microsoft.Data.Transfer.Core** project, and open **migrationsettings.json**. This file provides an example outline of the settings file structure. Using the documentation linked above, configure the **JsonSourceSettings** and **Cosmos-NoSqlSinkSettings** sections. Ensure the **FilePath** setting is the location where the sample data is extracted. The ConnectionString setting can be found on the Cosmos DB Emulator **Quickstart** screen as the **Primary Connection String**. Save the file.
+2. In the Visual Studio Solution Explorer, expand the **Microsoft.Data.Transfer.Core** project, and open **migrationsettings.json**. This file provides an example outline of the settings file structure. Using the documentation linked above, configure the **SourceSettings** and **SinkSettings** sections. Ensure the **FilePath** setting is the location where the sample data is extracted. The ConnectionString setting can be found on the Cosmos DB Emulator **Quickstart** screen as the **Primary Connection String**. Save the file.
 
     ```json
     {
@@ -138,7 +138,7 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
 2. The **Extensions** folder contains the plug-ins available for use in the migration. Each extension is located in a folder with the name of the data source. For example, the Cosmos DB extension is located in the folder **Cosmos**. Before running the application, you can open the **Extensions** folder and remove any folders for the extensions that are not required for the migration.
 
-3. In the root of the build folder, locate the **migrationsettings.json** and update settings as documented in the (Extension documentation)(#extension-documentation). Example file (similar to tutorial above):
+3. In the root of the build folder, locate the **migrationsettings.json** and update settings as documented in the [Extension documentation](#extension-documentation). Example file (similar to tutorial above):
 
     ```json
     {
@@ -157,7 +157,8 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
         }
     }
     ```
-
+> **Note**: **migrationsettings.json** can also be configured to execute multiple data transfer operations with a single run command. To do this, include an `Operations` property consisting of an array of objects that include `SourceSettings` and `SinkSettings` properties using the same format as those shown above for single operations.
+    
 4. Execute the program using the following command:
 
     ```bash
