@@ -18,6 +18,7 @@ class Program
         var rootCommand = new RootCommand("Azure data migration tool") { TreatUnmatchedTokensAsErrors = false };
         rootCommand.AddCommand(new RunCommand());
         rootCommand.AddCommand(new ListCommand());
+        rootCommand.AddCommand(new InitCommand());
 
         // execute Run if no command provided
         RunCommand.AddRunOptions(rootCommand);
@@ -56,7 +57,8 @@ class Program
                     services.AddTransient<IExtensionLoader, ExtensionLoader>();
                 })
                     .UseCommandHandler<RunCommand, RunCommand.CommandHandler>()
-                    .UseCommandHandler<ListCommand, ListCommand.CommandHandler>();
+                    .UseCommandHandler<ListCommand, ListCommand.CommandHandler>()
+                    .UseCommandHandler<InitCommand, InitCommand.CommandHandler>();
             })
             .UseHelp(AddAdditionalArgumentsHelp)
             .UseDefaults().Build();
