@@ -21,6 +21,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public int InitialRetryDurationMs { get; set; } = 200;
         public int? CreatedContainerMaxThroughput { get; set; }
         public bool UseAutoscaleForCreatedContainer { get; set; } = true;
+        public bool IsServerlessAccount { get; set; } = false;
         public DataWriteMode WriteMode { get; set; } = DataWriteMode.InsertStream;
     }
 }
