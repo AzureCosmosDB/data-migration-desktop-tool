@@ -18,14 +18,26 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.AzureTableAPIExtension", "Extensions\AzureTableAPI\Cosmos.DataTransfer.AzureTableAPIExtension\Cosmos.DataTransfer.AzureTableAPIExtension.csproj", "{CA03961C-4330-4ED9-963A-3B63FBC08ABB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cosmos", "Cosmos", "{D0475879-F47F-4D12-9A43-812043CFFD22}"
+	ProjectSection(SolutionItems) = preProject
+		Extensions\Cosmos\README.md = Extensions\Cosmos\README.md
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Json", "Json", "{84E51D21-FA45-4CCB-94BB-6B6066749A4A}"
+	ProjectSection(SolutionItems) = preProject
+		Extensions\Json\README.md = Extensions\Json\README.md
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AzureTableAPI", "AzureTableAPI", "{CB41F880-D0A5-42C1-9571-479CF7E54D82}"
+	ProjectSection(SolutionItems) = preProject
+		Extensions\AzureTableAPI\README.md = Extensions\AzureTableAPI\README.md
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.AzureTableAPIExtension.UnitTests", "Extensions\AzureTableAPI\Cosmos.DataTransfer.AzureTableAPIExtension.UnitTests\Cosmos.DataTransfer.AzureTableAPIExtension.UnitTests.csproj", "{F31FADBA-BC78-4839-A9F5-8861695EC95E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mongo", "Mongo", "{F18E789A-D32D-48D3-B75F-1196D7215F74}"
+	ProjectSection(SolutionItems) = preProject
+		Extensions\Mongo\README.md = Extensions\Mongo\README.md
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.MongoExtension", "Extensions\Mongo\Cosmos.DataTransfer.MongoExtension\Cosmos.DataTransfer.MongoExtension.csproj", "{F6EAC33B-9F7D-433B-9328-622FB8938C24}"
 EndProject
@@ -34,6 +46,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.CosmosExtension.UnitTests", "Extensions\Cosmos\Cosmos.DataTransfer.CosmosExtension.UnitTests\Cosmos.DataTransfer.CosmosExtension.UnitTests.csproj", "{C7A3910D-A7F6-4767-9A7A-19CFA4CCB7A8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SqlServer", "SqlServer", "{2F075279-E8B0-4A6E-A8D9-2058B7DEC671}"
+	ProjectSection(SolutionItems) = preProject
+		Extensions\SqlServer\README.md = Extensions\SqlServer\README.md
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.SqlServerExtension", "Extensions\SqlServer\Cosmos.DataTransfer.SqlServerExtension\Cosmos.DataTransfer.SqlServerExtension.csproj", "{7A020621-77E6-4DD1-B230-50A46B4BB2B1}"
 EndProject

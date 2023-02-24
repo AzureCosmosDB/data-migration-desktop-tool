@@ -1,6 +1,6 @@
 {
   "profiles": {
-    ".Core": {
+    "Cosmos.DataTransfer.Core": {
       "commandName": "Project",
       "commandLineArgs": ""
     },
