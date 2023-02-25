@@ -68,11 +68,30 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 PartitionKeyPath = settings.PartitionKeyPath,
             };
 
-            ThroughputProperties throughputProperties = settings.UseAutoscaleForCreatedContainer
+            ThroughputProperties? throughputProperties = settings.IsServerlessAccount
+                ? null
+                : settings.UseAutoscaleForCreatedContainer
                 ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
                 : ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400);
 
-            Container? container = await database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, cancellationToken: cancellationToken);
+            Container? container;
+            try
+            {
+                container = await database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, cancellationToken: cancellationToken);
+            }
+            catch (CosmosException ex) when (ex.ResponseBody.Contains("not supported for serverless accounts", StringComparison.InvariantCultureIgnoreCase))
+            {
+                logger.LogWarning("Cosmos Serverless Account does not support throughput options. Creating Container {ContainerName} without those settings.", settings.Container);
+
+                // retry without throughput settings which are incompatible with serverless
+                container = await database.CreateContainerIfNotExistsAsync(containerProperties, cancellationToken: cancellationToken);
+            }
+
+            if (container == null)
+            {
+                logger.LogError("Failed to initialize Container {Container}", settings.Container);
+                throw new Exception("Cosmos container unavailable for write");
+            }
 
             int addedCount = 0;
 
