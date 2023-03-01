@@ -179,8 +179,9 @@ namespace Cosmos.DataTransfer.Core
                 IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
                 if (!string.IsNullOrEmpty(settingsPath) && File.Exists(settingsPath))
                 {
-                    _logger.LogInformation("Settings loading from file at configured path '{FilePath}'.", settingsPath);
-                    configurationBuilder = configurationBuilder.AddJsonFile(settingsPath);
+                    var fullFilePath = Path.GetFullPath(settingsPath);
+                    _logger.LogInformation("Settings loading from file at configured path '{FilePath}'.", fullFilePath);
+                    configurationBuilder = configurationBuilder.AddJsonFile(fullFilePath);
                 }
                 else if (promptForFile)
                 {
@@ -189,8 +190,9 @@ namespace Cosmos.DataTransfer.Core
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!string.IsNullOrWhiteSpace(path))
                     {
-                        _logger.LogInformation("Settings loading from file at entered path '{FilePath}'.", settingsPath);
-                        configurationBuilder = configurationBuilder.AddJsonFile(path);
+                        var fullFilePath = Path.GetFullPath(path);
+                        _logger.LogInformation("Settings loading from file at entered path '{FilePath}'.", fullFilePath);
+                        configurationBuilder = configurationBuilder.AddJsonFile(fullFilePath);
                     }
                 }
 
