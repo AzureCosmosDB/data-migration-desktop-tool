@@ -49,8 +49,19 @@ class Program
         var parser = cmdlineBuilder.UseHost(_ => Host.CreateDefaultBuilder(args),
             builder =>
             {
-                builder.ConfigureAppConfiguration(cfg =>
+                builder.ConfigureAppConfiguration((hostContext, cfg) =>
                 {
+                    var exeFolder = AppContext.BaseDirectory;
+                    var appsettings = Path.Combine(exeFolder, "appsettings.json");
+                    if (File.Exists(appsettings))
+                    {
+                        cfg.AddJsonFile(appsettings);
+                    }
+                    var appsettingsEnv = Path.Combine(exeFolder, $"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json");
+                    if (File.Exists(appsettingsEnv))
+                    {
+                        cfg.AddJsonFile(appsettingsEnv);
+                    }
                     cfg.AddUserSecrets<Program>();
                 }).ConfigureServices((hostContext, services) =>
                 {
