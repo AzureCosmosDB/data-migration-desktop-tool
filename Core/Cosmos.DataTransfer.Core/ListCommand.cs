@@ -16,9 +16,9 @@ namespace Cosmos.DataTransfer.Core
         public class CommandHandler : ICommandHandler
         {
             private readonly ILogger<CommandHandler> _logger;
-            private readonly ExtensionLoader _extensionLoader;
+            private readonly IExtensionLoader _extensionLoader;
 
-            public CommandHandler(ExtensionLoader extensionLoader, ILogger<CommandHandler> logger)
+            public CommandHandler(IExtensionLoader extensionLoader, ILogger<CommandHandler> logger)
             {
                 _logger = logger;
                 _extensionLoader = extensionLoader;
