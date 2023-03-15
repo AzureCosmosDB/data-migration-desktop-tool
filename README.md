@@ -1,15 +1,5 @@
 # Azure Cosmos DB Data Migration Tool
 
-> **PLEASE NOTE**
-> 
-> The Azure Cosmos DB data migration tool is undergoing a full refactor to restructure the project to accomplish the following:
->
-> - Provide a base cross-platform CLI that is lightweight and serves as the base (core) executable for hosting extensions
-> - The extensible framework enables the community to add source and destination targets without modifying the core executable
-> - Improve stability
-> - Use the latest stable .NET release (currently .NET 6)
-> - Use the latest Azure Cosmos DB SDKs
-
 To access the archived version of the tool, navigate to the [**Archive branch**](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/archive).
 
 ---
@@ -67,7 +57,7 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 ### Tutorial Software prerequisites
 
 1. [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
-2. [.NET 6.0 SDK](https://github.com/Azure/azure-documentdb-datamigrationtool)
+2. [.NET 6.0 SDK](https://dotnet.microsoft.com/en-us/download)
 4. [Azure Cosmos DB Emulator](https://learn.microsoft.com/azure/cosmos-db/local-emulator) or Azure Cosmos DB resource.
 
 ### Task 1: Provision a sample database and container using the Azure Cosmos DB Emulator as the destination(sink)
