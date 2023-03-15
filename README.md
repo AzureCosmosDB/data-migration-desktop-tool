@@ -51,7 +51,7 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 1. From a command prompt, execute the following command in an empty working folder that will house the source code.
 
 ```shell
-git clone https://github.com/Azure/azure-documentdb-datamigrationtool.git
+git clone https://github.com/AzureCosmosDB/data-migration-desktop-tool.git
 ```
 
 ### Build the solution
@@ -102,7 +102,7 @@ This tutorial outlines how to use the Cosmos DB Data Migration tool to move JSON
 
 ### Task 3: Setup the data migration configuration
 
-1. Each extension contains a README document that outlines configuration for the data migration. In this case, locate the configuration for [JSON (Source)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Json/Cosmos.DataTransfer.JsonExtension) and [Cosmos DB (Sink)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension).
+1. Each extension contains a README document that outlines configuration for the data migration. In this case, locate the configuration for [JSON (Source)](Extensions/Json/README.md) and [Cosmos DB (Sink)](Extensions/Cosmos/README.md).
 
 2. In the Visual Studio Solution Explorer, expand the **Microsoft.Data.Transfer.Core** project, and open **migrationsettings.json**. This file provides an example outline of the settings file structure. Using the documentation linked above, configure the **SourceSettings** and **SinkSettings** sections. Ensure the **FilePath** setting is the location where the sample data is extracted. The ConnectionString setting can be found on the Cosmos DB Emulator **Quickstart** screen as the **Primary Connection String**. Save the file.
 
