@@ -1,4 +1,4 @@
-# Azure Cosmos DB data migration tool
+# Azure Cosmos DB Data Migration Tool
 
 > **PLEASE NOTE**
 > 
