@@ -1,5 +1,5 @@
 <!-- omit in toc -->
-# Contributing to Azure Cosmos DB Data Migration Desktop Tool
+# Contributing to Azure Cosmos DB Desktop Data Migration Tool
 
 First off, thanks for taking the time to contribute! ❤️
 
@@ -24,7 +24,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 ## Code of Conduct
 
 This project and everyone participating in it is governed by the
-[Azure Cosmos DB Data Migration Desktop Tool Code of Conduct](https://github.com/AzureCosmosDB/data-migration-desktop-toolblob/master/CODE_OF_CONDUCT.md).
+[Azure Cosmos DB Desktop Data Migration Tool Code of Conduct](https://github.com/AzureCosmosDB/data-migration-desktop-toolblob/master/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable behavior
 to <carey.payette@gmail.com>.
 
