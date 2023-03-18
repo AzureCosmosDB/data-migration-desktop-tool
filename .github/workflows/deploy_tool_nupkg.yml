@@ -1,0 +1,38 @@
+name: Deploy dotnet tool NuGet package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build CosmosDbDataMigrationTool.sln --no-restore --no-incremental
+    - name: Create NuGet Package
+      run: dotnet pack Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj
+    - name: Add Extensions folder into the NuGet package
+      uses: azure/powershell@v1
+      with:
+        inlineScript: |
+          cd .\Core\Cosmos.DataTransfer.Core\bin\Release
+          $pkg = Get-ChildItem './' -Filter '*.nupkg'
+          $fileName = $pkg.Name
+          Rename-Item -Path $fileName -NewName "$($fileName).zip"
+          Expand-Archive -Path "$($fileName).zip" -DestinationPath $fileName.Split('.')[0]
+          Copy-Item "./net6.0/Extensions" -Destination "./$($fileName.Split('.')[0])/tools/net6.0/any/Extensions" -Recurse
+          Compress-Archive -Path "$($fileName.Split('.')[0])\*" -DestinationPath "$($fileName).zip" -Force
+          Rename-Item -Path "$($fileName).zip" -NewName $fileName
+      azPSVersion: "latest"
+    - name: Upload package
+      uses: actions/upload-artifact@v3
+      with:
+        name: nuget-tool-package
+        path: *.nupkg
