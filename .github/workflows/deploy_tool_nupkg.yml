@@ -15,7 +15,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build CosmosDbDataMigrationTool.sln --no-restore --no-incremental
+      run: dotnet build CosmosDbDataMigrationTool.sln --configuration Release --no-restore --no-incremental
     - name: Create NuGet Package
       run: dotnet pack Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj
     - name: Add Extensions folder into the NuGet package
@@ -30,9 +30,13 @@ jobs:
           Copy-Item "./net6.0/Extensions" -Destination "./$($fileName.Split('.')[0])/tools/net6.0/any/Extensions" -Recurse
           Compress-Archive -Path "$($fileName.Split('.')[0])\*" -DestinationPath "$($fileName).zip" -Force
           Rename-Item -Path "$($fileName).zip" -NewName $fileName
+          cd..
+          cd..
+          cd..
+          cd..
       azPSVersion: "latest"
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:
         name: nuget-tool-package
-        path: ./*.nupkg
+        path: Core/Cosmos.DataTransfer.Core/bin/Release/*.nupkg
