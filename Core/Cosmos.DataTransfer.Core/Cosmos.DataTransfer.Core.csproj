@@ -6,8 +6,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>c7432a3a-5dc1-4e86-a1f0-b2363bf5c77f</UserSecretsId>
-    <PackageId>datatransfer-core</PackageId>
+    <PackageId>cosmos-db-desktop-data-migration-tool</PackageId>
     <AssemblyName>dmt</AssemblyName>
+    <Title>Cosmos DB Desktop Data Migration Tool</Title>
+    <PackageProjectUrl>https://github.com/AzureCosmosDB/data-migration-desktop-tool</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AzureCosmosDB/data-migration-desktop-tool</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackAsTool>True</PackAsTool>
+    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+    <Description>The Azure Cosmos DB Desktop Data Migration Tool is an extensible command-line application that simplifies moving data into and out of Azure Cosmos DB.</Description>
   </PropertyGroup>
 
   <ItemGroup>
