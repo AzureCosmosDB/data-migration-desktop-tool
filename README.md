@@ -1,15 +1,5 @@
 # Azure Cosmos DB Desktop Data Migration Tool
 
-> **PLEASE NOTE**
-> 
-> The Azure Cosmos DB Desktop Data Migration Tool is undergoing a full refactor to restructure the project to accomplish the following:
->
-> - Provide a base cross-platform CLI that is lightweight and serves as the base (core) executable for hosting extensions
-> - The extensible framework enables the community to add source and destination targets without modifying the core executable
-> - Improve stability
-> - Use the latest stable .NET release (currently .NET 6)
-> - Use the latest Azure Cosmos DB SDKs
-
 To access the archived version of the tool, navigate to the [**Archive branch**](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/archive).
 
 ---
@@ -67,7 +57,7 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
 ### Tutorial Software prerequisites
 
 1. [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
-2. [.NET 6.0 SDK](https://github.com/Azure/azure-documentdb-datamigrationtool)
+2. [.NET 6.0 SDK](https://dotnet.microsoft.com/en-us/download)
 4. [Azure Cosmos DB Emulator](https://learn.microsoft.com/azure/cosmos-db/local-emulator) or Azure Cosmos DB resource.
 
 ### Task 1: Provision a sample database and container using the Azure Cosmos DB Emulator as the destination(sink)
@@ -102,7 +92,7 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
 
 ### Task 3: Setup the data migration configuration
 
-1. Each extension contains a README document that outlines configuration for the data migration. In this case, locate the configuration for [JSON (Source)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Json/Cosmos.DataTransfer.JsonExtension) and [Cosmos DB (Sink)](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/feature/begin-core/Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension).
+1. Each extension contains a README document that outlines configuration for the data migration. In this case, locate the configuration for [JSON (Source)](Extensions/Json/README.md) and [Cosmos DB (Sink)](Extensions/Cosmos/README.md).
 
 2. In the Visual Studio Solution Explorer, expand the **Microsoft.Data.Transfer.Core** project, and open **migrationsettings.json**. This file provides an example outline of the settings file structure. Using the documentation linked above, configure the **SourceSettings** and **SinkSettings** sections. Ensure the **FilePath** setting is the location where the sample data is extracted. The ConnectionString setting can be found on the Cosmos DB Emulator **Quickstart** screen as the **Primary Connection String**. Save the file.
 
