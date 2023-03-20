@@ -5,7 +5,9 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    name: Build self-contained executables
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:6.0
     steps:
     - uses: actions/checkout@v3
     - name: Restore dependencies
