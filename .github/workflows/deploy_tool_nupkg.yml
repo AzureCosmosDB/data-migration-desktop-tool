@@ -11,6 +11,6 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build CosmosDbDataMigrationTool.sln --configuration Release --no-restore --no-incremental
+      run: dotnet build CosmosDbDataMigrationTool.sln --framework net6.0 --configuration Release --no-restore --no-incremental
     - name: Create NuGet Package
       run: dotnet pack Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj --configuration Release --no-build
