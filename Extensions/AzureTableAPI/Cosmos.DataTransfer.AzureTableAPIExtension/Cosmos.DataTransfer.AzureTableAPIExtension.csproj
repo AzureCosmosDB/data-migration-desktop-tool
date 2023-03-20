@@ -18,7 +18,7 @@
 	</ItemGroup>
 
 	<Target Name="PublishToExtensionsFolder" AfterTargets="Build">
-		<Exec Command="dotnet publish --no-build -p:PublishProfile=PublishToExtensionsFolder" />
+		<Exec Command="dotnet publish --configuration $(Configuration) --no-build -p:PublishProfile=PublishToExtensionsFolder" />
 	</Target>
 
 </Project>
