@@ -13,29 +13,29 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: windows-package
-          path: win-pkg/
+          path: windows-package
       - name: Download macOS x64 package
         uses: actions/download-artifact@v3
         with:
           name: mac-package
-          path: mac-pkg/
+          path: mac-package
       - name: Download Linux x64 package
         uses: actions/download-artifact@v3
         with:
           name: linux-package
-          path: lnx-pkg/
+          path: linux-package
       - name: Rename output files
         run: |
-          mv win-pkg/dmt.exe dmt-${{ github.ref_name }}-win-x64.exe
-          mv mac-pkg/dmt dmt-${{ github.ref_name }}-mac-x64
-          mv lnx-pkg/dmt dmt-${{ github.ref_name }}-linux-x64
+          mv windows-package dmt-${{ github.ref_name }}-win-x64.zip
+          mv mac-package dmt-${{ github.ref_name }}-mac-x64.zip
+          mv linux-package dmt-${{ github.ref_name }}-linux-x64.zip
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dmt-${{ github.ref_name }}-win-x64.exe
-            dmt-${{ github.ref_name }}-mac-x64
-            dmt-${{ github.ref_name }}-linux-x64
+            dmt-${{ github.ref_name }}-win-x64.zip
+            dmt-${{ github.ref_name }}-mac-x64.zip
+            dmt-${{ github.ref_name }}-linux-x64.zip
   build-package:
     name: Build self-contained executables
     runs-on: ubuntu-latest
