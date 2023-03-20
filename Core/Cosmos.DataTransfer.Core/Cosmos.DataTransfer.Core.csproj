@@ -13,6 +13,7 @@
     <RepositoryUrl>https://github.com/AzureCosmosDB/data-migration-desktop-tool</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackAsTool>True</PackAsTool>
+	<PackageVersion>2.0.0</PackageVersion>
     <PackageReleaseNotes>Initial release</PackageReleaseNotes>
     <Description>The Azure Cosmos DB Desktop Data Migration Tool is an extensible command-line application that simplifies moving data into and out of Azure Cosmos DB.</Description>
   </PropertyGroup>
