@@ -12,7 +12,7 @@ jobs:
     - name: Check out repository
       uses: actions/checkout@v3
       with:
-        ref: feature/nuget_packaging   
+        ref: main   
     - name: Build
       run: dotnet build CosmosDbDataMigrationTool.sln --configuration Release --no-incremental
     - name: Create NuGet Package
