@@ -34,7 +34,6 @@ jobs:
           cd..
           cd..
           cd..
-      azPSVersion: "latest"
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:
