@@ -22,7 +22,7 @@
 		<ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
 	</ItemGroup>
 
-	<Target Name="PublishDebug" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">
-		<Exec Command="dotnet publish --no-build -p:PublishProfile=LocalDebugFolder" />
+	<Target Name="PublishToExtensionsFolder" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">
+		<Exec Command="dotnet publish --configuration $(Configuration) --no-build -p:PublishProfile=PublishToExtensionsFolder" />
 	</Target>
 </Project>

@@ -5,35 +5,39 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    name:  Create dotnet tool NuGet package
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:6.0
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+    - name: Check out repository
+      uses: actions/checkout@v3
       with:
-        dotnet-version: 6.0.x
-    - name: Restore dependencies
-      run: dotnet restore
+        ref: main
     - name: Build
-      run: dotnet build CosmosDbDataMigrationTool.sln --configuration Release --no-restore --no-incremental
+      run: dotnet build CosmosDbDataMigrationTool.sln --configuration Release --no-incremental
+    - name: Publish extensions (AzureTableAPI)
+      run: dotnet publish Extensions/AzureTableAPI/Cosmos.DataTransfer.AzureTableAPIExtension/Cosmos.DataTransfer.AzureTableAPIExtension.csproj --configuration Release --no-build -p:PublishProfile=PublishToExtensionsFolder
+    - name: Publish extensions (Cosmos)
+      run: dotnet publish Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension/Cosmos.DataTransfer.CosmosExtension.csproj --configuration Release --no-build -p:PublishProfile=PublishToExtensionsFolder
+    - name: Publish extensions (Json)
+      run: dotnet publish Extensions/Json/Cosmos.DataTransfer.JsonExtension/Cosmos.DataTransfer.JsonExtension.csproj --configuration Release --no-build -p:PublishProfile=PublishToExtensionsFolder
+    - name: Publish extensions (Mongo)
+      run: dotnet publish Extensions/Mongo/Cosmos.DataTransfer.MongoExtension/Cosmos.DataTransfer.MongoExtension.csproj --configuration Release --no-build -p:PublishProfile=PublishToExtensionsFolder
+    - name: Publish extensions (SQL Server)
+      run: dotnet publish Extensions/SqlServer/Cosmos.DataTransfer.SqlServerExtension/Cosmos.DataTransfer.SqlServerExtension.csproj --configuration Release --no-build -p:PublishProfile=PublishToExtensionsFolder
     - name: Create NuGet Package
-      run: dotnet pack Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj
-    - name: Add Extensions folder into the NuGet package
-      uses: azure/powershell@v1
-      with:
-        inlineScript: |
-          cd .\Core\Cosmos.DataTransfer.Core\bin\Release
-          $pkg = Get-ChildItem './' -Filter '*.nupkg'
-          $fileName = $pkg.Name
-          Rename-Item -Path $fileName -NewName "$($fileName).zip"
-          Expand-Archive -Path "$($fileName).zip" -DestinationPath $fileName.Split('.')[0]
-          Copy-Item "./net6.0/Extensions" -Destination "./$($fileName.Split('.')[0])/tools/net6.0/any/Extensions" -Recurse
-          Compress-Archive -Path "$($fileName.Split('.')[0])\*" -DestinationPath "$($fileName).zip" -Force
-          Rename-Item -Path "$($fileName).zip" -NewName $fileName
-          cd..
-          cd..
-          cd..
-          cd..
+      run: dotnet pack Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj --configuration Release --no-build
+    - name: Add extensions to package
+      run: |
+        cd .\Core\Cosmos.DataTransfer.Core\bin\Release
+        $pkg = Get-ChildItem './' -Filter '*.nupkg'
+        $fileName = $pkg.Name
+        Rename-Item -Path $fileName -NewName "$($fileName).zip"
+        Expand-Archive -Path "$($fileName).zip" -DestinationPath $fileName.Split('.')[0]
+        Copy-Item "./net6.0/Extensions" -Destination "./$($fileName.Split('.')[0])/tools/net6.0/any/Extensions" -Recurse
+        Compress-Archive -Path "$($fileName.Split('.')[0])\*" -DestinationPath "$($fileName).zip" -Force
+        Rename-Item -Path "$($fileName).zip" -NewName $fileName
+      shell: pwsh
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:

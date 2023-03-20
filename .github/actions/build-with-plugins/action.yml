@@ -18,7 +18,7 @@ runs:
       run: |
         dotnet publish \
         Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj \
-        --configuration release \
+        --configuration Release \
         --output ${{ inputs.platform-short }} \
         --self-contained true \
         --runtime ${{ inputs.runtime }} \
@@ -33,7 +33,7 @@ runs:
       run: |
         dotnet publish \
         Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension/Cosmos.DataTransfer.CosmosExtension.csproj \
-        --configuration release \
+        --configuration Release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
@@ -48,7 +48,7 @@ runs:
       run: |
         dotnet publish \
         Extensions/Json/Cosmos.DataTransfer.JsonExtension/Cosmos.DataTransfer.JsonExtension.csproj \
-        --configuration release \
+        --configuration Release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
@@ -63,7 +63,7 @@ runs:
       run: |
         dotnet publish \
         Extensions/AzureTableAPI/Cosmos.DataTransfer.AzureTableAPIExtension/Cosmos.DataTransfer.AzureTableAPIExtension.csproj \
-        --configuration release \
+        --configuration Release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
@@ -78,7 +78,7 @@ runs:
       run: |
         dotnet publish \
         Extensions/Mongo/Cosmos.DataTransfer.MongoExtension/Cosmos.DataTransfer.MongoExtension.csproj \
-        --configuration release \
+        --configuration Release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
@@ -93,7 +93,7 @@ runs:
       run: |
         dotnet publish \
         Extensions/SqlServer/Cosmos.DataTransfer.SqlServerExtension/Cosmos.DataTransfer.SqlServerExtension.csproj \
-        --configuration release \
+        --configuration Release \
         --output ${{ inputs.platform-short }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \

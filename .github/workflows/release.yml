@@ -24,11 +24,11 @@ jobs:
         with:
           name: linux-package
           path: linux-package
-      - name: Rename output files
+      - name: Package output files
         run: |
-          mv windows-package dmt-${{ github.ref_name }}-win-x64.zip
-          mv mac-package dmt-${{ github.ref_name }}-mac-x64.zip
-          mv linux-package dmt-${{ github.ref_name }}-linux-x64.zip
+          zip -r dmt-${{ github.ref_name }}-win-x64.zip windows-package/*
+          zip -r dmt-${{ github.ref_name }}-mac-x64.zip mac-package/*
+          zip -r dmt-${{ github.ref_name }}-linux-x64.zip linux-package/*
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:

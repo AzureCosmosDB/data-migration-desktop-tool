@@ -5,8 +5,10 @@ To access the archived version of the tool, navigate to the [**Archive branch**]
 ---
 
 - [Azure Cosmos DB Desktop Data Migration Tool](#azure-cosmos-db-desktop-data-migration-tool)
-  - [Architecture](#Azure-Cosmos-DB-Desktop-Data-Migration-Tool-architecture)
-  - [Project Structure](#cosmos-db-project-structure)
+  - [Overview](#overview)
+  - [Extension documentation](#extension-documentation)
+  - [Architecture](#architecture)
+  - [Project Structure](#project-structure)
   - [Getting Started](#getting-started)
     - [Clone the source code repository](#clone-the-source-code-repository)
     - [Build the solution](#build-the-solution)
@@ -17,8 +19,24 @@ To access the archived version of the tool, navigate to the [**Archive branch**]
     - [Task 3: Setup the data migration configuration](#task-3-setup-the-data-migration-configuration)
   - [Using the command line](#using-the-command-line)
   - [Creating Extensions](#creating-extensions)
-  - [Extension documentation](#extension-documentation)
 
+## Overview
+
+The Azure Cosmos DB Desktop Data Migration Tool is an open-source project containing a command-line application that provides import and export functionality for Azure Cosmos DB.
+
+## Extension documentation
+
+Multiple extensions are provided in this repository. Find the documentation for the usage and configuration of each using the links provided:
+
+1. [Azure Cosmos DB](Extensions/Cosmos/README.md)
+
+2. [Azure Table API](Extensions/AzureTableAPI/README.md)
+
+3. [JSON](Extensions/Json/README.md)
+
+4. [MongoDB](Extensions/Mongo/README.md)
+
+5. [SQL Server](Extensions/SqlServer/README.md)
 
 ## Architecture
 
@@ -183,17 +201,3 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
 7. Settings needed by the extension can be retrieved from any standard .NET configuration source in the main application by using the `IConfiguration` instance passed into the `ReadAsync` and `WriteAsync` methods. Settings under `SourceSettings`/`SinkSettings` will be included as well as any settings included in JSON files specified by the `SourceSettingsPath`/`SinkSettingsPath`.
 
 8. Implement your extension to read and/or write using the generic `IDataItem` interface which exposes object properties as a list key-value pairs. Depending on the specific structure of the data storage type being implemented, you can choose to support nested objects and arrays or only flat top-level properties.
-
-## Extension documentation
-
-Multiple extensions are provided in this repository. Find the documentation for the usage and configuration of each using the links provided:
-
-1. [Azure Cosmos DB](Extensions/Cosmos/README.md)
-
-2. [Azure Table API](Extensions/AzureTableAPI/README.md)
-
-3. [JSON](Extensions/Json/README.md)
-
-4. [MongoDB](Extensions/Mongo/README.md)
-
-5. [SQL Server](Extensions/SqlServer/README.md)
