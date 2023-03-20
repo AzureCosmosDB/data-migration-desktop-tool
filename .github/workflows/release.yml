@@ -46,21 +46,21 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v3
       - name: Execute Action build-with-plugins for Windows
-        uses: ./actions/build-with-plugins
+        uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-win
         with:
           platform: windows
           platform-short: win
           runtime: win-x64
       - name: Execute Action build-with-plugins for MacOS
-        uses: ./actions/build-with-plugins
+        uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-mac
         with:
           platform: mac
           platform-short: mac
           runtime: osx-x64
       - name: Execute Action build-with-plugins for Linux
-        uses: ./actions/build-with-plugins
+        uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-linux
         with:
           platform: linux
