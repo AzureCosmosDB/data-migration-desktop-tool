@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    name: Build self-contained executables
+    name:  Create dotnet tool NuGet package
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/dotnet/sdk:6.0
     steps:
