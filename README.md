@@ -24,6 +24,10 @@ To access the archived version of the tool, navigate to the [**Archive branch**]
 
 The Azure Cosmos DB Desktop Data Migration Tool is an open-source project containing a command-line application that provides import and export functionality for Azure Cosmos DB.
 
+## Quick Installation
+
+To use the tool, download the latest zip file for your platform (win-x64, mac-x64, or linux-x64) from [Releases](releases) and extract all files to your desired install location. To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms.
+
 ## Extension documentation
 
 Multiple extensions are provided in this repository. Find the documentation for the usage and configuration of each using the links provided:
