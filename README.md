@@ -42,6 +42,8 @@ Multiple extensions are provided in this repository. Find the documentation for 
 
 5. [SQL Server](Extensions/SqlServer/README.md)
 
+6. [Azure Cognitive Search](Extensions/CognitiveSearch/README.md)
+
 ## Architecture
 
 The Azure Cosmos DB Desktop Data Migration Tool is a lightweight executable that leverages the [Managed Extensibility Framework (MEF)](https://docs.microsoft.com/en-us/dotnet/framework/mef/). MEF enables decoupled implementation of the core project and its extensions. The core application is a command-line executable responsible for composing the required extensions at runtime by automatically loading them from the Extensions folder of the application. An Extension is a class library that includes the implementation of a System as a Source and (optionally) Sink for data transfer. The core application project does not contain direct references to any extension implementation. Instead, these projects share a common interface.
