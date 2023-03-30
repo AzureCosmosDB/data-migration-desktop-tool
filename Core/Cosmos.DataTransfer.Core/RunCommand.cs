@@ -98,11 +98,21 @@ namespace Cosmos.DataTransfer.Core
                     foreach (var operationConfig in operations)
                     {
                         var operationSource = operationConfig.GetSection("SourceSettings");
+                        var sourceBuilder = new ConfigurationBuilder().AddConfiguration(sourceConfig);
+                        if (operationSource.Exists())
+                        {
+                            sourceBuilder.AddConfiguration(operationSource);
+                        }
                         var operationSink = operationConfig.GetSection("SinkSettings");
+                        var sinkBuilder = new ConfigurationBuilder().AddConfiguration(sinkConfig);
+                        if (operationSink.Exists())
+                        {
+                            sinkBuilder.AddConfiguration(operationSink);
+                        }
                         await ExecuteDataTransferOperation(source, 
-                                  operationSource.Exists() ? operationSource : sourceConfig, 
+                                  sourceBuilder.Build(), 
                                   sink, 
-                                  operationSink.Exists() ? operationSink : sinkConfig, 
+                                  sinkBuilder.Build(), 
                                   cancellationToken);
                     }
                 }
@@ -114,7 +124,7 @@ namespace Cosmos.DataTransfer.Core
                 return 0;
             }
 
-            private async Task ExecuteDataTransferOperation(IDataSourceExtension source, IConfigurationSection sourceConfig, IDataSinkExtension sink, IConfigurationSection sinkConfig, CancellationToken cancellationToken)
+            private async Task ExecuteDataTransferOperation(IDataSourceExtension source, IConfiguration sourceConfig, IDataSinkExtension sink, IConfiguration sinkConfig, CancellationToken cancellationToken)
             {
                 _logger.LogDebug("Loaded {SettingCount} settings for source {SourceName}:\n\t\t{SettingList}",
                     sourceConfig.AsEnumerable().Count(),
