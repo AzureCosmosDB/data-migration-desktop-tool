@@ -9,7 +9,7 @@ namespace Cosmos.DataTransfer.MongoExtension;
 [Export(typeof(IDataSinkExtension))]
 public class MongoDataSinkExtension : IDataSinkExtension
 {
-    public string DisplayName => "Mongo";
+    public string DisplayName => "MongoDB";
 
     public async Task WriteAsync(IAsyncEnumerable<IDataItem> dataItems, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
     {
