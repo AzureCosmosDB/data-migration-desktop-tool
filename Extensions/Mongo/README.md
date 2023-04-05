@@ -1,8 +1,8 @@
-# Mongo Extension
+# MongoDB Extension
 
-The Mongo data transfer extension provides source and sink capabilities for reading from and writing to a Mongo database.
+The MongoDB data transfer extension provides source and sink capabilities for reading from and writing to a MongoDB database.
 
-> **Note**: When specifying the Mongo extension as the Source or Sink property in configuration, utilize the name **Mongo**.
+> **Note**: When specifying the MongoDB extension as the Source or Sink property in configuration, utilize the name **MongoDB**.
 > 
 ## Settings
 
