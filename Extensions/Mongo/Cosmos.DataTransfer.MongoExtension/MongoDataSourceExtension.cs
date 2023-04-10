@@ -10,7 +10,7 @@ namespace Cosmos.DataTransfer.MongoExtension;
 [Export(typeof(IDataSourceExtension))]
 internal class MongoDataSourceExtension : IDataSourceExtension
 {
-    public string DisplayName => "Mongo";
+    public string DisplayName => "MongoDB";
 
     public async IAsyncEnumerable<IDataItem> ReadAsync(IConfiguration config, ILogger logger, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
