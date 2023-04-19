@@ -2,8 +2,13 @@
   "Source": null,
   "Sink": null,
   "SourceSettings": {
+    "FilePath": "test.parquet",
+    "ConnectionString": "data source=localhost;TrustServerCertificate=true;Initial Catalog=Stackoverflow2010; user id=sa; password=HasanSavran@gmail.com",
+    "QueryText": "SELECT TOP 50000 * FROM [StackOverflow2010].[dbo].[Posts]"
+
   },
   "SinkSettings": {
+    "FilePath": "test2.parquet"
   },
   "Operations": [
     //{
