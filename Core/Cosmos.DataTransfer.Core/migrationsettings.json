@@ -2,18 +2,10 @@
   "Source": null,
   "Sink": null,
   "SourceSettings": {
-    "FilePath": "test.parquet",
-    "ConnectionString": "data source=localhost;TrustServerCertificate=true;Initial Catalog=Stackoverflow2010; user id=sa; password=HasanSavran@gmail.com",
-    "QueryText": "SELECT TOP 50000 * FROM [StackOverflow2010].[dbo].[Posts]"
-
+    "FilePath": "test.parquet"
   },
   "SinkSettings": {
-    "FilePath": "test2.parquet",
-    "UploadToS3": true,
-    "S3Region": "",
-    "S3BucketName": "",
-    "S3AccessKey": "",
-    "S3SecretKey": ""
+    "FilePath": "test2.parquet"
   },
   "Operations": [
     //{
