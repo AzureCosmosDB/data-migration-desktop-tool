@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Parquet.Schema;
 using Parquet;
 using System.ComponentModel.Composition;
-using Parquet.Data;
 using System.Data;
 
 namespace Cosmos.DataTransfer.ParquetExtension
@@ -22,7 +21,6 @@ namespace Cosmos.DataTransfer.ParquetExtension
             if (settings != null && settings.FilePath != null)
             {
                 logger.LogInformation("Writing to file '{FilePath}", settings.FilePath);
-
                 await foreach (var item in dataItems.WithCancellation(cancellationToken))
                 {
                     ProcessColumns(item);
@@ -31,6 +29,18 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 CreateParquetColumns();
                 await SaveFile(schema, settings.FilePath, cancellationToken);
                 logger.LogInformation("Completed writing data to file '{FilePath}'", settings.FilePath);
+                if (settings.UploadToS3 == true)
+                {
+                    if (settings.S3Region != null && settings.S3BucketName != null && settings.S3AccessKey !=null && settings.S3SecretKey !=null)
+                    {
+                        logger.LogInformation("Saving file to AWS S3 Bucket '{BucketName}'", settings.S3BucketName);
+                        await SaveToS3(settings, cancellationToken);
+                    }
+                    else
+                    {
+                        logger.LogError("S3 Requires S3Region, S3BucketName, S3AccessKey, and S3SecretKey to be set.");
+                    }                    
+                }                
             }
         }
 
@@ -113,7 +123,7 @@ namespace Cosmos.DataTransfer.ParquetExtension
             return new ParquetSchema(arr);
         }
 
-        private async Task<bool> SaveFile(ParquetSchema schema, string filepath, CancellationToken cancellationToken)
+        private async Task SaveFile(ParquetSchema schema, string filepath, CancellationToken cancellationToken)
         {
             using Stream fs = File.OpenWrite(filepath);
             using ParquetWriter writer = await ParquetWriter.CreateAsync(schema, fs);
@@ -124,8 +134,13 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 {
                     await groupWriter.WriteColumnAsync(col.ParquetDataColumn, cancellationToken);
                 }
-            }
-            return true;
+            }           
+        }
+
+        private async Task SaveToS3(ParquetSinkSettings settings, CancellationToken cancellationToken)
+        {
+            S3Writer.InitializeS3Client(settings.S3AccessKey, settings.S3SecretKey, settings.S3Region);
+            await S3Writer.WriteToS3(settings.S3BucketName, settings.FilePath, cancellationToken);
         }
     }
 }

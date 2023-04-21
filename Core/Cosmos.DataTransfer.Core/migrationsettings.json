@@ -10,10 +10,10 @@
   "SinkSettings": {
     "FilePath": "test2.parquet",
     "UploadToS3": true,
-    "S3Region": "us-east-1",
-    "S3BucketName": "2EPod",
-    "S3AccessKey": "AKIAVRRNASNM7FQRQHVQ",
-    "S3SecretKey": "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"
+    "S3Region": "",
+    "S3BucketName": "",
+    "S3AccessKey": "",
+    "S3SecretKey": ""
   },
   "Operations": [
     //{
