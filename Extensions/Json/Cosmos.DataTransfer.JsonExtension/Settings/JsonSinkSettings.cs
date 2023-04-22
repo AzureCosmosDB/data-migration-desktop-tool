@@ -15,5 +15,9 @@ namespace Cosmos.DataTransfer.JsonExtension.Settings
         public string S3BucketName { get; set; }
         public string S3AccessKey { get; set; }
         public string S3SecretKey { get; set; }
+        public bool UploadToAzureBlob { get; set; }
+        public string AzureBlobConnectionString { get; set; }
+        public string AzureBlobContainerName { get; set; }
+        public int? AzureBlobMaxBlockSizeinKB { get; set; }
     }
 }

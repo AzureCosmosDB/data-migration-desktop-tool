@@ -36,6 +36,18 @@ namespace Cosmos.DataTransfer.JsonExtension
                         logger.LogError("S3 Requires S3Region, S3BucketName, S3AccessKey, and S3SecretKey to be set.");
                     }
                 }
+                if (settings.UploadToAzureBlob == true)
+                {
+                    if (settings.AzureBlobConnectionString != null && settings.AzureBlobContainerName != null)
+                    {
+                        logger.LogInformation("Saving file to Azure Blob Container '{ContainerName}'", settings.AzureBlobContainerName);
+                        await SaveToAzureBlob(settings, cancellationToken);
+                    }
+                    else
+                    {
+                        logger.LogError("Azure Blob Requires AzureBlobConnectionString and AzureBlobContainerName to be set.");
+                    }
+                }
             }
         }
 
@@ -59,6 +71,12 @@ namespace Cosmos.DataTransfer.JsonExtension
         {
             S3Writer.InitializeS3Client(settings.S3AccessKey, settings.S3SecretKey, settings.S3Region);
             await S3Writer.WriteToS3(settings.S3BucketName, settings.FilePath, cancellationToken);
+        }
+
+        private async Task SaveToAzureBlob(JsonSinkSettings settings, CancellationToken cancellationToken)
+        {
+            BlobWriter.InitializeAzureBlobClient(settings.AzureBlobConnectionString, settings.AzureBlobContainerName, settings.AzureBlobContainerName);
+            await BlobWriter.WriteToAzureBlob(settings.FilePath, settings.AzureBlobMaxBlockSizeinKB, cancellationToken);
         }
     }
 }
