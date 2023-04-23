@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.Composition;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.Json;
 using Cosmos.DataTransfer.Interfaces;
 using Cosmos.DataTransfer.JsonExtension.Settings;
@@ -23,13 +22,16 @@ namespace Cosmos.DataTransfer.JsonExtension
                 if (File.Exists(settings.FilePath))
                 {
                     logger.LogInformation("Reading file '{FilePath}'", settings.FilePath);
-                    var list = await ReadFileAsync(settings.FilePath, logger, cancellationToken);
+                    var list = ReadFileAsync(settings.FilePath, logger, cancellationToken);
 
                     if (list != null)
                     {
-                        foreach (var listItem in list)
+                        await foreach (var listItem in list.WithCancellation(cancellationToken))
                         {
-                            yield return new JsonDictionaryDataItem(listItem);
+                            if (listItem != null)
+                            {
+                                yield return new JsonDictionaryDataItem(listItem);
+                            }
                         }
                     }
                 }
@@ -40,13 +42,16 @@ namespace Cosmos.DataTransfer.JsonExtension
                     foreach (string filePath in files.OrderBy(f => f))
                     {
                         logger.LogInformation("Reading file '{FilePath}'", filePath);
-                        var list = await ReadFileAsync(filePath, logger, cancellationToken);
+                        var list = ReadFileAsync(filePath, logger, cancellationToken);
 
                         if (list != null)
                         {
-                            foreach (var listItem in list)
+                            await foreach (var listItem in list.WithCancellation(cancellationToken))
                             {
-                                yield return new JsonDictionaryDataItem(listItem);
+                                if (listItem != null)
+                                {
+                                    yield return new JsonDictionaryDataItem(listItem);
+                                }
                             }
                         }
                     }
@@ -63,15 +68,18 @@ namespace Cosmos.DataTransfer.JsonExtension
                         yield break;
                     }
 
-                    var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                    var json = await response.Content.ReadAsStreamAsync(cancellationToken);
 
-                    var list = await ReadJsonItemsAsync(json, logger, cancellationToken);
+                    var list = ReadJsonItemsAsync(json, logger, cancellationToken);
 
                     if (list != null)
                     {
-                        foreach (var listItem in list)
+                        await foreach (var listItem in list.WithCancellation(cancellationToken))
                         {
-                            yield return new JsonDictionaryDataItem(listItem);
+                            if (listItem != null)
+                            {
+                                yield return new JsonDictionaryDataItem(listItem);
+                            }
                         }
                     }
                 }
@@ -85,45 +93,70 @@ namespace Cosmos.DataTransfer.JsonExtension
             }
         }
 
-        private static async Task<List<Dictionary<string, object?>>?> ReadFileAsync(string filePath, ILogger logger, CancellationToken cancellationToken)
+        private static IAsyncEnumerable<Dictionary<string, object?>?>? ReadFileAsync(string filePath, ILogger logger, CancellationToken cancellationToken)
         {
-            var jsonText = await File.ReadAllTextAsync(filePath, cancellationToken);
-            return await ReadJsonItemsAsync(jsonText, logger, cancellationToken);
+            var jsonFile = File.OpenRead(filePath);
+            return ReadJsonItemsAsync(jsonFile, logger, cancellationToken);
         }
 
-        private static async Task<List<Dictionary<string, object?>>?> ReadJsonItemsAsync(string jsonText, ILogger logger, CancellationToken cancellationToken)
+        private static IAsyncEnumerable<Dictionary<string, object?>?>? ReadJsonItemsAsync(Stream jsonStream, ILogger logger, CancellationToken cancellationToken)
         {
+            if (jsonStream is { CanSeek: true, Length: < 10485760L })
+            {
+                // test for single item in JSON
+                var singleItemList = ReadSingleItemAsync(jsonStream, logger);
+                if (singleItemList != null)
+                {
+                    return singleItemList.ToAsyncEnumerable();
+                }
+            }
+
             try
             {
-                using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(jsonText));
-                return await JsonSerializer.DeserializeAsync<List<Dictionary<string, object?>>>(stream, cancellationToken: cancellationToken);
+                jsonStream.Seek(0, SeekOrigin.Begin);
+                return JsonSerializer.DeserializeAsyncEnumerable<Dictionary<string, object?>>(jsonStream, cancellationToken: cancellationToken);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // list failed
             }
 
-            var list = new List<Dictionary<string, object?>>();
+            return null;
+        }
+
+        private static IEnumerable<Dictionary<string, object?>?>? ReadSingleItemAsync(Stream stream, ILogger logger)
+        {
+            Dictionary<string, object?>? item;
             try
             {
-                using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(jsonText));
-                var item = await JsonSerializer.DeserializeAsync<Dictionary<string, object?>>(stream, cancellationToken: cancellationToken);
-                if (item != null)
-                {
-                    list.Add(item);
-                }
+                item = JsonSerializer.Deserialize<Dictionary<string, object?>>(stream);
+            }
+            catch (Exception)
+            {
+                // single item failed
+                return null;
+            }
+
+            if (item != null)
+            {
+                return new[] { item };
+            }
+
+            string textContent;
+            try
+            {
+                var chars = new char[50];
+                new StreamReader(stream).ReadBlock(chars, 0, chars.Length);
+                textContent = new string(chars);
             }
             catch (Exception ex)
             {
-                // single item failed
+                logger.LogWarning(ex, "Failed to read stream");
+                textContent = "<error>";
             }
+            logger.LogWarning("No records read from '{Content}'", textContent);
 
-            if (!list.Any())
-            {
-                logger.LogWarning("No records read from '{Content}'", jsonText);
-            }
-
-            return list;
+            return null;
         }
     }
 }
