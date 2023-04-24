@@ -4,6 +4,7 @@ using System.Dynamic;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
+using Azure.Identity;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
@@ -24,74 +25,53 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var settings = config.Get<CosmosSinkSettings>();
             settings.Validate();
 
-            // based on:
-            //UserAgentSuffix = String.Format(CultureInfo.InvariantCulture, Resources.CustomUserAgentSuffixFormat,
-            //    entryAssembly == null ? Resources.UnknownEntryAssembly : entryAssembly.GetName().Name,
-            //    Assembly.GetExecutingAssembly().GetName().Version,
-            //    context.SourceName, context.SinkName,
-            //    isShardedImport ? Resources.ShardedImportDesignator : String.Empty)
-
-            var entryAssembly = Assembly.GetEntryAssembly();
-            bool isShardedImport = false;
-            string sourceName = dataSource.DisplayName;
-            string sinkName = DisplayName;
-            string userAgentString = string.Format(CultureInfo.InvariantCulture, "{0}-{1}-{2}-{3}{4}",
-                                    entryAssembly == null ? "dtr" : entryAssembly.GetName().Name,
-                                    Assembly.GetExecutingAssembly().GetName().Version,
-                                    sourceName, sinkName,
-                                    isShardedImport ? "-Sharded" : string.Empty);
-
-            var client = new CosmosClient(settings.ConnectionString,
-                new CosmosClientOptions
-                {
-                    ConnectionMode = settings.ConnectionMode,
-                    ApplicationName = userAgentString,
-                    AllowBulkExecution = true,
-                    EnableContentResponseOnWrite = false,
-                });
-
-            Database database = await client.CreateDatabaseIfNotExistsAsync(settings.Database, cancellationToken: cancellationToken);
-
-            if (settings.RecreateContainer)
-            {
-                try
-                {
-                    await database.GetContainer(settings.Container).DeleteContainerAsync(cancellationToken: cancellationToken);
-                }
-                catch { }
-            }
-
-            var containerProperties = new ContainerProperties
-            {
-                Id = settings.Container,
-                PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2,
-                PartitionKeyPath = settings.PartitionKeyPath,
-            };
-
-            ThroughputProperties? throughputProperties = settings.IsServerlessAccount
-                ? null
-                : settings.UseAutoscaleForCreatedContainer
-                ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
-                : ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400);
+            var client = CosmosExtensionServices.CreateClient(settings, DisplayName, dataSource.DisplayName);
 
             Container? container;
-            try
+            if (settings.UseRbacAuth)
             {
-                container = await database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, cancellationToken: cancellationToken);
+                container = client.GetContainer(settings.Database, settings.Container);
             }
-            catch (CosmosException ex) when (ex.ResponseBody.Contains("not supported for serverless accounts", StringComparison.InvariantCultureIgnoreCase))
+            else
             {
-                logger.LogWarning("Cosmos Serverless Account does not support throughput options. Creating Container {ContainerName} without those settings.", settings.Container);
+                Database database = await client.CreateDatabaseIfNotExistsAsync(settings.Database, cancellationToken: cancellationToken);
 
-                // retry without throughput settings which are incompatible with serverless
-                container = await database.CreateContainerIfNotExistsAsync(containerProperties, cancellationToken: cancellationToken);
+                if (settings.RecreateContainer)
+                {
+                    try
+                    {
+                        await database.GetContainer(settings.Container).DeleteContainerAsync(cancellationToken: cancellationToken);
+                    }
+                    catch { }
+                }
+
+                var containerProperties = new ContainerProperties
+                {
+                    Id = settings.Container,
+                    PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2,
+                    PartitionKeyPath = settings.PartitionKeyPath,
+                };
+
+                ThroughputProperties? throughputProperties = settings.IsServerlessAccount
+                    ? null
+                    : settings.UseAutoscaleForCreatedContainer
+                    ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
+                    : ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400);
+
+                try
+                {
+                    container = await database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, cancellationToken: cancellationToken);
+                }
+                catch (CosmosException ex) when (ex.ResponseBody.Contains("not supported for serverless accounts", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    logger.LogWarning("Cosmos Serverless Account does not support throughput options. Creating Container {ContainerName} without those settings.", settings.Container);
+
+                    // retry without throughput settings which are incompatible with serverless
+                    container = await database.CreateContainerIfNotExistsAsync(containerProperties, cancellationToken: cancellationToken);
+                }
             }
 
-            if (container == null)
-            {
-                logger.LogError("Failed to initialize Container {Container}", settings.Container);
-                throw new Exception("Cosmos container unavailable for write");
-            }
+            await CosmosExtensionServices.VerifyContainerAccess(container, settings.Container, logger, cancellationToken);
 
             int addedCount = 0;
 
