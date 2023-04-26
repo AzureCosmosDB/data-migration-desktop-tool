@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections;
+using System.Text;
 using System.Text.Json;
 
 namespace Cosmos.DataTransfer.Interfaces;
@@ -52,7 +53,7 @@ public static class DataItemJsonConverter
             {
                 WriteDataItem(writer, child, includeNullFields, fieldName);
             }
-            else if (fieldValue is IEnumerable<object> children)
+            else if (fieldValue is not string && fieldValue is IEnumerable children)
             {
                 writer.WriteStartArray(fieldName);
                 foreach (object arrayItem in children)
@@ -69,6 +70,10 @@ public static class DataItemJsonConverter
                     {
                         writer.WriteBooleanValue(boolean);
                     }
+                    else if (arrayItem is DateTime date)
+                    {
+                        writer.WriteStringValue(date.ToString("O"));
+                    }
                     else
                     {
                         writer.WriteStringValue(arrayItem.ToString());
@@ -83,6 +88,10 @@ public static class DataItemJsonConverter
             else if (fieldValue is bool boolean)
             {
                 writer.WriteBoolean(fieldName, boolean);
+            }
+            else if (fieldValue is DateTime date)
+            {
+                writer.WriteString(fieldName, date.ToString("O"));
             }
             else
             {
