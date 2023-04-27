@@ -2,7 +2,7 @@
 using Amazon.S3;
 using Amazon.S3.Transfer;
 
-namespace Cosmos.DataTransfer.Interfaces
+namespace Cosmos.DataTransfer.AwsS3Storage
 {
     public static class S3Writer
     {
@@ -14,10 +14,10 @@ namespace Cosmos.DataTransfer.Interfaces
             s3Client = new AmazonS3Client(accessKey, secretKey, region);            
         }
 
-        public static async Task WriteToS3(string bucketName, string filename, CancellationToken cancellationToken)
+        public static async Task WriteToS3(string bucketName, Stream data, string filename, CancellationToken cancellationToken)
         {
             var ftu = new TransferUtility(s3Client);
-            await ftu.UploadAsync(filename, bucketName, cancellationToken);
+            await ftu.UploadAsync(data, bucketName, filename, cancellationToken);
         }
     }
 }

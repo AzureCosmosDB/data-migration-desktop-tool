@@ -1,7 +1,6 @@
-﻿using Parquet.Data;
-using Parquet.Schema;
+﻿using Parquet.Schema;
 
-namespace Cosmos.DataTransfer.Interfaces
+namespace Cosmos.DataTransfer.ParquetExtension
 {
     public class ParquetDataCol
     {

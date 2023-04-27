@@ -1,6 +1,6 @@
 ﻿using Azure.Storage.Blobs.Specialized;
 
-namespace Cosmos.DataTransfer.Interfaces
+namespace Cosmos.DataTransfer.AzureBlobStorage
 {
     public static class BlobWriter
     {
@@ -11,7 +11,7 @@ namespace Cosmos.DataTransfer.Interfaces
             blob = new BlockBlobClient(connectionString, containerName, blobName);
         }
 
-        public static async Task WriteToAzureBlob(string filePath, int? maxBlockSize, CancellationToken cancellationToken)
+        public static async Task WriteToAzureBlob(byte[] fileContents, int? maxBlockSize, CancellationToken cancellationToken)
         {
             int MAX_BLOCK_SIZE = 512000;
             if (maxBlockSize.HasValue && maxBlockSize.Value > 0)
@@ -22,7 +22,6 @@ namespace Cosmos.DataTransfer.Interfaces
             List<string> blockIds = new List<string>();
             int blockId = 0;
             int contentProcessed = 0;
-            byte[] fileContents = File.ReadAllBytes(filePath);
 
             // Set current block size to MAX size
             int currentBlockSize = MAX_BLOCK_SIZE;

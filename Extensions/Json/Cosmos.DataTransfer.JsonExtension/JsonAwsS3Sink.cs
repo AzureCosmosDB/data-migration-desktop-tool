@@ -6,7 +6,7 @@ using Cosmos.DataTransfer.AwsS3Storage;
 namespace Cosmos.DataTransfer.JsonExtension;
 
 [Export(typeof(IDataSinkExtension))]
-public class JsonFileSink : CompositeSinkExtension<FileDataSink, JsonFormatWriter>
+public class JsonAwsS3Sink : CompositeSinkExtension<AwsS3DataSink, JsonFormatWriter>
 {
-    public override string DisplayName => "JSON-File(beta)";
+    public override string DisplayName => "JSON-AWSS3";
 }

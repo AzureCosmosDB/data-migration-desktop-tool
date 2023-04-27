@@ -10,14 +10,5 @@ namespace Cosmos.DataTransfer.JsonExtension.Settings
 
         public bool IncludeNullFields { get; set; }
         public bool Indented { get; set; }
-        public bool UploadToS3 { get; set; }
-        public string S3Region { get; set; }
-        public string S3BucketName { get; set; }
-        public string S3AccessKey { get; set; }
-        public string S3SecretKey { get; set; }
-        public bool UploadToAzureBlob { get; set; }
-        public string AzureBlobConnectionString { get; set; }
-        public string AzureBlobContainerName { get; set; }
-        public int? AzureBlobMaxBlockSizeinKB { get; set; }
     }
 }
