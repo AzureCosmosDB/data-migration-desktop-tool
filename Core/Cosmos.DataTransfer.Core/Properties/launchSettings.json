@@ -18,11 +18,11 @@
     },
     "JSON->SqlServer": {
       "commandName": "Project",
-      "commandLineArgs": "run --source json --sink sqlServer --SourceSettings:FilePath=c:\\temp\\test-json-sql-in.json --SettingsPath=c:\\temp\\Json-SqlSettings.json"
+      "commandLineArgs": "run --source json --sink sqlServer --SourceSettings:FilePath=c:\\temp\\test-json-sql-in.json --settings=c:\\temp\\Json-SqlSettings.json"
     },
     "JSON URI->Cosmos": {
       "commandName": "Project",
-      "commandLineArgs": "--source json --sink cosmos-nosql --SourceSettings:FilePath=https://raw.githubusercontent.com/AzureCosmosDB/data-migration-desktop-tool/feature/cosmos-configuration/Extensions/Json/.JsonExtension.UnitTests/Data/ArraysTypesNesting.json --SettingsPath=c:\\temp\\CosmosSinkSettings.json"
+      "commandLineArgs": "--source json-file --sink cosmos-nosql --SourceSettings:FilePath=https://raw.githubusercontent.com/AzureCosmosDB/data-migration-desktop-tool/main/Extensions/Json/Cosmos.DataTransfer.JsonExtension.UnitTests/Data/ArraysTypesNesting.json --settings=c:\\temp\\CosmosSinkSettings.json"
     }
   }
 }
