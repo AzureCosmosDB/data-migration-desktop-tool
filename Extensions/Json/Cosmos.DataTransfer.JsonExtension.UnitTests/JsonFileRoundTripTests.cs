@@ -4,13 +4,13 @@ using Newtonsoft.Json.Linq;
 namespace Cosmos.DataTransfer.JsonExtension.UnitTests
 {
     [TestClass]
-    public class JsonRoundTripTests
+    public class JsonFileRoundTripTests
     {
         [TestMethod]
         public async Task WriteAsync_fromReadAsync_ProducesIdenticalFile()
         {
-            var input = new JsonDataSourceExtension();
-            var output = new JsonDataSinkExtension();
+            var input = new JsonFileSource();
+            var output = new JsonFileSink();
 
             const string fileIn = "Data/ArraysTypesNesting.json";
             const string fileOut = $"{nameof(WriteAsync_fromReadAsync_ProducesIdenticalFile)}_out.json";
@@ -34,8 +34,8 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task WriteAsync_fromFolderReadAsync_ProducesExpectedCombinedFile()
         {
-            var input = new JsonDataSourceExtension();
-            var output = new JsonDataSinkExtension();
+            var input = new JsonFileSource();
+            var output = new JsonFileSink();
 
             const string fileIn = "Data/SingleObjects";
             const string fileCompare = "Data/SimpleIdName.json";
@@ -60,8 +60,8 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task WriteAsync_fromReadUriAsync_ProducesIdenticalFile()
         {
-            var input = new JsonDataSourceExtension();
-            var output = new JsonDataSinkExtension();
+            var input = new JsonFileSource();
+            var output = new JsonFileSink();
 
             const string urlIn = "https://raw.githubusercontent.com/AzureCosmosDB/data-migration-desktop-tool/main/Extensions/Json/Cosmos.DataTransfer.JsonExtension.UnitTests/Data/ArraysTypesNesting.json";
             const string compareFile = "Data/ArraysTypesNesting.json";

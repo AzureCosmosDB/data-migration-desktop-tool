@@ -114,18 +114,10 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             string json = await File.ReadAllTextAsync(outputFile);
             var outputData = JsonConvert.DeserializeObject<List<TestDataObject>>(json);
 
-            Assert.AreEqual(now, outputData.Single().Dates.ElementAt(0));
-            Assert.AreEqual(randomTime, outputData.Single().Dates.ElementAt(1));
-            Assert.AreEqual(DateTime.UnixEpoch, outputData.Single().Dates.ElementAt(2));
+            Assert.AreEqual(now, outputData?.Single().Dates?.ElementAt(0));
+            Assert.AreEqual(randomTime, outputData?.Single().Dates?.ElementAt(1));
+            Assert.AreEqual(DateTime.UnixEpoch, outputData?.Single().Dates?.ElementAt(2));
         }
 
-    }
-
-    public class TestDataObject
-    {
-        public int Id { get; set; }
-        public string? Name { get; set; }
-        public DateTime? Created { get; set; }
-        public List<DateTime>? Dates { get; set; }
     }
 }
