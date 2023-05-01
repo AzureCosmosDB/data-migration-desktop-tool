@@ -21,40 +21,43 @@ namespace Cosmos.DataTransfer.ParquetExtension
             {
                 logger.LogInformation("Reading source file");
 
-                using ParquetReader reader = await ParquetReader.CreateAsync(source, cancellationToken: cancellationToken);
-                var coldata = new List<DataColumn>();
-                var numberofrows = 0;
-                //check if number of rows are same for each column.
-                for (int i = 0; i < reader.RowGroupCount; i++)
+                if (source != null)
                 {
-                    using ParquetRowGroupReader rowGroupReader = reader.OpenRowGroupReader(i);
-                    foreach (DataField df in reader.Schema.GetDataFields())
+                    using ParquetReader reader = await ParquetReader.CreateAsync(source, cancellationToken: cancellationToken);
+                    var coldata = new List<DataColumn>();
+                    var numberofrows = 0;
+                    //check if number of rows are same for each column.
+                    for (int i = 0; i < reader.RowGroupCount; i++)
                     {
-                        var temp = await rowGroupReader.ReadColumnAsync(df, cancellationToken);
-                        if (numberofrows == 0)
+                        using ParquetRowGroupReader rowGroupReader = reader.OpenRowGroupReader(i);
+                        foreach (DataField df in reader.Schema.GetDataFields())
                         {
-                            numberofrows = temp.Data.Length;
-                        }
-                        else
-                        {
-                            if (numberofrows != temp.Data.Length)
+                            var temp = await rowGroupReader.ReadColumnAsync(df, cancellationToken);
+                            if (numberofrows == 0)
                             {
-                                logger.LogInformation("Number of rows in '{colname}' column does not match the rest.", temp.Field.Name);
+                                numberofrows = temp.Data.Length;
                             }
+                            else
+                            {
+                                if (numberofrows != temp.Data.Length)
+                                {
+                                    logger.LogInformation("Number of rows in '{colname}' column does not match the rest.", temp.Field.Name);
+                                }
+                            }
+                            coldata.Add(temp);
                         }
-                        coldata.Add(temp);
                     }
-                }
-                for (var i = 0; i < numberofrows; i++)
-                {
-                    var temp = new Dictionary<string, object?>();
-                    foreach (var x in coldata)
+                    for (var i = 0; i < numberofrows; i++)
                     {
-                        temp.Add(x.Field.Name, x.Data.GetValue(i));
-
+                        var temp = new Dictionary<string, object?>();
+                        foreach (var x in coldata)
+                        {
+                            temp.Add(x.Field.Name, x.Data.Cast<object?>().ElementAtOrDefault(i));
+                        }
+                        yield return new ParquetDictionaryDataItem(temp);
                     }
-                    yield return new ParquetDictionaryDataItem(temp);
                 }
+
                 logger.LogInformation("Completed reading source file");
             }
         }

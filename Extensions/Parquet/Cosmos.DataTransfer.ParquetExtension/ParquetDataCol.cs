@@ -6,7 +6,19 @@ namespace Cosmos.DataTransfer.ParquetExtension
     {
         public string ColumnName { get; set; }
         public Type ColumnType { get; set; }
-        public IList<object> ColumnData { get; set; }
+        public IEnumerable<object?> ColumnData
+        {
+            get
+            {
+                var maxRow = SparseColumnData.Keys.Max();
+                for (long i = 0; i <= maxRow; i++)
+                {
+                    yield return SparseColumnData.TryGetValue(i, out var value) ? value : null;
+                }
+            }
+        }
+
+        public Dictionary<long, object> SparseColumnData { get; } = new Dictionary<long, object>();
 
         public DataField ParquetDataType { get; set; }
 
@@ -15,14 +27,12 @@ namespace Cosmos.DataTransfer.ParquetExtension
         public ParquetDataCol()
         {
             ColumnType = Type.Missing.GetType();
-            ColumnData = new List<object>();
         }
 
         public ParquetDataCol(string name, Type coltype)
         {
             ColumnName = name;
             ColumnType = coltype;
-            ColumnData = new List<object>();
             if (coltype != System.Type.Missing.GetType())
             {
                 ParquetDataType = MapDataType(name, coltype);
@@ -32,6 +42,16 @@ namespace Cosmos.DataTransfer.ParquetExtension
         private static DataField MapDataType(string colname, Type coltype)
         {
             return new DataField(colname, coltype, true);
+        }
+
+        public void AddColumnValue(long row, object? value)
+        {
+            if (value == null)
+            {
+                return;
+            }
+
+            SparseColumnData[row] = value;
         }
     }
 }

@@ -18,9 +18,11 @@ namespace Cosmos.DataTransfer.ParquetExtension
             settings.Validate();
 
             logger.LogInformation("Writing parquet format");
+            long row = 0;
             await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
-                ProcessColumns(item);
+                ProcessColumns(item, row);
+                row++;
             }
 
             var schema = CreateSchema();
@@ -28,7 +30,7 @@ namespace Cosmos.DataTransfer.ParquetExtension
             await SaveFile(schema, target, cancellationToken);
         }
 
-        private void ProcessColumns(IDataItem item)
+        private void ProcessColumns(IDataItem item, long row)
         {
             var itemcolumns = item.GetFieldNames();
             foreach (var col in itemcolumns)
@@ -43,7 +45,7 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 if (current == null)
                 {
                     var newcol = new ParquetDataCol(col, coltype);
-                    newcol.ColumnData.Add(colval);
+                    newcol.AddColumnValue(row, colval);
                     parquetDataCols.Add(newcol);
                 }
                 else if (coltype != Type.Missing.GetType() && current.ColumnType != coltype)
@@ -59,7 +61,7 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 }
                 if (current != null)
                 {
-                    current.ColumnData.Add(colval);
+                    current.AddColumnValue(row, colval);
                 }
             }
         }
@@ -92,6 +94,9 @@ namespace Cosmos.DataTransfer.ParquetExtension
                         break;
                     case "Float":
                         current.ParquetDataColumn = new Parquet.Data.DataColumn(current.ParquetDataType, current.ColumnData.Cast<float?>().ToArray());
+                        break;
+                    case "Double":
+                        current.ParquetDataColumn = new Parquet.Data.DataColumn(current.ParquetDataType, current.ColumnData.Cast<double?>().ToArray());
                         break;
                 }
             }
