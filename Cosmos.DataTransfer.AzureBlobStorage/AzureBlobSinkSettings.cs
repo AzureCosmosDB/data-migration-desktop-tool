@@ -6,11 +6,14 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
     public class AzureBlobSinkSettings : IDataExtensionSettings
     {
         [Required]
-        public string AzureBlobConnectionString { get; set; } = null!;
+        public string ConnectionString { get; set; } = null!;
 
         [Required]
-        public string AzureBlobContainerName { get; set; } = null!;
+        public string ContainerName { get; set; } = null!;
 
-        public int? AzureBlobMaxBlockSizeinKB { get; set; }
+        [Required]
+        public string BlobName { get; set; } = null!;
+
+        public int? MaxBlockSizeinKB { get; set; }
     }
 }

@@ -11,11 +11,11 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             var settings = config.Get<AzureBlobSinkSettings>();
             settings.Validate();
 
-            logger.LogInformation("Saving file to Azure Blob Container '{ContainerName}'", settings.AzureBlobContainerName);
-            BlobWriter.InitializeAzureBlobClient(settings.AzureBlobConnectionString, settings.AzureBlobContainerName, settings.AzureBlobContainerName);
+            logger.LogInformation("Saving file '{File}' to Azure Blob Container '{ContainerName}'", settings.BlobName, settings.ContainerName);
+            BlobWriter.InitializeAzureBlobClient(settings.ConnectionString, settings.ContainerName, settings.BlobName);
             await using var stream = new MemoryStream();
             await dataWriter.FormatDataAsync(dataItems, stream, config, logger, cancellationToken);
-            await BlobWriter.WriteToAzureBlob(stream.ToArray(), settings.AzureBlobMaxBlockSizeinKB, cancellationToken);
+            await BlobWriter.WriteToAzureBlob(stream.ToArray(), settings.MaxBlockSizeinKB, cancellationToken);
         }
     }
 }
