@@ -8,5 +8,5 @@ namespace Cosmos.DataTransfer.JsonExtension;
 [Export(typeof(IDataSinkExtension))]
 public class JsonAwsS3Sink : CompositeSinkExtension<AwsS3DataSink, JsonFormatWriter>
 {
-    public override string DisplayName => "JSON-AWSS3";
+    public override string DisplayName => "JSON-AWSS3(beta)";
 }

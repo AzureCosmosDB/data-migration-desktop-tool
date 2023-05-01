@@ -8,5 +8,5 @@ namespace Cosmos.DataTransfer.JsonExtension;
 [Export(typeof(IDataSinkExtension))]
 public class JsonAzureBlobSink : CompositeSinkExtension<AzureBlobDataSink, JsonFormatWriter>
 {
-    public override string DisplayName => "JSON-AzureBlob";
+    public override string DisplayName => "JSON-AzureBlob(beta)";
 }

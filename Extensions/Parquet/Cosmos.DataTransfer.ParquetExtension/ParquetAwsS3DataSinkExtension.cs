@@ -8,6 +8,6 @@ namespace Cosmos.DataTransfer.ParquetExtension
     [Export(typeof(IDataSinkExtension))]
     public class ParquetAwsS3DataSinkExtension : CompositeSinkExtension<AwsS3DataSink, ParquetFormatWriter>
     {
-        public override string DisplayName => "Parquet-AWSS3";
+        public override string DisplayName => "Parquet-AWSS3(beta)";
     }
 }

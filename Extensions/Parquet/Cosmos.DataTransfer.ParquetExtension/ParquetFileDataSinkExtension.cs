@@ -7,6 +7,6 @@ namespace Cosmos.DataTransfer.ParquetExtension
     [Export(typeof(IDataSinkExtension))]
     public class ParquetFileDataSinkExtension : CompositeSinkExtension<FileDataSink, ParquetFormatWriter>
     {
-        public override string DisplayName => "Parquet";
+        public override string DisplayName => "Parquet(beta)";
     }
 }
