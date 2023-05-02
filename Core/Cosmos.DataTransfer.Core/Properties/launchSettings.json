@@ -23,6 +23,14 @@
     "JSON URI->Cosmos": {
       "commandName": "Project",
       "commandLineArgs": "--source json-file --sink cosmos-nosql --SourceSettings:FilePath=https://raw.githubusercontent.com/AzureCosmosDB/data-migration-desktop-tool/main/Extensions/Json/Cosmos.DataTransfer.JsonExtension.UnitTests/Data/ArraysTypesNesting.json --settings=c:\\temp\\CosmosSinkSettings.json"
+    },
+    "JSON->Parquet": {
+      "commandName": "Project",
+      "commandLineArgs": "run -from json-file(beta) --sink parquet --settings C:\\Temp\\Json-Parquet.json"
+    },
+    "Parquet->JSON": {
+      "commandName": "Project",
+      "commandLineArgs": "run --sink json-file(beta) --source parquet --settings C:\\Temp\\Parquet-Json.json"
     }
   }
 }
