@@ -26,7 +26,7 @@ The Azure Cosmos DB Desktop Data Migration Tool is an open-source project contai
 
 ## Quick Installation
 
-To use the tool, download the latest zip file for your platform (win-x64, mac-x64, or linux-x64) from [Releases](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases) and extract all files to your desired install location. To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms.
+To use the tool, download the latest zip file for your platform (win-x64, mac-x64, or linux-x64) from [Releases](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases) and extract all files to your desired install location. To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below or [review examples](ExampleConfigs.md)), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms.
 
 ## Extension documentation
 
@@ -177,7 +177,7 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
         }
     }
     ```
-> **Note**: **migrationsettings.json** can also be configured to execute multiple data transfer operations with a single run command. To do this, include an `Operations` property consisting of an array of objects that include `SourceSettings` and `SinkSettings` properties using the same format as those shown above for single operations.
+> **Note**: **migrationsettings.json** can also be configured to execute multiple data transfer operations with a single run command. To do this, include an `Operations` property consisting of an array of objects that include `SourceSettings` and `SinkSettings` properties using the same format as those shown above for single operations. Additional details and examples can be found in [this blog post](https://codemindinterface.com/2023/03/cosmos-tool-operations/).
     
 4. Execute the program using the following command:
 
