@@ -58,15 +58,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Parquet", "Parquet", "{2BD6
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.ParquetExtension", "Extensions\Parquet\Cosmos.DataTransfer.ParquetExtension\Cosmos.DataTransfer.ParquetExtension.csproj", "{B83FEBC7-08B6-4C25-831A-EA0C08794F67}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.Common", "Cosmos.DataTransfer.Common\Cosmos.DataTransfer.Common.csproj", "{0FAD9D89-2E41-4D65-8440-5C01885D9292}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.Common", "Interfaces\Cosmos.DataTransfer.Common\Cosmos.DataTransfer.Common.csproj", "{0FAD9D89-2E41-4D65-8440-5C01885D9292}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AzureBlob", "AzureBlob", "{9627A42A-BEB0-4A39-B49C-C3C6D54E705A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AwsS3", "AwsS3", "{502197E4-F554-4B5B-9235-FBFE7E49EBEF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.AwsS3Storage", "Cosmos.DataTransfer.AwsS3Storage\Cosmos.DataTransfer.AwsS3Storage.csproj", "{8BA59E9C-0B45-426F-A672-61D40C3C4FB7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.AwsS3Storage", "Extensions\AwsS3\Cosmos.DataTransfer.AwsS3Storage\Cosmos.DataTransfer.AwsS3Storage.csproj", "{8BA59E9C-0B45-426F-A672-61D40C3C4FB7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.AzureBlobStorage", "Cosmos.DataTransfer.AzureBlobStorage\Cosmos.DataTransfer.AzureBlobStorage.csproj", "{60ACD837-40BD-4596-832A-139CCBFA7EFE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.AzureBlobStorage", "Extensions\AzureBlob\Cosmos.DataTransfer.AzureBlobStorage\Cosmos.DataTransfer.AzureBlobStorage.csproj", "{60ACD837-40BD-4596-832A-139CCBFA7EFE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

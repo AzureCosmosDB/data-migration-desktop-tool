@@ -34,13 +34,21 @@ Multiple extensions are provided in this repository. Find the documentation for 
 
 1. [Azure Cosmos DB](Extensions/Cosmos/README.md)
 
-2. [Azure Table API](Extensions/AzureTableAPI/README.md)
+1. [Azure Table API](Extensions/AzureTableAPI/README.md)
 
-3. [JSON](Extensions/Json/README.md)
+1. [JSON](Extensions/Json/README.md)
 
-4. [MongoDB](Extensions/Mongo/README.md)
+1. [MongoDB](Extensions/Mongo/README.md)
 
-5. [SQL Server](Extensions/SqlServer/README.md)
+1. [SQL Server](Extensions/SqlServer/README.md)
+
+1. [Parquet (beta)](Extensions/Parquet/README.md)
+
+1. [File Storage (beta)](Interfaces/Cosmos.DataTransfer.Common/README.md)
+
+1. [Azure Blob Storage (beta)](Extensions/AzureBlob/README.md)
+
+1. [AWS S3 (beta)](Extensions/AwsS3/README.md)
 
 ## Architecture
 
@@ -180,11 +188,18 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
 
 ## Creating Extensions
 
+1. Decide what type of extension you want to create. There are 3 different types of extensions and each of those can be implemented to read data, write data, or both.
+    
+    1. DataSource/DataSink extension: Appropriate for data sources which include both a native data format and storage. Most databases fall under this category and generally your extension will be written using an SDK specific to that type of database. For example, SQL Server uses data structured as tables and is accessed through drivers that handle underlying communication with the database.
+    1. Binary File Storage extension: Only concerned with the storage of binary files and is agnostic to the specific file format. Examples include files on local disk or cloud blob storage providers. This type of extension can be used by any File Format extension.
+    1. File Format extension: Handles translating data for a specific binary file format but is agnostic to storage. Examples include JSON or Parquet. This type of extension can be combined with any Binary File Storage extension to create multiple DataSource/DataSink extensions. 
+
 1. Add a new folder in the Extensions folder with the name of your extension.
 
 2. Create the extension project and an accompanying test project.
     - The naming convention for extension projects is `Cosmos.DataTransfer.<Name>Extension`.
     - Extension projects should use .NET 6 framework and **Console Application** type. A Program.cs file must be included in order to build the console project. A Console Application Project is required to have the build include NuGet referenced packages.
+    > Binary File Storage extensions are only used in combination with other extensions so should be placed in a .NET 6 **Class Library** without the additional debugging configuration needed below.
   
 3. Add the new projects to the `CosmosDbDataMigrationTool` solution.
 
@@ -201,7 +216,16 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
 5. Add references to the `System.ComponentModel.Composition` NuGet package and the `Cosmos.DataTransfer.Interfaces` project.
 
 6. Extensions can implement either `IDataSourceExtension` to read data or `IDataSinkExtension` to write data. Classes implementing these interfaces should include a class level `System.ComponentModel.Composition.ExportAttribute` with the implemented interface type as a parameter. This will allow the plugin to get picked up by the main application.
-
-7. Settings needed by the extension can be retrieved from any standard .NET configuration source in the main application by using the `IConfiguration` instance passed into the `ReadAsync` and `WriteAsync` methods. Settings under `SourceSettings`/`SinkSettings` will be included as well as any settings included in JSON files specified by the `SourceSettingsPath`/`SinkSettingsPath`.
+    - Binary File Storage extensions implement the `IComposableDataSource` or `IComposableDataSink` interfaces. To be used with different file formats, the projects containing the formatters should reference the extension's project and add new `CompositeSourceExtension` or `CompositeSinkExtension` referencing the storage and formatter extensions.
+    - File Format extensions implement the `IFormattedDataReader` or `IFormattedDataWriter` interfaces. In order to be usable each should also declare one or more `CompositeSourceExtension` or `CompositeSinkExtension` to define available storage locations for the format. This will require adding references to Storage extension projects and adding a declaration for each file format/storage combination. Example:
+        ```csharp
+        [Export(typeof(IDataSinkExtension))]
+        public class JsonAzureBlobSink : CompositeSinkExtension<AzureBlobDataSink, JsonFormatWriter>
+        {
+            public override string DisplayName => "JSON-AzureBlob";
+        }
+        ```
+    7. Settings needed by the extension can be retrieved from any standard .NET configuration source in the main application by using the `IConfiguration` instance passed into the `ReadAsync` and `WriteAsync` methods. Settings under `SourceSettings`/`SinkSettings` will be included as well as any settings included in JSON files specified by the `SourceSettingsPath`/`SinkSettingsPath`.
 
 8. Implement your extension to read and/or write using the generic `IDataItem` interface which exposes object properties as a list key-value pairs. Depending on the specific structure of the data storage type being implemented, you can choose to support nested objects and arrays or only flat top-level properties.
+    > Binary File Storage extensions are only concerned with generic storage so only work with `Stream` instances representing whole files rather than individual `IDataItem`. 

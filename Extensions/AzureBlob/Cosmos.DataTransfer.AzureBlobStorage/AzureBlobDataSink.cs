@@ -6,7 +6,7 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
 {
     public class AzureBlobDataSink : IComposableDataSink
     {
-        public async Task WriteToTargetAsync(IFormattedDataWriter dataWriter, IAsyncEnumerable<IDataItem> dataItems, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
+        public async Task WriteToTargetAsync(Func<Stream, Task> writeToStream, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
         {
             var settings = config.Get<AzureBlobSinkSettings>();
             settings.Validate();
@@ -14,7 +14,7 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             logger.LogInformation("Saving file '{File}' to Azure Blob Container '{ContainerName}'", settings.BlobName, settings.ContainerName);
             BlobWriter.InitializeAzureBlobClient(settings.ConnectionString, settings.ContainerName, settings.BlobName);
             await using var stream = new MemoryStream();
-            await dataWriter.FormatDataAsync(dataItems, stream, config, logger, cancellationToken);
+            await writeToStream(stream);
             await BlobWriter.WriteToAzureBlob(stream.ToArray(), settings.MaxBlockSizeinKB, cancellationToken);
         }
     }
