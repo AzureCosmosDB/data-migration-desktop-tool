@@ -15,6 +15,11 @@ public abstract class CompositeSinkExtension<TSink, TFormatter> : IDataSinkExten
         var sink = new TSink();
         var formatter = new TFormatter();
 
-        await sink.WriteToTargetAsync(formatter, dataItems, config, dataSource, logger, cancellationToken);
+        async Task WriteToStream(Stream stream)
+        {
+            await formatter.FormatDataAsync(dataItems, stream, config, logger, cancellationToken);
+        }
+
+        await sink.WriteToTargetAsync(WriteToStream, config, dataSource, logger, cancellationToken);
     }
 }
