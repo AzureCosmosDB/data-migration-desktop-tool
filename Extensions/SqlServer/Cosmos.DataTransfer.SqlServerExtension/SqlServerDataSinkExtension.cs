@@ -36,11 +36,12 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                         bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(dbColumn.ColumnName, dbColumn.ColumnName));
                     }
 
+                    var dataTable = new DataTable();
+                    dataTable.Columns.AddRange(dataColumns.Values.ToArray());
+
                     var batches = dataItems.Buffer(settings.BatchSize);
                     await foreach (var batch in batches.WithCancellation(cancellationToken))
                     {
-                        var dataTable = new DataTable();
-                        dataTable.Columns.AddRange(dataColumns.Values.ToArray());
                         foreach (var item in batch)
                         {
                             var fieldNames = item.GetFieldNames().ToList();
@@ -77,6 +78,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                             dataTable.Rows.Add(row);
                         }
                         await bulkCopy.WriteToServerAsync(dataTable, cancellationToken);
+                        dataTable.Clear();
                     }
 
                     await transaction.CommitAsync(cancellationToken);
