@@ -68,6 +68,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.AwsS3St
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.AzureBlobStorage", "Extensions\AzureBlob\Cosmos.DataTransfer.AzureBlobStorage\Cosmos.DataTransfer.AzureBlobStorage.csproj", "{60ACD837-40BD-4596-832A-139CCBFA7EFE}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CognitiveSearch", "CognitiveSearch", "{F745B535-C483-4894-8BA9-657DB1913D0B}"
+	ProjectSection(SolutionItems) = preProject
+		Extensions\CognitiveSearch\README.md = Extensions\CognitiveSearch\README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.CognitiveSearchExtension", "Extensions\CognitiveSearch\Cosmos.DataTransfer.CognitiveSearchExtension\Cosmos.DataTransfer.CognitiveSearchExtension.csproj", "{37DBC3CB-F8F6-48F8-BFBA-07A27D2E9DD9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.CognitiveSearchExtension.UnitTests", "Extensions\CognitiveSearch\Cosmos.DataTransfer.CognitiveSearchExtension.UnitTests\Cosmos.DataTransfer.CognitiveSearchExtension.UnitTests.csproj", "{B55A183D-E4D4-4095-8569-D361A6AA1D10}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -138,6 +147,14 @@ Global
 		{60ACD837-40BD-4596-832A-139CCBFA7EFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{60ACD837-40BD-4596-832A-139CCBFA7EFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{60ACD837-40BD-4596-832A-139CCBFA7EFE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37DBC3CB-F8F6-48F8-BFBA-07A27D2E9DD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37DBC3CB-F8F6-48F8-BFBA-07A27D2E9DD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37DBC3CB-F8F6-48F8-BFBA-07A27D2E9DD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37DBC3CB-F8F6-48F8-BFBA-07A27D2E9DD9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B55A183D-E4D4-4095-8569-D361A6AA1D10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B55A183D-E4D4-4095-8569-D361A6AA1D10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B55A183D-E4D4-4095-8569-D361A6AA1D10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B55A183D-E4D4-4095-8569-D361A6AA1D10}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -163,6 +180,9 @@ Global
 		{502197E4-F554-4B5B-9235-FBFE7E49EBEF} = {A8A1CEAB-2D82-460C-9B86-74ABD17CD201}
 		{8BA59E9C-0B45-426F-A672-61D40C3C4FB7} = {502197E4-F554-4B5B-9235-FBFE7E49EBEF}
 		{60ACD837-40BD-4596-832A-139CCBFA7EFE} = {9627A42A-BEB0-4A39-B49C-C3C6D54E705A}
+		{F745B535-C483-4894-8BA9-657DB1913D0B} = {A8A1CEAB-2D82-460C-9B86-74ABD17CD201}
+		{37DBC3CB-F8F6-48F8-BFBA-07A27D2E9DD9} = {F745B535-C483-4894-8BA9-657DB1913D0B}
+		{B55A183D-E4D4-4095-8569-D361A6AA1D10} = {F745B535-C483-4894-8BA9-657DB1913D0B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {662B3F27-70D8-45E6-A1C0-1438A9C8A542}
