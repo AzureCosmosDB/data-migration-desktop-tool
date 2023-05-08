@@ -10,9 +10,13 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
 		<PackageReference Include="System.ComponentModel.Composition" Version="6.0.0" />
+		<PackageReference Include="System.Linq.Async" Version="6.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\..\Extensions\AwsS3\Cosmos.DataTransfer.AwsS3Storage\Cosmos.DataTransfer.AwsS3Storage.csproj" />
+		<ProjectReference Include="..\..\..\Extensions\AzureBlob\Cosmos.DataTransfer.AzureBlobStorage\Cosmos.DataTransfer.AzureBlobStorage.csproj" />
+		<ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Common\Cosmos.DataTransfer.Common.csproj" />
 		<ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
 	</ItemGroup>
 

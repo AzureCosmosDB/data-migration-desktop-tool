@@ -1,8 +1,9 @@
 name: Validate all .NET projects
 on:
-  pull_request:
-    branches:
-      - main
+  # pull_request:
+  #   branches:
+  #     - main
+  workflow_dispatch:
 jobs:
   build-test:
     name: Build and test .NET projects

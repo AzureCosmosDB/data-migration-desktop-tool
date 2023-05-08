@@ -4,6 +4,7 @@ using System.Dynamic;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
@@ -33,8 +34,8 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             var entryAssembly = Assembly.GetEntryAssembly();
             bool isShardedImport = false;
-            string sourceName = dataSource.DisplayName;
-            string sinkName = DisplayName;
+            string sourceName = StripSpecialChars(dataSource.DisplayName);
+            string sinkName = StripSpecialChars(DisplayName);
             string userAgentString = string.Format(CultureInfo.InvariantCulture, "{0}-{1}-{2}-{3}{4}",
                                     entryAssembly == null ? "dtr" : entryAssembly.GetName().Name,
                                     Assembly.GetExecutingAssembly().GetName().Version,
@@ -117,6 +118,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             logger.LogInformation("Added {AddedCount} total records in {TotalSeconds}s", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
+        }
+
+        private static string StripSpecialChars(string displayName)
+        {
+            return Regex.Replace(displayName, "[^\\w]", "", RegexOptions.Compiled);
         }
 
         private static AsyncRetryPolicy GetRetryPolicy(int maxRetryCount, int initialRetryDuration)

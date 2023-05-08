@@ -433,3 +433,4 @@ FodyWeavers.xsd
 
 # macOS .DS_Store
 **/.DS_Store
+/Core/Cosmos.DataTransfer.Core/migrationsettings.json
