@@ -118,6 +118,21 @@ runs:
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=false \
         -p:Version=0.0.${{ github.run_number }}
+    - name: Build Cognitive Search Extension
+      shell: bash
+      run: |
+        dotnet publish \
+        Extensions/CognitiveSearch/Cosmos.DataTransfer.CognitiveSearchExtension/Cosmos.DataTransfer.CognitiveSearchExtension.csproj \
+        --configuration Release \
+        --output ${{ inputs.platform-short }}/Extensions \
+        --self-contained false \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=false \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=0.0.${{ github.run_number }}
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:
