@@ -12,7 +12,7 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             settings.Validate();
 
             logger.LogInformation("Saving file '{File}' to Azure Blob Container '{ContainerName}'", settings.BlobName, settings.ContainerName);
-            BlobWriter.InitializeAzureBlobClient(settings.ConnectionString, settings.ContainerName, settings.BlobName);
+            await BlobWriter.InitializeAzureBlobClient(settings.ConnectionString, settings.ContainerName, settings.BlobName, cancellationToken);
             await using var stream = new MemoryStream();
             await writeToStream(stream);
             await BlobWriter.WriteToAzureBlob(stream.ToArray(), settings.MaxBlockSizeinKB, cancellationToken);
