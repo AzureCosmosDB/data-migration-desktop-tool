@@ -96,4 +96,9 @@ public class JsonFormatReader : IFormattedDataReader
 
         return textContent;
     }
+
+    public IEnumerable<IDataExtensionSettings> GetSettings()
+    {
+        yield break;
+    }
 }

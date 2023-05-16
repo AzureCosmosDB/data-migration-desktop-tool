@@ -26,4 +26,9 @@ public class JsonFormatWriter : IFormattedDataWriter
 
         writer.WriteEndArray();
     }
+
+    public IEnumerable<IDataExtensionSettings> GetSettings()
+    {
+        yield return new JsonFormatWriterSettings();
+    }
 }

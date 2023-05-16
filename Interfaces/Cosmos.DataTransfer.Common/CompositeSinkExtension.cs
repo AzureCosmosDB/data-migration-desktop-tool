@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Cosmos.DataTransfer.Common;
 
-public abstract class CompositeSinkExtension<TSink, TFormatter> : IDataSinkExtension
+public abstract class CompositeSinkExtension<TSink, TFormatter> : IDataSinkExtensionWithSettings
     where TSink : class, IComposableDataSink, new()
     where TFormatter : class, IFormattedDataWriter, new()
 {
@@ -21,5 +21,10 @@ public abstract class CompositeSinkExtension<TSink, TFormatter> : IDataSinkExten
         }
 
         await sink.WriteToTargetAsync(WriteToStream, config, dataSource, logger, cancellationToken);
+    }
+
+    public IEnumerable<IDataExtensionSettings> GetSettings()
+    {
+        return ExtensionHelpers.GetCompositeSettings<TFormatter, TSink>();
     }
 }

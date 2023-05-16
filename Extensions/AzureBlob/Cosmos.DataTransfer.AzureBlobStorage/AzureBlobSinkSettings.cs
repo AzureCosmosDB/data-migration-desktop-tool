@@ -1,11 +1,13 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
 using System.ComponentModel.DataAnnotations;
+using Cosmos.DataTransfer.Interfaces.Manifest;
 
 namespace Cosmos.DataTransfer.AzureBlobStorage
 {
     public class AzureBlobSinkSettings : IDataExtensionSettings
     {
         [Required]
+        [SensitiveValue]
         public string ConnectionString { get; set; } = null!;
 
         [Required]

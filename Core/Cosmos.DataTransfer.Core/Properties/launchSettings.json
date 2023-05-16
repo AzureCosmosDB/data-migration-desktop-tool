@@ -31,6 +31,10 @@
     "Parquet->JSON": {
       "commandName": "Project",
       "commandLineArgs": "run --sink json-file(beta) --source parquet --settings C:\\Temp\\Parquet-Json.json"
+    },
+    "SettingsCommand": {
+      "commandName": "Project",
+      "commandLineArgs": "settings --sink -e cosmos-nosql"
     }
   }
 }

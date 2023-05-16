@@ -13,7 +13,7 @@ using System.Dynamic;
 namespace Cosmos.DataTransfer.CognitiveSearchExtension
 {
     [Export(typeof(IDataSinkExtension))]
-    public class CognitiveSearchDataSinkExtension : IDataSinkExtension
+    public class CognitiveSearchDataSinkExtension : IDataSinkExtensionWithSettings
     {
         public string DisplayName => "CognitiveSearch";
 
@@ -90,6 +90,11 @@ namespace Cosmos.DataTransfer.CognitiveSearchExtension
             }
 
             return item;
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new CognitiveSearchDataSinkSettings();
         }
     }
 }

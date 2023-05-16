@@ -61,5 +61,10 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 logger.LogInformation("Completed reading source file");
             }
         }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new ParquetSourceSettings();
+        }
     }
 }

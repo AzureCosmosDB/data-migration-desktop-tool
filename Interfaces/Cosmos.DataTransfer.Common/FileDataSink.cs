@@ -16,4 +16,9 @@ public class FileDataSink : IComposableDataSink
             await writeToStream(writer);
         }
     }
+
+    public IEnumerable<IDataExtensionSettings> GetSettings()
+    {
+        yield return new FileSinkSettings();
+    }
 }

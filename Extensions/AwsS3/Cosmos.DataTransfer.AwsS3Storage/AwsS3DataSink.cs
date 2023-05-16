@@ -18,5 +18,10 @@ namespace Cosmos.DataTransfer.AwsS3Storage
             await writeToStream(stream);
             await S3Writer.WriteToS3(settings.S3BucketName, stream, settings.FileName, cancellationToken);
         }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new AwsS3SinkSettings();
+        }
     }
 }

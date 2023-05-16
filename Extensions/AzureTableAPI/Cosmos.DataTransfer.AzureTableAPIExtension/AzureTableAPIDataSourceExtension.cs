@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace Cosmos.DataTransfer.AzureTableAPIExtension
 {
     [Export(typeof(IDataSourceExtension))]
-    public class AzureTableAPIDataSourceExtension : IDataSourceExtension
+    public class AzureTableAPIDataSourceExtension : IDataSourceExtensionWithSettings
     {
         public string DisplayName => "AzureTableAPI";
 
@@ -40,6 +40,11 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
             //{
             //    yield return new AzureTableAPIDataItem(enumerator.Current, settings.PartitionKeyFieldName, settings.RowKeyFieldName);
             //} while (await enumerator.MoveNextAsync());
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new AzureTableAPIDataSourceSettings();
         }
     }
 }

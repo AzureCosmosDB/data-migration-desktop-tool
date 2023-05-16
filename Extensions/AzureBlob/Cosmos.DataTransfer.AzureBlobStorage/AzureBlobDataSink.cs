@@ -17,5 +17,10 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             await writeToStream(stream);
             await BlobWriter.WriteToAzureBlob(stream.ToArray(), settings.MaxBlockSizeinKB, cancellationToken);
         }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new AzureBlobSinkSettings();
+        }
     }
 }

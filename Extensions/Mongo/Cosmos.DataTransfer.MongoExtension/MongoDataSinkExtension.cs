@@ -7,7 +7,7 @@ using MongoDB.Bson;
 
 namespace Cosmos.DataTransfer.MongoExtension;
 [Export(typeof(IDataSinkExtension))]
-public class MongoDataSinkExtension : IDataSinkExtension
+public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
 {
     public string DisplayName => "MongoDB";
 
@@ -41,5 +41,10 @@ public class MongoDataSinkExtension : IDataSinkExtension
                 await repo.AddRange(objects);
             }
         }
+    }
+
+    public IEnumerable<IDataExtensionSettings> GetSettings()
+    {
+        yield return new MongoSinkSettings();
     }
 }

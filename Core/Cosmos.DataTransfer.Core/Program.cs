@@ -19,6 +19,7 @@ class Program
         rootCommand.AddCommand(new RunCommand());
         rootCommand.AddCommand(new ListCommand());
         rootCommand.AddCommand(new InitCommand());
+        rootCommand.AddCommand(new SettingsCommand());
 
         // execute Run if no command provided
         RunCommand.AddRunOptions(rootCommand);
@@ -66,10 +67,13 @@ class Program
                 }).ConfigureServices((hostContext, services) =>
                 {
                     services.AddTransient<IExtensionLoader, ExtensionLoader>();
+                    services.AddTransient<IRawOutputWriter, ConsoleOutputWriter>();
+                    services.AddTransient<IExtensionManifestBuilder, ExtensionManifestBuilder>();
                 })
                     .UseCommandHandler<RunCommand, RunCommand.CommandHandler>()
                     .UseCommandHandler<ListCommand, ListCommand.CommandHandler>()
-                    .UseCommandHandler<InitCommand, InitCommand.CommandHandler>();
+                    .UseCommandHandler<InitCommand, InitCommand.CommandHandler>()
+                    .UseCommandHandler<SettingsCommand, SettingsCommand.CommandHandler>();
             })
             .UseHelp(AddAdditionalArgumentsHelp)
             .UseDefaults().Build();
