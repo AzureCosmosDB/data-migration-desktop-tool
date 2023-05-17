@@ -27,10 +27,16 @@ namespace Cosmos.DataTransfer.Core
         {
             var sourceOption = new Option<string?>(
                 aliases: new[] { "--source", "-from" },
-                description: "The extension to read data.");
+                description: "The extension to read data.")
+            {
+                ArgumentHelpName = "source"
+            };
             var sinkOption = new Option<string?>(
-                aliases: new[] { "--sink", "-to" },
-                description: "The extension to write data.");
+                aliases: new[] { "--sink", "-to", "--target", "--destination" },
+                description: "The extension to write data.")
+            {
+                ArgumentHelpName = "sink"
+            };
             var settingsOption = new Option<FileInfo?>(
                 aliases: new[] { "--settings" },
                 description: "The settings file. (default: migrationsettings.json)");
@@ -90,7 +96,7 @@ namespace Cosmos.DataTransfer.Core
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var sourceConfig = combinedConfig.GetSection("SourceSettings");
-                var sinkConfig = combinedConfig.GetSection("SinkSettings");
+                var sinkConfig = GetSinkConfig(combinedConfig);
                 var operationConfigs = combinedConfig.GetSection("Operations");
                 var operations = operationConfigs?.GetChildren().ToList();
                 if (operations?.Any() == true)
@@ -103,16 +109,16 @@ namespace Cosmos.DataTransfer.Core
                         {
                             sourceBuilder.AddConfiguration(operationSource);
                         }
-                        var operationSink = operationConfig.GetSection("SinkSettings");
+                        var operationSink = GetSinkConfig(operationConfig);
                         var sinkBuilder = new ConfigurationBuilder().AddConfiguration(sinkConfig);
                         if (operationSink.Exists())
                         {
                             sinkBuilder.AddConfiguration(operationSink);
                         }
-                        await ExecuteDataTransferOperation(source, 
-                                  sourceBuilder.Build(), 
-                                  sink, 
-                                  sinkBuilder.Build(), 
+                        await ExecuteDataTransferOperation(source,
+                                  sourceBuilder.Build(),
+                                  sink,
+                                  sinkBuilder.Build(),
                                   cancellationToken);
                     }
                 }
@@ -122,6 +128,24 @@ namespace Cosmos.DataTransfer.Core
                 }
 
                 return 0;
+            }
+
+            private static IConfigurationSection GetSinkConfig(IConfiguration combinedConfig)
+            {
+                var config = combinedConfig.GetSection("SinkSettings");
+                if (config != null && config.Exists())
+                {
+                    return config;
+                }
+
+                config = combinedConfig.GetSection("TargetSettings");
+                if (config != null && config.Exists())
+                {
+                    return config;
+                }
+
+                config = combinedConfig.GetSection("DestinationSettings");
+                return config;
             }
 
             private async Task ExecuteDataTransferOperation(IDataSourceExtension source, IConfiguration sourceConfig, IDataSinkExtension sink, IConfiguration sinkConfig, CancellationToken cancellationToken)
