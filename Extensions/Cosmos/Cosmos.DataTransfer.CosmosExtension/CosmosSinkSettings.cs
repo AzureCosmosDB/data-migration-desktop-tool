@@ -14,7 +14,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? Database { get; set; }
         [Required]
         public string? Container { get; set; }
-        [Required]
+        //[Required]
         public string? PartitionKeyPath { get; set; }
         public bool RecreateContainer { get; set; }
         public int BatchSize { get; set; } = 100;
@@ -25,5 +25,6 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public bool UseAutoscaleForCreatedContainer { get; set; } = true;
         public bool IsServerlessAccount { get; set; } = false;
         public DataWriteMode WriteMode { get; set; } = DataWriteMode.InsertStream;
+        public List<string>? PartitionKeyPaths { get; set; }
     }
 }

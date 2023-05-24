@@ -66,8 +66,15 @@ namespace Cosmos.DataTransfer.CosmosExtension
             {
                 Id = settings.Container,
                 PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2,
-                PartitionKeyPath = settings.PartitionKeyPath,
             };
+            if (settings.PartitionKeyPaths != null)
+            {
+                containerProperties.PartitionKeyPaths = settings.PartitionKeyPaths;
+            }
+            else
+            {
+                containerProperties.PartitionKeyPath = settings.PartitionKeyPath;
+            }
 
             ThroughputProperties? throughputProperties = settings.IsServerlessAccount
                 ? null
@@ -111,7 +118,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
             await foreach (var batch in batches.WithCancellation(cancellationToken))
             {
-                var addTasks = batch.Select(item => AddItemAsync(container, item, settings.PartitionKeyPath, settings.WriteMode, retry, logger, cancellationToken)).ToList();
+                var addTasks = batch.Select(item => AddItemAsync(container, item, settings.PartitionKeyPath ?? settings.PartitionKeyPaths?.FirstOrDefault(), settings.WriteMode, retry, logger, cancellationToken)).ToList();
 
                 var results = await Task.WhenAll(addTasks);
                 ReportCount(results.Sum());
