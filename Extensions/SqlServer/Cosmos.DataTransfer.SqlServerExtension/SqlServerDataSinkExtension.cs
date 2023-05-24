@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Cosmos.DataTransfer.SqlServerExtension
 {
     [Export(typeof(IDataSinkExtension))]
-    public class SqlServerDataSinkExtension : IDataSinkExtension
+    public class SqlServerDataSinkExtension : IDataSinkExtensionWithSettings
     {
         public string DisplayName => "SqlServer";
 
@@ -91,6 +91,11 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             }
 
             await connection.CloseAsync();
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new SqlServerSinkSettings();
         }
     }
 }

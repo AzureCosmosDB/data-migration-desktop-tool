@@ -12,7 +12,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
 
         public string? GetFieldName()
         {
-            return SourceFieldName ?? ColumnName;
+            return !string.IsNullOrEmpty(SourceFieldName) ? SourceFieldName : ColumnName;
         }
     }
 }

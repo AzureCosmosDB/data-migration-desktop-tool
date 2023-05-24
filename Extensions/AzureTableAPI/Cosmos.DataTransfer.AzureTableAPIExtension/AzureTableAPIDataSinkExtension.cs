@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace Cosmos.DataTransfer.AzureTableAPIExtension
 {
     [Export(typeof(IDataSinkExtension))]
-    public class AzureTableAPIDataSinkExtension : IDataSinkExtension
+    public class AzureTableAPIDataSinkExtension : IDataSinkExtensionWithSettings
     {
         public string DisplayName => "AzureTableAPI";
 
@@ -31,6 +31,11 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
             }
 
             await Task.WhenAll(createTasks);
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new AzureTableAPIDataSinkSettings();
         }
     }
 }

@@ -53,4 +53,9 @@ public class FileDataSource : IComposableDataSource
             logger.LogInformation("Completed reading '{FilePath}'", settings.FilePath);
         }
     }
+
+    public IEnumerable<IDataExtensionSettings> GetSettings()
+    {
+        yield return new FileSourceSettings();
+    }
 }

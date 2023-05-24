@@ -16,7 +16,7 @@ using Polly.Retry;
 namespace Cosmos.DataTransfer.CosmosExtension
 {
     [Export(typeof(IDataSinkExtension))]
-    public class CosmosDataSinkExtension : IDataSinkExtension
+    public class CosmosDataSinkExtension : IDataSinkExtensionWithSettings
     {
         public string DisplayName => "Cosmos-nosql";
 
@@ -227,6 +227,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             return item;
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new CosmosSinkSettings();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Azure.Storage.Blobs.Specialized;
+﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Specialized;
 
 namespace Cosmos.DataTransfer.AzureBlobStorage
 {
@@ -6,9 +7,11 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
     {
         private static BlockBlobClient blob;
 
-        public static void InitializeAzureBlobClient(string connectionString, string containerName, string blobName)
+        public static async Task InitializeAzureBlobClient(string connectionString, string containerName, string blobName, CancellationToken cancellationToken)
         {
-            blob = new BlockBlobClient(connectionString, containerName, blobName);
+            var account = new BlobContainerClient(connectionString, containerName);
+            await account.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+            blob = account.GetBlockBlobClient(blobName);
         }
 
         public static async Task WriteToAzureBlob(byte[] fileContents, int? maxBlockSize, CancellationToken cancellationToken)

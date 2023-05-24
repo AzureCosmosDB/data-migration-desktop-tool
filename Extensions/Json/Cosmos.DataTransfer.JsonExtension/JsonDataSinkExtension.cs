@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Cosmos.DataTransfer.JsonExtension
 {
     [Export(typeof(IDataSinkExtension))]
-    public class JsonDataSinkExtension : IDataSinkExtension
+    public class JsonDataSinkExtension : IDataSinkExtensionWithSettings
     {
         public string DisplayName => "JSON";
 
@@ -41,6 +41,11 @@ namespace Cosmos.DataTransfer.JsonExtension
             }
 
             writer.WriteEndArray();
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new JsonSinkSettings();
         }
     }
 }

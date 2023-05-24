@@ -7,4 +7,8 @@ namespace Cosmos.DataTransfer.Interfaces
     {
         IAsyncEnumerable<IDataItem> ReadAsync(IConfiguration config, ILogger logger, CancellationToken cancellationToken = default);
     }
+
+    public interface IDataSourceExtensionWithSettings : IDataSourceExtension, IExtensionWithSettings
+    {
+    }
 }

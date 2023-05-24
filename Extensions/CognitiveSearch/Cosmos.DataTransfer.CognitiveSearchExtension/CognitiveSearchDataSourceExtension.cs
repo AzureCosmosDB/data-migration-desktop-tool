@@ -11,7 +11,7 @@ using System.Text.Json;
 namespace Cosmos.DataTransfer.CognitiveSearchExtension
 {
     [Export(typeof(IDataSourceExtension))]
-    public class CognitiveSearchDataSourceExtension : IDataSourceExtension
+    public class CognitiveSearchDataSourceExtension : IDataSourceExtensionWithSettings
     {
         public string DisplayName => "CognitiveSearch";
 
@@ -34,6 +34,11 @@ namespace Cosmos.DataTransfer.CognitiveSearchExtension
             {
                 yield return new CognitiveSearchDataItem(searchResult.Document);
             }
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new CognitiveSearchDataSourceSettings();
         }
     }
 }

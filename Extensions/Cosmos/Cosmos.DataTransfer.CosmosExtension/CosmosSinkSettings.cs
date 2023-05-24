@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Interfaces.Manifest;
 using Microsoft.Azure.Cosmos;
 
 namespace Cosmos.DataTransfer.CosmosExtension
@@ -7,6 +8,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
     public class CosmosSinkSettings : IDataExtensionSettings
     {
         [Required]
+        [SensitiveValue]
         public string? ConnectionString { get; set; }
         [Required]
         public string? Database { get; set; }

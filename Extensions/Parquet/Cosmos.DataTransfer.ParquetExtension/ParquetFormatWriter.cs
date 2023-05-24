@@ -124,5 +124,10 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 }
             }
         }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new ParquetSinkSettings();
+        }
     }
 }

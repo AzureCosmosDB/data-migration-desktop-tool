@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace Cosmos.DataTransfer.JsonExtension
 {
     [Export(typeof(IDataSourceExtension))]
-    public class JsonDataSourceExtension : IDataSourceExtension
+    public class JsonDataSourceExtension : IDataSourceExtension//WithSettings // disabled for now to enable UI testing of missing settings
     {
         public string DisplayName => "JSON";
         public async IAsyncEnumerable<IDataItem> ReadAsync(IConfiguration config, ILogger logger, [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -157,6 +157,11 @@ namespace Cosmos.DataTransfer.JsonExtension
             logger.LogWarning("No records read from '{Content}'", textContent);
 
             return null;
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new JsonSourceSettings();
         }
     }
 }

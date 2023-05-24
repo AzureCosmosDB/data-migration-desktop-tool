@@ -1,4 +1,5 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Interfaces.Manifest;
 using System.ComponentModel.DataAnnotations;
 
 namespace Cosmos.DataTransfer.CognitiveSearchExtension.Settings
@@ -17,6 +18,7 @@ namespace Cosmos.DataTransfer.CognitiveSearchExtension.Settings
         /// for Source admin key or query key
         /// </summary>
         [Required]
+        [SensitiveValue]
         public string? ApiKey { get; set; }
 
         /// <summary>
