@@ -34,7 +34,7 @@
     },
     "SettingsCommand": {
       "commandName": "Project",
-      "commandLineArgs": "settings --sink -e cosmos-nosql"
+      "commandLineArgs": "settings --sink"
     }
   }
 }
