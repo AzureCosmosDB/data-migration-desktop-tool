@@ -1,0 +1,255 @@
+{
+  "AppVersion": "1.0.0",
+  "Extensions": [
+    {
+      "Name": "AzureTableAPI",
+      "Direction": "Source",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.AzureTableAPIExtension",
+      "Settings": [
+        {
+          "Name": "QueryFilter",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "Table",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "RowKeyFieldName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "PartitionKeyFieldName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "CognitiveSearch",
+      "Direction": "Source",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.CognitiveSearchExtension",
+      "Settings": [
+        {
+          "Name": "ODataFilter",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "Endpoint",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "ApiKey",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "Index",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "Cosmos-nosql",
+      "Direction": "Source",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.CosmosExtension",
+      "Settings": [
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "Database",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "Container",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "PartitionKeyValue",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "Query",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "IncludeMetadataFields",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "ConnectionMode",
+          "Type": "Enum",
+          "DefaultValue": "Gateway",
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": [
+            "Gateway",
+            "Direct"
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "JSON",
+      "Direction": "Source",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.JsonExtension",
+      "Settings": []
+    },
+    {
+      "Name": "JSON-File(beta)",
+      "Direction": "Source",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.JsonExtension",
+      "Settings": [
+        {
+          "Name": "FilePath",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "MongoDB",
+      "Direction": "Source",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.MongoExtension",
+      "Settings": [
+        {
+          "Name": "Collection",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "DatabaseName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "Parquet(beta)",
+      "Direction": "Source",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.ParquetExtension",
+      "Settings": [
+        {
+          "Name": "FilePath",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "SqlServer",
+      "Direction": "Source",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.SqlServerExtension",
+      "Settings": [
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "QueryText",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+﻿@page "/"
+@using Cosmos.DataTransfer.Ui.MessageOutput
+
+<div class="main-content p-4">
+    <div class="row">
+        <div class="col-md-6">
+            <ExtensionSelector Direction="ExtensionDirection.Source"
+                               AvailableExtensions="@AllExtensions?.Sources"
+                               OnExtensionSelected="SourceSelectionChanged" />
+            <SettingsList Settings="@SourceSettings?.Settings" />
+        </div>
+        <div class="col-md-6">
+            <ExtensionSelector Direction="ExtensionDirection.Sink"
+                               AvailableExtensions="@AllExtensions?.Sinks"
+                               OnExtensionSelected="SinkSelectionChanged" />
+            <SettingsList Settings="@SinkSettings?.Settings" />
+        </div>
+    </div>
+    <div class="row">
+        <button class="btn btn-primary m-2" @onclick="RunTransfer">Generate Settings</button>
+    </div>
+</div>
+<div class="fixed-bottom">
+    <MessageLog Messages="@Logs" />
+</div>

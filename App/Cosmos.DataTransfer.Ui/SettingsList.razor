@@ -1,0 +1,15 @@
+﻿
+<div class="border-top border-1 border-primary p-2 pt-4 mt-2">
+    @if (Settings != null)
+    {
+        foreach (var setting in Settings)
+        {
+            <SettingEditor Setting="@setting" />
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IEnumerable<ExtensionSetting>? Settings { get; set; }
+}

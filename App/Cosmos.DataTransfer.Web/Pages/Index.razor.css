@@ -1,0 +1,15 @@
+.log-output {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+    .log-output > .col {
+        display: inline-block;
+        float: none;
+    }
+
+.main-content {
+    height: calc(70vh - 3.5rem);
+    padding-bottom: 10px;
+    overflow-y: auto;
+}

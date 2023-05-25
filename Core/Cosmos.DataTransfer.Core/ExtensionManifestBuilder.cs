@@ -140,6 +140,16 @@ namespace Cosmos.DataTransfer.Core
                 return PropertyType.Enum;
             }
 
+            if (type == typeof(string))
+            {
+                return PropertyType.String;
+            }
+
+            if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+            {
+                return PropertyType.Array;
+            }
+
             return PropertyType.String;
         }
 
