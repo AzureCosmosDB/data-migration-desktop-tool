@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Cosmos.DataTransfer.SqlServerExtension
 {
     [Export(typeof(IDataSourceExtension))]
-    public class SqlServerDataSourceExtension : IDataSourceExtension
+    public class SqlServerDataSourceExtension : IDataSourceExtensionWithSettings
     {
         public string DisplayName => "SqlServer";
 
@@ -36,6 +36,11 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                 }
                 yield return new DictionaryDataItem(fields);
             }
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new SqlServerSourceSettings();
         }
     }
 }

@@ -1,5 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Interfaces.Manifest;
+using Microsoft.Azure.Cosmos;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -13,7 +16,8 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public int? CreatedContainerMaxThroughput { get; set; }
         public bool UseAutoscaleForCreatedContainer { get; set; } = true;
         public bool IsServerlessAccount { get; set; } = false;
-        public DataWriteMode WriteMode { get; set; } = DataWriteMode.Insert;
+        public DataWriteMode WriteMode { get; set; } = DataWriteMode.InsertStream;
+        public List<string>? PartitionKeyPaths { get; set; }
 
         public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

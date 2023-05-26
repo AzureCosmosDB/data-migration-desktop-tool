@@ -7,4 +7,7 @@ namespace Cosmos.DataTransfer.Interfaces
     {
         Task WriteAsync(IAsyncEnumerable<IDataItem> dataItems, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default);
     }
+    public interface IDataSinkExtensionWithSettings : IDataSinkExtension, IExtensionWithSettings
+    {
+    }
 }

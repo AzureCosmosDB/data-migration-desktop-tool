@@ -8,7 +8,7 @@ using MongoDB.Bson;
 
 namespace Cosmos.DataTransfer.MongoExtension;
 [Export(typeof(IDataSourceExtension))]
-internal class MongoDataSourceExtension : IDataSourceExtension
+internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 {
     public string DisplayName => "MongoDB";
 
@@ -42,5 +42,10 @@ internal class MongoDataSourceExtension : IDataSourceExtension
         {
             yield return new MongoDataItem(record);
         }
+    }
+
+    public IEnumerable<IDataExtensionSettings> GetSettings()
+    {
+        yield return new MongoSourceSettings();
     }
 }

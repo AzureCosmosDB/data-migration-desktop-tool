@@ -82,5 +82,5 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             bool areEqual = JToken.DeepEquals(JToken.Parse(await File.ReadAllTextAsync(compareFile)), JToken.Parse(await File.ReadAllTextAsync(fileOut)));
             Assert.IsTrue(areEqual);
         }
-  }
+    }
 }

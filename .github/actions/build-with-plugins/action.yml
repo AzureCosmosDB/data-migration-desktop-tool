@@ -10,6 +10,9 @@ inputs:
   runtime:
     description: Target platform runtime (win-x64)
     required: true
+  build-version:
+    description: Build or release version (0.0.1)
+    required: true
 runs:
   using: composite
   steps:
@@ -27,7 +30,7 @@ runs:
         -p:EnableCompressionInSingleFile=true \
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=false \
-        -p:Version=0.0.${{ github.run_number }}
+        -p:Version=${{ inputs.build-version }}
     - name: Build Cosmos Extension
       shell: bash
       run: |
@@ -42,7 +45,7 @@ runs:
         -p:EnableCompressionInSingleFile=true \
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=false \
-        -p:Version=0.0.${{ github.run_number }}
+        -p:Version=${{ inputs.build-version }}
     - name: Build JSON Extension
       shell: bash
       run: |
@@ -57,7 +60,7 @@ runs:
         -p:EnableCompressionInSingleFile=true \
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=false \
-        -p:Version=0.0.${{ github.run_number }}
+        -p:Version=${{ inputs.build-version }}
     - name: Build Azure Table Extension
       shell: bash
       run: |
@@ -72,7 +75,7 @@ runs:
         -p:EnableCompressionInSingleFile=true \
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=false \
-        -p:Version=0.0.${{ github.run_number }}
+        -p:Version=${{ inputs.build-version }}
     - name: Build Mongo Extension
       shell: bash
       run: |
@@ -87,7 +90,7 @@ runs:
         -p:EnableCompressionInSingleFile=true \
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=false \
-        -p:Version=0.0.${{ github.run_number }}
+        -p:Version=${{ inputs.build-version }}
     - name: Build SQL Server Extension
       shell: bash
       run: |
@@ -102,7 +105,37 @@ runs:
         -p:EnableCompressionInSingleFile=true \
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=false \
-        -p:Version=0.0.${{ github.run_number }}
+        -p:Version=${{ inputs.build-version }}
+    - name: Build Parquet Extension
+      shell: bash
+      run: |
+        dotnet publish \
+        Extensions/Parquet/Cosmos.DataTransfer.ParquetExtension/Cosmos.DataTransfer.ParquetExtension.csproj \
+        --configuration Release \
+        --output ${{ inputs.platform-short }}/Extensions \
+        --self-contained false \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=false \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=${{ inputs.build-version }}
+    - name: Build Cognitive Search Extension
+      shell: bash
+      run: |
+        dotnet publish \
+        Extensions/CognitiveSearch/Cosmos.DataTransfer.CognitiveSearchExtension/Cosmos.DataTransfer.CognitiveSearchExtension.csproj \
+        --configuration Release \
+        --output ${{ inputs.platform-short }}/Extensions \
+        --self-contained false \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=false \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=${{ inputs.build-version }}
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:

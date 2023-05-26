@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Interfaces.Manifest;
 using Microsoft.Azure.Cosmos;
 
 namespace Cosmos.DataTransfer.CosmosExtension

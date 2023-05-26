@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Interfaces.Manifest;
 
 namespace Cosmos.DataTransfer.AzureTableAPIExtension.Settings
 {
@@ -9,6 +10,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension.Settings
         /// The Connection String.
         /// </summary>
         [Required]
+        [SensitiveValue]
         public string? ConnectionString { get; set; }
 
         /// <summary>

@@ -4,6 +4,7 @@ using System.Dynamic;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using Azure.Identity;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
@@ -16,7 +17,7 @@ using Polly.Retry;
 namespace Cosmos.DataTransfer.CosmosExtension
 {
     [Export(typeof(IDataSinkExtension))]
-    public class CosmosDataSinkExtension : IDataSinkExtension
+    public class CosmosDataSinkExtension : IDataSinkExtensionWithSettings
     {
         public string DisplayName => "Cosmos-nosql";
 
@@ -45,12 +46,19 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     catch { }
                 }
 
-                var containerProperties = new ContainerProperties
-                {
-                    Id = settings.Container,
-                    PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2,
-                    PartitionKeyPath = settings.PartitionKeyPath,
-                };
+            var containerProperties = new ContainerProperties
+            {
+                Id = settings.Container,
+                PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2,
+            };
+            if (settings.PartitionKeyPaths != null)
+            {
+                containerProperties.PartitionKeyPaths = settings.PartitionKeyPaths;
+            }
+            else
+            {
+                containerProperties.PartitionKeyPath = settings.PartitionKeyPath;
+            }
 
                 ThroughputProperties? throughputProperties = settings.IsServerlessAccount
                     ? null
@@ -90,13 +98,18 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
             await foreach (var batch in batches.WithCancellation(cancellationToken))
             {
-                var addTasks = batch.Select(item => AddItemAsync(container, item, settings.PartitionKeyPath, settings.WriteMode, retry, logger, cancellationToken)).ToList();
+                var addTasks = batch.Select(item => AddItemAsync(container, item, settings.PartitionKeyPath ?? settings.PartitionKeyPaths?.FirstOrDefault(), settings.WriteMode, retry, logger, cancellationToken)).ToList();
 
                 var results = await Task.WhenAll(addTasks);
                 ReportCount(results.Sum());
             }
 
             logger.LogInformation("Added {AddedCount} total records in {TotalSeconds}s", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
+        }
+
+        private static string StripSpecialChars(string displayName)
+        {
+            return Regex.Replace(displayName, "[^\\w]", "", RegexOptions.Compiled);
         }
 
         private static AsyncRetryPolicy GetRetryPolicy(int maxRetryCount, int initialRetryDuration)
@@ -201,6 +214,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             return item;
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new CosmosSinkSettings();
         }
     }
 }

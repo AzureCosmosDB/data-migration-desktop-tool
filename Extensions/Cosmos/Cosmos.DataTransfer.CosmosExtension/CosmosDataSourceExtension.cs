@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Cosmos.DataTransfer.CosmosExtension
 {
     [Export(typeof(IDataSourceExtension))]
-    public class CosmosDataSourceExtension : IDataSourceExtension
+    public class CosmosDataSourceExtension : IDataSourceExtensionWithSettings
     {
         public string DisplayName => "Cosmos-nosql";
 
@@ -56,6 +56,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             return container.GetItemQueryIterator<T>(settings.Query, requestOptions: requestOptions);
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new CosmosSourceSettings();
         }
     }
 }

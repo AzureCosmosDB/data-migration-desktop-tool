@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Cosmos.DataTransfer.SqlServerExtension
 {
     [Export(typeof(IDataSinkExtension))]
-    public class SqlServerDataSinkExtension : IDataSinkExtension
+    public class SqlServerDataSinkExtension : IDataSinkExtensionWithSettings
     {
         public string DisplayName => "SqlServer";
 
@@ -36,11 +36,12 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                         bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(dbColumn.ColumnName, dbColumn.ColumnName));
                     }
 
+                    var dataTable = new DataTable();
+                    dataTable.Columns.AddRange(dataColumns.Values.ToArray());
+
                     var batches = dataItems.Buffer(settings.BatchSize);
                     await foreach (var batch in batches.WithCancellation(cancellationToken))
                     {
-                        var dataTable = new DataTable();
-                        dataTable.Columns.AddRange(dataColumns.Values.ToArray());
                         foreach (var item in batch)
                         {
                             var fieldNames = item.GetFieldNames().ToList();
@@ -77,6 +78,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                             dataTable.Rows.Add(row);
                         }
                         await bulkCopy.WriteToServerAsync(dataTable, cancellationToken);
+                        dataTable.Clear();
                     }
 
                     await transaction.CommitAsync(cancellationToken);
@@ -89,6 +91,11 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             }
 
             await connection.CloseAsync();
+        }
+
+        public IEnumerable<IDataExtensionSettings> GetSettings()
+        {
+            yield return new SqlServerSinkSettings();
         }
     }
 }
