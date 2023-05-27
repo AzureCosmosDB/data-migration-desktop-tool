@@ -46,19 +46,21 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     catch { }
                 }
 
-            var containerProperties = new ContainerProperties
-            {
-                Id = settings.Container,
-                PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2,
-            };
-            if (settings.PartitionKeyPaths != null)
-            {
-                containerProperties.PartitionKeyPaths = settings.PartitionKeyPaths;
-            }
-            else
-            {
-                containerProperties.PartitionKeyPath = settings.PartitionKeyPath;
-            }
+                var containerProperties = new ContainerProperties
+                {
+                    Id = settings.Container,
+                    PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2,
+                };
+
+                if (settings.PartitionKeyPaths != null)
+                {
+                    logger.LogInformation("Using partition key paths: {PartitionKeyPaths}", string.Join(", ", settings.PartitionKeyPaths));
+                    containerProperties.PartitionKeyPaths = settings.PartitionKeyPaths;
+                }
+                else
+                {
+                    containerProperties.PartitionKeyPath = settings.PartitionKeyPath;
+                }
 
                 ThroughputProperties? throughputProperties = settings.IsServerlessAccount
                     ? null
