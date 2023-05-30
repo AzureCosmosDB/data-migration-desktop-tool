@@ -6,8 +6,11 @@ The Cosmos data transfer extension provides source and sink capabilities for rea
 
 ## Settings
 
-Source and sink settings both require multiple parameters to specify and provide access to the data location within a Cosmos DB account: 
-- `ConnectionString`
+Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of two ways:
+- Using a `ConnectionString` that includes an AccountEndpoint and AccountKey
+- Using RBAC (Role Based Access Control) by setting `UseRbac` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available.
+
+Source and sink settings also both require parameters to specify the data location within a Cosmos DB account: 
 - `Database`
 - `Container`
 
@@ -26,7 +29,22 @@ Source supports an optional `IncludeMetadataFields` parameter (`false` by defaul
 }
 ```
 
-Sink requires an additional `PartitionKeyPath` parameter which is used when creating the container if it does not exist. It also supports an optional `RecreateContainer` parameter (`false` by default) to delete and then recreate the container to ensure only newly imported data is present. The optional `BatchSize` parameter (100 by default) sets the number of items to accumulate before inserting. `ConnectionMode` can be set to either `Gateway` (default) or `Direct` to control how the client connects to the CosmosDB service. For situations where a container is created as part of the transfer operation `CreatedContainerMaxThroughput` (in RUs) and `UseAutoscaleForCreatedContainer` provide the initial throughput settings which will be in effect when executing the transfer. The optional `WriteMode` parameter specifies the type of data write to use: `InsertStream`, `Insert`, `UpsertStream`, or `Upsert`. The `IsServerlessAccount` parameter specifies whether the target account uses Serverless instead of Provisioned throughput, which affects the way containers are created. Additional parameters allow changing the behavior of the Cosmos client appropriate to your environment.
+Or with RBAC:
+
+```json
+{
+    "UseRbac": true,
+    "AccountEndpoint": "https://...",
+    "EnableInteractiveCredentials": true,
+    "Database":"myDb",
+    "Container":"myContainer",
+    "IncludeMetadataFields": false,
+    "PartitionKeyValue":"123",
+    "Query":"SELECT * FROM c WHERE c.category='event'"
+}
+```
+
+Sink requires an additional `PartitionKeyPath` parameter which is used when creating the container if it does not exist. To use hierarchical partition keys, instead use the `PartitionKeyPaths` setting to supply an array of up to 3 paths. It also supports an optional `RecreateContainer` parameter (`false` by default) to delete and then recreate the container to ensure only newly imported data is present. The optional `BatchSize` parameter (100 by default) sets the number of items to accumulate before inserting. `ConnectionMode` can be set to either `Gateway` (default) or `Direct` to control how the client connects to the CosmosDB service. For situations where a container is created as part of the transfer operation `CreatedContainerMaxThroughput` (in RUs) and `UseAutoscaleForCreatedContainer` provide the initial throughput settings which will be in effect when executing the transfer. The optional `WriteMode` parameter specifies the type of data write to use: `InsertStream`, `Insert`, `UpsertStream`, or `Upsert`. The `IsServerlessAccount` parameter specifies whether the target account uses Serverless instead of Provisioned throughput, which affects the way containers are created. Additional parameters allow changing the behavior of the Cosmos client appropriate to your environment.
 
 ### Sink
 

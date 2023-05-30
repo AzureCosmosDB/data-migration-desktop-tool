@@ -26,16 +26,16 @@ jobs:
           path: linux-package
       - name: Package output files
         run: |
-          zip -r dmt-${{ github.ref_name }}-win-x64.zip windows-package/*
-          zip -r dmt-${{ github.ref_name }}-mac-x64.zip mac-package/*
-          zip -r dmt-${{ github.ref_name }}-linux-x64.zip linux-package/*
+          zip -r dmt-${{ github.event.release.tag_name }}-win-x64.zip windows-package/*
+          zip -r dmt-${{ github.event.release.tag_name }}-mac-x64.zip mac-package/*
+          zip -r dmt-${{ github.event.release.tag_name }}-linux-x64.zip linux-package/*
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dmt-${{ github.ref_name }}-win-x64.zip
-            dmt-${{ github.ref_name }}-mac-x64.zip
-            dmt-${{ github.ref_name }}-linux-x64.zip
+            dmt-${{ github.event.release.tag_name }}-win-x64.zip
+            dmt-${{ github.event.release.tag_name }}-mac-x64.zip
+            dmt-${{ github.event.release.tag_name }}-linux-x64.zip
   build-package:
     name: Build self-contained executables
     runs-on: ubuntu-latest
@@ -52,6 +52,7 @@ jobs:
           platform: windows
           platform-short: win
           runtime: win-x64
+          build-version: ${{ github.event.release.tag_name }}
       - name: Execute Action build-with-plugins for MacOS
         uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-mac
@@ -59,6 +60,7 @@ jobs:
           platform: mac
           platform-short: mac
           runtime: osx-x64
+          build-version: ${{ github.event.release.tag_name }}
       - name: Execute Action build-with-plugins for Linux
         uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-linux
@@ -66,3 +68,4 @@ jobs:
           platform: linux
           platform-short: linux
           runtime: linux-x64
+          build-version: ${{ github.event.release.tag_name }}

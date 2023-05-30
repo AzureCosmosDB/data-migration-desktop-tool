@@ -11,6 +11,7 @@ namespace Cosmos.DataTransfer.Core
     {
         private readonly ILogger _logger;
         private readonly IExtensionLoader _extensionLoader;
+        private static string? _appVersion;
 
         public ExtensionManifestBuilder(IExtensionLoader extensionLoader, ILogger<ExtensionManifestBuilder> logger)
         {
@@ -45,10 +46,19 @@ namespace Cosmos.DataTransfer.Core
             {
                 extensions.AddRange(GetSinks());
             }
-            var manifest = new ExtensionManifest(extensions
-                .Select(e => new ExtensionManifestItem(e.DisplayName,
-                    direction,
-                    GetExtensionSettings(e as IExtensionWithSettings))).ToList());
+            var manifest = new ExtensionManifest(AppVersion, extensions
+                .Select(e =>
+                {
+                    var assembly = Assembly.GetAssembly(e.GetType());
+                    var version = assembly != null ? GetAssemblyVersion(assembly) : null;
+                    var assemblyName = assembly?.GetName().Name;
+
+                    return new ExtensionManifestItem(e.DisplayName,
+                        direction,
+                        version,
+                        assemblyName,
+                        GetExtensionSettings(e as IExtensionWithSettings));
+                }).ToList());
             return manifest;
         }
 
@@ -131,6 +141,29 @@ namespace Cosmos.DataTransfer.Core
             }
 
             return PropertyType.String;
+        }
+
+        private static string AppVersion => _appVersion ??= GetAppVersion();
+
+        private static string GetAppVersion()
+        {
+            var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+
+            return GetAssemblyVersion(assembly);
+        }
+
+        private static string GetAssemblyVersion(Assembly assembly)
+        {
+            var assemblyVersionAttribute = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+
+            if (assemblyVersionAttribute is null)
+            {
+                return assembly.GetName().Version?.ToString() ?? "";
+            }
+            else
+            {
+                return assemblyVersionAttribute.InformationalVersion;
+            }
         }
     }
 }

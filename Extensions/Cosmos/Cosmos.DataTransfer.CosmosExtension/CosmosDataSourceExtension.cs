@@ -17,14 +17,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var settings = config.Get<CosmosSourceSettings>();
             settings.Validate();
 
-            var client = new CosmosClient(settings.ConnectionString,
-                new CosmosClientOptions
-                {
-                    ConnectionMode = settings.ConnectionMode,
-                    AllowBulkExecution = true
-                });
+            var client = CosmosExtensionServices.CreateClient(settings, DisplayName);
 
             var container = client.GetContainer(settings.Database, settings.Container);
+            
+            await CosmosExtensionServices.VerifyContainerAccess(container, settings.Container, logger, cancellationToken);
+
             var requestOptions = new QueryRequestOptions();
             if (!string.IsNullOrEmpty(settings.PartitionKeyValue))
             {
