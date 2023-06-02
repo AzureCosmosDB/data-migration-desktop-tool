@@ -176,7 +176,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             return ((IDictionary<string, object?>)item)[propertyName]?.ToString();
         }
 
-        private static ExpandoObject? BuildObject(IDataItem? source, bool requireStringId = false)
+        internal static ExpandoObject? BuildObject(IDataItem? source, bool requireStringId = false)
         {
             if (source == null)
                 return null;
@@ -202,20 +202,29 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 }
                 else if (value is IEnumerable<object?> array)
                 {
-                    value = array.Select(dataItem =>
-                    {
-                        if (dataItem is IDataItem childObject)
-                        {
-                            return BuildObject(childObject);
-                        }
-                        return dataItem;
-                    }).ToArray();
+                    value = BuildArray(array);
                 }
 
                 item.TryAdd(fieldName, value);
             }
 
             return item;
+
+            static object BuildArray(IEnumerable<object?> array)
+            {
+                return array.Select(dataItem =>
+                {
+                    if (dataItem is IDataItem childObject)
+                    {
+                        return BuildObject(childObject);
+                    }
+                    else if (dataItem is IEnumerable<object?> array)
+                    {
+                        return BuildArray(array);
+                    }
+                    return dataItem;
+                }).ToArray();
+            }
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()
