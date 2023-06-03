@@ -27,7 +27,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 
             foreach (var collection in collectionNames)
             {
-                await foreach (var item in EnumerateCollectionAsync(context, collection))
+                await foreach (var item in EnumerateCollectionAsync(context, collection, logger).WithCancellation(cancellationToken))
                 {
                     yield return item;
                 }
@@ -35,13 +35,20 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         }
     }
 
-    public async IAsyncEnumerable<IDataItem> EnumerateCollectionAsync(Context context, string collectionName)
+    public async IAsyncEnumerable<IDataItem> EnumerateCollectionAsync(Context context, string collectionName, ILogger logger)
     {
+        logger.LogInformation("Reading collection '{Collection}'", collectionName);
         var collection = context.GetRepository<BsonDocument>(collectionName);
+        int itemCount = 0;
         foreach (var record in collection.AsQueryable())
         {
             yield return new MongoDataItem(record);
+            itemCount++;
         }
+        if (itemCount > 0)
+            logger.LogInformation("Read {ItemCount} items from collection '{Collection}'", itemCount, collectionName);
+        else
+            logger.LogWarning("No items read from collection '{Collection}'", collectionName);
     }
 
     public IEnumerable<IDataExtensionSettings> GetSettings()
