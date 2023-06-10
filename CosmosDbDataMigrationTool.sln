@@ -64,18 +64,22 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AzureBlob", "AzureBlob", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AwsS3", "AwsS3", "{502197E4-F554-4B5B-9235-FBFE7E49EBEF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.AwsS3Storage", "Extensions\AwsS3\Cosmos.DataTransfer.AwsS3Storage\Cosmos.DataTransfer.AwsS3Storage.csproj", "{8BA59E9C-0B45-426F-A672-61D40C3C4FB7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.AwsS3Storage", "Extensions\AwsS3\Cosmos.DataTransfer.AwsS3Storage\Cosmos.DataTransfer.AwsS3Storage.csproj", "{8BA59E9C-0B45-426F-A672-61D40C3C4FB7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.AzureBlobStorage", "Extensions\AzureBlob\Cosmos.DataTransfer.AzureBlobStorage\Cosmos.DataTransfer.AzureBlobStorage.csproj", "{60ACD837-40BD-4596-832A-139CCBFA7EFE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.AzureBlobStorage", "Extensions\AzureBlob\Cosmos.DataTransfer.AzureBlobStorage\Cosmos.DataTransfer.AzureBlobStorage.csproj", "{60ACD837-40BD-4596-832A-139CCBFA7EFE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CognitiveSearch", "CognitiveSearch", "{F745B535-C483-4894-8BA9-657DB1913D0B}"
 	ProjectSection(SolutionItems) = preProject
 		Extensions\CognitiveSearch\README.md = Extensions\CognitiveSearch\README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.CognitiveSearchExtension", "Extensions\CognitiveSearch\Cosmos.DataTransfer.CognitiveSearchExtension\Cosmos.DataTransfer.CognitiveSearchExtension.csproj", "{37DBC3CB-F8F6-48F8-BFBA-07A27D2E9DD9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.CognitiveSearchExtension", "Extensions\CognitiveSearch\Cosmos.DataTransfer.CognitiveSearchExtension\Cosmos.DataTransfer.CognitiveSearchExtension.csproj", "{37DBC3CB-F8F6-48F8-BFBA-07A27D2E9DD9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.CognitiveSearchExtension.UnitTests", "Extensions\CognitiveSearch\Cosmos.DataTransfer.CognitiveSearchExtension.UnitTests\Cosmos.DataTransfer.CognitiveSearchExtension.UnitTests.csproj", "{B55A183D-E4D4-4095-8569-D361A6AA1D10}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.CognitiveSearchExtension.UnitTests", "Extensions\CognitiveSearch\Cosmos.DataTransfer.CognitiveSearchExtension.UnitTests\Cosmos.DataTransfer.CognitiveSearchExtension.UnitTests.csproj", "{B55A183D-E4D4-4095-8569-D361A6AA1D10}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Csv", "Csv", "{39930280-DA29-4814-837B-FA7F252EB3EC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.CsvExtension", "Extensions\Csv\Cosmos.DataTransfer.CsvExtension\Cosmos.DataTransfer.CsvExtension.csproj", "{6A3FB90C-B837-4724-A406-214D4CEA686F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -155,6 +159,10 @@ Global
 		{B55A183D-E4D4-4095-8569-D361A6AA1D10}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B55A183D-E4D4-4095-8569-D361A6AA1D10}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B55A183D-E4D4-4095-8569-D361A6AA1D10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A3FB90C-B837-4724-A406-214D4CEA686F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A3FB90C-B837-4724-A406-214D4CEA686F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A3FB90C-B837-4724-A406-214D4CEA686F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A3FB90C-B837-4724-A406-214D4CEA686F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -183,6 +191,8 @@ Global
 		{F745B535-C483-4894-8BA9-657DB1913D0B} = {A8A1CEAB-2D82-460C-9B86-74ABD17CD201}
 		{37DBC3CB-F8F6-48F8-BFBA-07A27D2E9DD9} = {F745B535-C483-4894-8BA9-657DB1913D0B}
 		{B55A183D-E4D4-4095-8569-D361A6AA1D10} = {F745B535-C483-4894-8BA9-657DB1913D0B}
+		{39930280-DA29-4814-837B-FA7F252EB3EC} = {A8A1CEAB-2D82-460C-9B86-74ABD17CD201}
+		{6A3FB90C-B837-4724-A406-214D4CEA686F} = {39930280-DA29-4814-837B-FA7F252EB3EC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {662B3F27-70D8-45E6-A1C0-1438A9C8A542}
