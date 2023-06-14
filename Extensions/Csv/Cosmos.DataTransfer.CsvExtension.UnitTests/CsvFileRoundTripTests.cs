@@ -1,3 +1,4 @@
+using System.Globalization;
 using Cosmos.DataTransfer.JsonExtension;
 using Cosmos.DataTransfer.JsonExtension.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -28,7 +29,7 @@ public class CsvFileRoundTripTests
 
         await output.WriteAsync(input.ReadAsync(sourceConfig, NullLogger.Instance), sinkConfig, input, NullLogger.Instance);
 
-        Assert.AreEqual(await File.ReadAllTextAsync(fileIn), await File.ReadAllTextAsync(fileOut));
+        Assert.AreEqual(await File.ReadAllTextAsync(fileIn), await File.ReadAllTextAsync(fileOut), false, CultureInfo.InvariantCulture);
     }
 
 }
