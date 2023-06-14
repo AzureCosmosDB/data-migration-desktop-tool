@@ -1,6 +1,9 @@
 ﻿using System.Globalization;
+using System.Runtime.CompilerServices;
+using Cosmos.DataTransfer.CsvExtension.Settings;
 using Cosmos.DataTransfer.Interfaces;
 using CsvHelper;
+using CsvHelper.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -19,15 +22,37 @@ public class CsvFormatWriter : IFormattedDataWriter
         settings.Validate();
 
         await using var textWriter = new StreamWriter(target, leaveOpen: true);
-        await using var writer = new CsvWriter(textWriter, CultureInfo.InvariantCulture);
+        await using var writer = new CsvWriter(textWriter, new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            Delimiter = settings.Delimiter,
+            HasHeaderRecord = settings.IncludeHeader,
+        });
 
+        var headerWritten = false;
+        var firstRecord = true;
         await foreach (var item in dataItems.WithCancellation(cancellationToken))
         {
+            if (!firstRecord)
+            {
+                await writer.NextRecordAsync();
+            }
+
+            if (settings.IncludeHeader && !headerWritten)
+            {
+                foreach (string field in item.GetFieldNames())
+                {
+                    writer.WriteField(field);
+                }
+                headerWritten = true;
+                await writer.NextRecordAsync();
+            }
+
             foreach (string field in item.GetFieldNames())
             {
                 writer.WriteField(item.GetValue(field)?.ToString());
             }
-            await writer.NextRecordAsync();
+
+            firstRecord = false;
         }
 
         await writer.FlushAsync();
