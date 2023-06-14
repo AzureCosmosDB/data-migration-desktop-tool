@@ -28,8 +28,7 @@ public class CsvFileRoundTripTests
 
         await output.WriteAsync(input.ReadAsync(sourceConfig, NullLogger.Instance), sinkConfig, input, NullLogger.Instance);
 
-        bool areEqual = string.Equals(await File.ReadAllTextAsync(fileIn), await File.ReadAllTextAsync(fileOut));
-        Assert.IsTrue(areEqual);
+        Assert.AreEqual(await File.ReadAllTextAsync(fileIn), await File.ReadAllTextAsync(fileOut));
     }
 
 }
