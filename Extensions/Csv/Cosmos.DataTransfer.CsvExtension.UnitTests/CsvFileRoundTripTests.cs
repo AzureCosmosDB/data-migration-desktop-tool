@@ -29,16 +29,16 @@ public class CsvFileRoundTripTests
 
         await output.WriteAsync(input.ReadAsync(sourceConfig, NullLogger.Instance), sinkConfig, input, NullLogger.Instance);
 
-        string originalText = await File.ReadAllTextAsync(fileIn);
-        string finalText = await File.ReadAllTextAsync(fileOut);
+        var originalText = await File.ReadAllLinesAsync(fileIn);
+        var finalText = await File.ReadAllLinesAsync(fileOut);
         for (var index = 0; index < originalText.Length; index++)
         {
-            var a = originalText[index];
-            var b = finalText[index];
-            Assert.AreEqual(a, b, $"Different character at position {index}");
+            var a = originalText.ElementAtOrDefault(index);
+            var b = finalText.ElementAtOrDefault(index);
+            Assert.AreEqual(a, b, $"Different text at row {index}");
         }
 
-        Assert.AreEqual(originalText, finalText, false, CultureInfo.InvariantCulture);
+        CollectionAssert.AreEquivalent(originalText, finalText);
     }
 
 }
