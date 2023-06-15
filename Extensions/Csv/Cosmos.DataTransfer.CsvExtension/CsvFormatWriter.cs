@@ -26,6 +26,7 @@ public class CsvFormatWriter : IFormattedDataWriter
         {
             Delimiter = settings.Delimiter,
             HasHeaderRecord = settings.IncludeHeader,
+            NewLine = "\r\n",
         });
 
         var headerWritten = false;
