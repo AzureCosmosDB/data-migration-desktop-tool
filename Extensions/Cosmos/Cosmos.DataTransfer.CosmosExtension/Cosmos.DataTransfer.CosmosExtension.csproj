@@ -8,6 +8,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="Cosmos.DataTransfer.CosmosExtension.UnitTests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Azure.Identity" Version="1.6.0" />
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.34.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
