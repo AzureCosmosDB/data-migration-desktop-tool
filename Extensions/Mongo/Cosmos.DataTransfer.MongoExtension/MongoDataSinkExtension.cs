@@ -27,7 +27,7 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
             int itemCount = 0;
             await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
-                var dict = item.GetFieldNames().ToDictionary(key => key, key => item.GetValue(key));
+                var dict = item.BuildDynamicObjectTree();
                 objects.Add(new BsonDocument(dict));
                 itemCount++;
 
