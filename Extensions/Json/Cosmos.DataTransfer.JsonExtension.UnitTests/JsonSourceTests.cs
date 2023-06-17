@@ -9,7 +9,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task ReadAsync_WithFlatObjects_ReadsValues()
         {
-            var extension = new JsonDataSourceExtension();
+            var extension = new JsonFileSource();
             var config = TestHelpers.CreateConfig(new Dictionary<string, string>
             {
                 { "FilePath", "Data/SimpleIdName.json" }
@@ -26,7 +26,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task ReadAsync_WithNestedObjects_ReadsValues()
         {
-            var extension = new JsonDataSourceExtension();
+            var extension = new JsonFileSource();
             var config = TestHelpers.CreateConfig(new Dictionary<string, string>
             {
                 { "FilePath", "Data/NestedObjects.json" }
@@ -50,7 +50,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task ReadAsync_WithSingleObjectFile_ReadsValues()
         {
-            var extension = new JsonDataSourceExtension();
+            var extension = new JsonFileSource();
             var config = TestHelpers.CreateConfig(new Dictionary<string, string>
             {
                 { "FilePath", "Data/SingleObject.json" }
@@ -72,7 +72,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task ReadAsync_WithSingleObjectsFolder_ReadsValuesInOrder()
         {
-            var extension = new JsonDataSourceExtension();
+            var extension = new JsonFileSource();
             var config = TestHelpers.CreateConfig(new Dictionary<string, string>
             {
                 { "FilePath", "Data/SingleObjects" }
@@ -98,7 +98,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task ReadAsync_WithArraysFolder_ReadsValues()
         {
-            var extension = new JsonDataSourceExtension();
+            var extension = new JsonFileSource();
             var config = TestHelpers.CreateConfig(new Dictionary<string, string>
             {
                 { "FilePath", "Data/Arrays" }
@@ -119,7 +119,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task ReadAsync_WithMixedObjectsFolder_ReadsValues()
         {
-            var extension = new JsonDataSourceExtension();
+            var extension = new JsonFileSource();
             var config = TestHelpers.CreateConfig(new Dictionary<string, string>
             {
                 { "FilePath", "Data/MixedObjects" }
@@ -140,7 +140,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task ReadAsync_WithFlatObjects_ReadsValuesFromUrl()
         {
-            var extension = new JsonDataSourceExtension();
+            var extension = new JsonFileSource();
             var config = TestHelpers.CreateConfig(new Dictionary<string, string>
             {
                 { "FilePath", "https://raw.githubusercontent.com/Azure/azure-documentdb-datamigrationtool/main/Extensions/Json/.JsonExtension.UnitTests/Data/SimpleIdName.json" }

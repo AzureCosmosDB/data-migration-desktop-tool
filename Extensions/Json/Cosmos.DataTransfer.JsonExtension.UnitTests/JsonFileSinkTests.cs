@@ -36,7 +36,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
                 { "FilePath", outputFile }
             });
 
-            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonDataSourceExtension(), NullLogger.Instance);
+            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonFileSource(), NullLogger.Instance);
 
             var outputData = JsonConvert.DeserializeObject<List<TestDataObject>>(await File.ReadAllTextAsync(outputFile));
 

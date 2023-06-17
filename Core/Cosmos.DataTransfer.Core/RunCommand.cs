@@ -180,7 +180,7 @@ namespace Cosmos.DataTransfer.Core
             {
                 if (!string.IsNullOrWhiteSpace(selectionName))
                 {
-                    var extension = extensions.FirstOrDefault(s => selectionName.Equals(s.DisplayName, StringComparison.OrdinalIgnoreCase));
+                    var extension = extensions.FirstOrDefault(s => s.MatchesExtensionSelection(selectionName));
                     if (extension != null)
                     {
                         Console.WriteLine($"Using {extension.DisplayName} {inputPrompt}");
