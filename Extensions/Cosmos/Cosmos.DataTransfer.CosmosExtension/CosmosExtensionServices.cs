@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Reflection;
 using Azure.Core;
+using System.Text.RegularExpressions;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -44,15 +45,21 @@ namespace Cosmos.DataTransfer.CosmosExtension
             //    Assembly.GetExecutingAssembly().GetName().Version,
             //    context.SourceName, context.SinkName,
             //    isShardedImport ? Resources.ShardedImportDesignator : String.Empty)
+            string sourceName = StripSpecialChars(sourceDisplayName ?? "");
+            string sinkName = StripSpecialChars(displayName);
 
             var entryAssembly = Assembly.GetEntryAssembly();
             bool isShardedImport = false;
             string userAgentString = string.Format(CultureInfo.InvariantCulture, "{0}-{1}-{2}-{3}{4}",
                 entryAssembly == null ? "dtr" : entryAssembly.GetName().Name,
                 Assembly.GetExecutingAssembly().GetName().Version,
-                sourceDisplayName, displayName,
+                sourceName, sinkName,
                 isShardedImport ? "-Sharded" : string.Empty);
             return userAgentString;
+        }
+        private static string StripSpecialChars(string displayName)
+        {
+            return Regex.Replace(displayName, "[^\\w]", "", RegexOptions.Compiled);
         }
 
         public static async Task VerifyContainerAccess(Container? container, string? name, ILogger logger, CancellationToken cancellationToken)

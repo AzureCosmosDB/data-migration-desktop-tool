@@ -1,10 +1,12 @@
-﻿namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
+﻿using Cosmos.DataTransfer.Interfaces;
+
+namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
 {
     [TestClass]
     public class CosmosDataSinkExtensionTests
     {
         [TestMethod]
-        public void BuildObject_WithNestedArrays_WorksCorrectly()
+        public void BuildDynamicObjectTree_WithNestedArrays_WorksCorrectly()
         {
             var item = new CosmosDictionaryDataItem(new Dictionary<string, object?>()
             {
@@ -34,7 +36,7 @@
                 }
             });
 
-            dynamic obj = CosmosDataSinkExtension.BuildObject(item)!;
+            dynamic obj = item.BuildDynamicObjectTree()!;
 
             Assert.AreEqual(typeof(object[]), obj.array.GetType());
             Assert.AreEqual(2, obj.array.Length);

@@ -24,14 +24,17 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
             var batchSize = settings.BatchSize ?? 1000;
 
             var objects = new List<BsonDocument>();
-            await foreach (var item in dataItems)
+            int itemCount = 0;
+            await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
-                var dict = item.GetFieldNames().ToDictionary(key => key, key => item.GetValue(key));
+                var dict = item.BuildDynamicObjectTree();
                 objects.Add(new BsonDocument(dict));
+                itemCount++;
 
                 if (objects.Count == batchSize)
                 {
                     await repo.AddRange(objects);
+                    logger.LogInformation("Added {ItemCount} items to collection '{Collection}'", itemCount, settings.Collection);
                     objects.Clear();
                 }
             }
@@ -40,6 +43,11 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
             {
                 await repo.AddRange(objects);
             }
+
+            if (itemCount > 0)
+                logger.LogInformation("Added {ItemCount} total items to collection '{Collection}'", itemCount, settings.Collection);
+            else
+                logger.LogWarning("No items added to collection '{Collection}'", settings.Collection);
         }
     }
 

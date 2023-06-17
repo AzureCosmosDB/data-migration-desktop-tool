@@ -36,6 +36,8 @@ namespace Cosmos.DataTransfer.JsonExtension
             JsonValueKind kind = element.ValueKind;
             switch (kind)
             {
+                case JsonValueKind.Null:
+                    return null;
                 case JsonValueKind.String:
                     return element.GetString();
                 case JsonValueKind.Number:

@@ -1,11 +1,8 @@
 ﻿using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Globalization;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using Azure.Identity;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
@@ -95,7 +92,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 }
             }
 
-            var convertedObjects = dataItems.Select(di => BuildObject(di, true)).Where(o => o != null).OfType<ExpandoObject>();
+            var convertedObjects = dataItems.Select(di => di.BuildDynamicObjectTree(true)).Where(o => o != null).OfType<ExpandoObject>();
             var batches = convertedObjects.Buffer(settings.BatchSize);
             var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
             await foreach (var batch in batches.WithCancellation(cancellationToken))
@@ -174,57 +171,6 @@ namespace Cosmos.DataTransfer.CosmosExtension
         private static string? GetPropertyValue(ExpandoObject item, string propertyName)
         {
             return ((IDictionary<string, object?>)item)[propertyName]?.ToString();
-        }
-
-        internal static ExpandoObject? BuildObject(IDataItem? source, bool requireStringId = false)
-        {
-            if (source == null)
-                return null;
-
-            var fields = source.GetFieldNames().ToList();
-            var item = new ExpandoObject();
-            if (requireStringId && !fields.Contains("id", StringComparer.CurrentCultureIgnoreCase))
-            {
-                item.TryAdd("id", Guid.NewGuid().ToString());
-            }
-            foreach (string field in fields)
-            {
-                object? value = source.GetValue(field);
-                var fieldName = field;
-                if (string.Equals(field, "id", StringComparison.CurrentCultureIgnoreCase) && requireStringId)
-                {
-                    value = value?.ToString();
-                    fieldName = "id";
-                }
-                else if (value is IDataItem child)
-                {
-                    value = BuildObject(child);
-                }
-                else if (value is IEnumerable<object?> array)
-                {
-                    value = BuildArray(array);
-                }
-
-                item.TryAdd(fieldName, value);
-            }
-
-            return item;
-
-            static object BuildArray(IEnumerable<object?> array)
-            {
-                return array.Select(dataItem =>
-                {
-                    if (dataItem is IDataItem childObject)
-                    {
-                        return BuildObject(childObject);
-                    }
-                    else if (dataItem is IEnumerable<object?> array)
-                    {
-                        return BuildArray(array);
-                    }
-                    return dataItem;
-                }).ToArray();
-            }
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()
