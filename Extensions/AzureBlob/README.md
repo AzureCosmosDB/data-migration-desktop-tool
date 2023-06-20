@@ -11,7 +11,8 @@ Sink settings require all parameters shown below. An optional `MaxBlockSizeInKB`
 ### Sink
 
 ```json
-{
+"Sink": "JSON-AzureBlob(beta)",
+"SinkSettings": {
     "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=...",
     "ContainerName": "",
     "BlobName": "",
