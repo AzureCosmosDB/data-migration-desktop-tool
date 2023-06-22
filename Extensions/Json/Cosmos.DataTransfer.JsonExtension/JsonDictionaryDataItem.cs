@@ -41,7 +41,12 @@ namespace Cosmos.DataTransfer.JsonExtension
                 case JsonValueKind.String:
                     return element.GetString();
                 case JsonValueKind.Number:
-                    return element.GetDouble();
+                { 
+                    if (IsInteger(element.ToString()))
+                        return element.GetInt32();
+                    else
+                        return element.GetDouble();
+                }
                 case JsonValueKind.True:
                     return true;
                 case JsonValueKind.False:
@@ -57,6 +62,11 @@ namespace Cosmos.DataTransfer.JsonExtension
         private static JsonDictionaryDataItem GetChildObject(JsonElement element)
         {
             return new JsonDictionaryDataItem(element.EnumerateObject().ToDictionary(p => p.Name, p => (object?)p.Value));
+        }
+
+        static bool IsInteger(string ?value)
+        {
+            return int.TryParse(value, out _);
         }
     }
 }
