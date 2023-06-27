@@ -16,4 +16,18 @@ public static class ExtensionExtensions
 
         return validNames.Any(n => selectionName.Equals(n, StringComparison.OrdinalIgnoreCase));
     }
+
+    public static async Task<string?> ReadLineAsync(this TextReader textReader, CancellationToken cancellationToken = default)
+    {
+        var readLine = Task.Run(textReader.ReadLine, cancellationToken);
+
+        var awaiter = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using Task cancelAwaiter = Task.Delay(Timeout.Infinite, awaiter.Token);
+        await Task.WhenAny(readLine, cancelAwaiter);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        awaiter.Cancel();
+
+        return await readLine;
+    }
 }
