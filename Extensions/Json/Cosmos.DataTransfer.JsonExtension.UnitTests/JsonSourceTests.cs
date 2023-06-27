@@ -61,7 +61,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             {
                 counter++;
                 CollectionAssert.AreEquivalent(new[] { "id", "name" }, dataItem.GetFieldNames().ToArray());
-                Assert.IsInstanceOfType(dataItem.GetValue("id"), typeof(double));
+                Assert.IsInstanceOfType(dataItem.GetValue("id"), typeof(int));
                 Assert.IsNotNull(dataItem.GetValue("name"));
             }
 
@@ -85,9 +85,9 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
                 counter++;
                 CollectionAssert.AreEquivalent(new[] { "id", "name" }, dataItem.GetFieldNames().ToArray());
                 object? value = dataItem.GetValue("id");
-                Assert.IsInstanceOfType(value, typeof(double));
+                Assert.IsInstanceOfType(value, typeof(int));
                 Assert.IsNotNull(dataItem.GetValue("name"));
-                var current = (double?)value ?? int.MaxValue;
+                var current = (int?)value ?? int.MaxValue;
                 Assert.IsTrue(current > lastId);
                 lastId = current;
             }
@@ -109,7 +109,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             {
                 counter++;
                 CollectionAssert.AreEquivalent(new[] { "id", "name" }, dataItem.GetFieldNames().ToArray());
-                Assert.IsInstanceOfType(dataItem.GetValue("id"), typeof(double));
+                Assert.IsInstanceOfType(dataItem.GetValue("id"), typeof(int));
                 Assert.IsNotNull(dataItem.GetValue("name"));
             }
 
@@ -130,7 +130,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             {
                 counter++;
                 CollectionAssert.AreEquivalent(new[] { "id", "name" }, dataItem.GetFieldNames().ToArray());
-                Assert.IsInstanceOfType(dataItem.GetValue("id"), typeof(double));
+                Assert.IsInstanceOfType(dataItem.GetValue("id"), typeof(int));
                 Assert.IsNotNull(dataItem.GetValue("name"));
             }
 
