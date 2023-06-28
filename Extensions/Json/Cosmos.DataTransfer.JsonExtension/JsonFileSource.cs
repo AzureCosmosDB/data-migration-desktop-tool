@@ -7,7 +7,7 @@ namespace Cosmos.DataTransfer.JsonExtension;
 [Export(typeof(IDataSourceExtension))]
 public class JsonFileSource : CompositeSourceExtension<FileDataSource, JsonFormatReader>, IAliasedDataTransferExtension
 {
-    public override string DisplayName => "JSON-File";
-    public IEnumerable<string> Aliases => new[] { "JSON" };
+    public override string DisplayName => "JSON";
+    public IEnumerable<string> Aliases => new[] { "JSON-File" };
 }
 
