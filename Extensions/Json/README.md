@@ -16,9 +16,11 @@ Supported storage sources:
 
 ## Settings
 
-Source does not require any formatter specific settings. Sink supports an optional `Indented` parameter (`false` by default) and an optional `IncludeNullFields` parameter (`false` by default) to control the formatting of the JSON output. See storage extension documentation for any storage specific settings needed ([ex. File Storage](../../Interfaces/Cosmos.DataTransfer.Common/README.md)).
+See storage extension documentation for any storage specific settings needed ([ex. File Storage](../../Interfaces/Cosmos.DataTransfer.Common/README.md)).
 
 ### Source
+
+Source does not require any formatter specific settings.
 
 ```json
 {
@@ -27,8 +29,12 @@ Source does not require any formatter specific settings. Sink supports an option
 
 ### Sink
 
+Sink supports an optional `Indented` parameter (`false` by default) and an optional `IncludeNullFields` parameter (`false` by default) to control the formatting of the JSON output. Sink also supports an optional `BufferSizeMB` parameter (`200` by default) to constrain the in-memory stream buffer.
+
 ```json
 {
-    "Indented": true
+    "Indented": true,
+    "IncludeNullFields": true,
+    "BufferSizeMB": 200
 }
 ```
