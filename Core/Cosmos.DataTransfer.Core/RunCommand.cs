@@ -101,6 +101,7 @@ namespace Cosmos.DataTransfer.Core
                     var sinkConfig = GetSinkConfig(combinedConfig);
                     var operationConfigs = combinedConfig.GetSection("Operations");
                     var operations = operationConfigs?.GetChildren().ToList();
+                    bool succeeded = true;
                     if (operations?.Any() == true)
                     {
                         foreach (var operationConfig in operations)
@@ -117,19 +118,19 @@ namespace Cosmos.DataTransfer.Core
                             {
                                 sinkBuilder.AddConfiguration(operationSink);
                             }
-                            await ExecuteDataTransferOperation(source,
-                                sourceBuilder.Build(),
-                                sink,
-                                sinkBuilder.Build(),
-                                cancellationToken);
+                            succeeded &= await ExecuteDataTransferOperation(source,
+                                      sourceBuilder.Build(),
+                                      sink,
+                                      sinkBuilder.Build(),
+                                      cancellationToken);
                         }
                     }
                     else
                     {
-                        await ExecuteDataTransferOperation(source, sourceConfig, sink, sinkConfig, cancellationToken);
+                        succeeded = await ExecuteDataTransferOperation(source, sourceConfig, sink, sinkConfig, cancellationToken);
                     }
 
-                    return 0;
+                    return succeeded ? 0 : 1;
                 }
                 catch (OperationCanceledException ex)
                 {
@@ -158,7 +159,7 @@ namespace Cosmos.DataTransfer.Core
                 return config;
             }
 
-            private async Task ExecuteDataTransferOperation(IDataSourceExtension source, IConfiguration sourceConfig, IDataSinkExtension sink, IConfiguration sinkConfig, CancellationToken cancellationToken)
+            private async Task<bool> ExecuteDataTransferOperation(IDataSourceExtension source, IConfiguration sourceConfig, IDataSinkExtension sink, IConfiguration sinkConfig, CancellationToken cancellationToken)
             {
                 _logger.LogDebug("Loaded {SettingCount} settings for source {SourceName}:\n\t\t{SettingList}",
                     sourceConfig.AsEnumerable().Count(),
@@ -178,14 +179,12 @@ namespace Cosmos.DataTransfer.Core
                     await sink.WriteAsync(data, sinkConfig, source, _loggerFactory.CreateLogger(sink.GetType().Name), cancellationToken);
 
                     _logger.LogInformation("Data transfer complete");
+                    return true;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Data transfer failed");
-                    if (ex is OperationCanceledException)
-                    {
-                        throw;
-                    }
+                    return false;
                 }
             }
 
