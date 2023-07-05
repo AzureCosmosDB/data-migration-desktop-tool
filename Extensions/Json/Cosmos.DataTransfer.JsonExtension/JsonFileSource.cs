@@ -5,7 +5,9 @@ using System.ComponentModel.Composition;
 namespace Cosmos.DataTransfer.JsonExtension;
 
 [Export(typeof(IDataSourceExtension))]
-public class JsonFileSource : CompositeSourceExtension<FileDataSource, JsonFormatReader>
+public class JsonFileSource : CompositeSourceExtension<FileDataSource, JsonFormatReader>, IAliasedDataTransferExtension
 {
-    public override string DisplayName => "JSON-File(beta)";
+    public override string DisplayName => "JSON";
+    public IEnumerable<string> Aliases => new[] { "JSON-File" };
 }
+

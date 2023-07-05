@@ -10,7 +10,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task WriteAsync_WithFlatObjects_WritesToValidFile()
         {
-            var sink = new JsonDataSinkExtension();
+            var sink = new JsonFileSink();
 
             var data = new List<DictionaryDataItem>
             {
@@ -36,7 +36,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
                 { "FilePath", outputFile }
             });
 
-            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonDataSourceExtension(), NullLogger.Instance);
+            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonFileSource(), NullLogger.Instance);
 
             var outputData = JsonConvert.DeserializeObject<List<TestDataObject>>(await File.ReadAllTextAsync(outputFile));
 
@@ -48,7 +48,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task WriteAsync_WithSourceDates_PreservesDateFormats()
         {
-            var sink = new JsonDataSinkExtension();
+            var sink = new JsonFileSink();
 
             var now = DateTime.UtcNow;
             var randomTime = DateTime.UtcNow.AddMinutes(Random.Shared.NextDouble() * 10000);
@@ -76,7 +76,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
                 { "FilePath", outputFile }
             });
 
-            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonDataSourceExtension(), NullLogger.Instance);
+            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonFileSource(), NullLogger.Instance);
 
             string json = await File.ReadAllTextAsync(outputFile);
             var outputData = JsonConvert.DeserializeObject<List<TestDataObject>>(json);
@@ -90,7 +90,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task WriteAsync_WithDateArray_PreservesDateFormats()
         {
-            var sink = new JsonDataSinkExtension();
+            var sink = new JsonFileSink();
 
             var now = DateTime.UtcNow;
             var randomTime = DateTime.UtcNow.AddMinutes(Random.Shared.NextDouble() * 10000);
@@ -109,7 +109,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
                 { "FilePath", outputFile }
             });
 
-            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonDataSourceExtension(), NullLogger.Instance);
+            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonFileSource(), NullLogger.Instance);
 
             string json = await File.ReadAllTextAsync(outputFile);
             var outputData = JsonConvert.DeserializeObject<List<TestDataObject>>(json);

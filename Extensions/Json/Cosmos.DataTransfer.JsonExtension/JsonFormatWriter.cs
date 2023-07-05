@@ -22,6 +22,11 @@ public class JsonFormatWriter : IFormattedDataWriter
         await foreach (var item in dataItems.WithCancellation(cancellationToken))
         {
             DataItemJsonConverter.WriteDataItem(writer, item, settings.IncludeNullFields);
+            int max = settings.BufferSizeMB * 1024 * 1024;
+            if (writer.BytesPending > max)
+            {
+                await writer.FlushAsync(cancellationToken);
+            }
         }
 
         writer.WriteEndArray();

@@ -74,60 +74,71 @@ namespace Cosmos.DataTransfer.Core
             {
                 CancellationToken cancellationToken = context.GetCancellationToken();
 
-                var configuredOptions = _configuration.Get<DataTransferOptions>() ?? new DataTransferOptions();
-                var combinedConfig = BuildSettingsConfiguration(_configuration,
-                    Settings?.FullName ?? configuredOptions.SettingsPath,
-                    string.IsNullOrEmpty(Source ?? configuredOptions.Source) && string.IsNullOrEmpty(Sink ?? configuredOptions.Sink),
-                    cancellationToken);
-
-                var options = combinedConfig.Get<DataTransferOptions>();
-
-                string extensionsPath = _extensionLoader.GetExtensionFolderPath();
-                CompositionContainer container = _extensionLoader.BuildExtensionCatalog(extensionsPath);
-
-                var sources = _extensionLoader.LoadExtensions<IDataSourceExtension>(container);
-                var sinks = _extensionLoader.LoadExtensions<IDataSinkExtension>(container);
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var source = GetExtensionSelection(Source ?? options.Source, sources, "Source", cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
-                var sink = GetExtensionSelection(Sink ?? options.Sink, sinks, "Sink", cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var sourceConfig = combinedConfig.GetSection("SourceSettings");
-                var sinkConfig = GetSinkConfig(combinedConfig);
-                var operationConfigs = combinedConfig.GetSection("Operations");
-                var operations = operationConfigs?.GetChildren().ToList();
-                if (operations?.Any() == true)
+                try
                 {
-                    foreach (var operationConfig in operations)
+                    var configuredOptions = _configuration.Get<DataTransferOptions>() ?? new DataTransferOptions();
+                    var combinedConfig = await BuildSettingsConfiguration(_configuration,
+                        Settings?.FullName ?? configuredOptions.SettingsPath,
+                        string.IsNullOrEmpty(Source ?? configuredOptions.Source) && string.IsNullOrEmpty(Sink ?? configuredOptions.Sink),
+                        cancellationToken);
+
+                    var options = combinedConfig.Get<DataTransferOptions>();
+
+                    string extensionsPath = _extensionLoader.GetExtensionFolderPath();
+                    CompositionContainer container = _extensionLoader.BuildExtensionCatalog(extensionsPath);
+
+                    var sources = _extensionLoader.LoadExtensions<IDataSourceExtension>(container);
+                    var sinks = _extensionLoader.LoadExtensions<IDataSinkExtension>(container);
+
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var source = await GetExtensionSelection(Source ?? options.Source, sources, "Source", cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var sink = await GetExtensionSelection(Sink ?? options.Sink, sinks, "Sink", cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var sourceConfig = combinedConfig.GetSection("SourceSettings");
+                    var sinkConfig = GetSinkConfig(combinedConfig);
+                    var operationConfigs = combinedConfig.GetSection("Operations");
+                    var operations = operationConfigs?.GetChildren().ToList();
+                    bool succeeded = true;
+                    if (operations?.Any() == true)
                     {
-                        var operationSource = operationConfig.GetSection("SourceSettings");
-                        var sourceBuilder = new ConfigurationBuilder().AddConfiguration(sourceConfig);
-                        if (operationSource.Exists())
+                        foreach (var operationConfig in operations)
                         {
-                            sourceBuilder.AddConfiguration(operationSource);
+                            var operationSource = operationConfig.GetSection("SourceSettings");
+                            var sourceBuilder = new ConfigurationBuilder().AddConfiguration(sourceConfig);
+                            if (operationSource.Exists())
+                            {
+                                sourceBuilder.AddConfiguration(operationSource);
+                            }
+                            var operationSink = GetSinkConfig(operationConfig);
+                            var sinkBuilder = new ConfigurationBuilder().AddConfiguration(sinkConfig);
+                            if (operationSink.Exists())
+                            {
+                                sinkBuilder.AddConfiguration(operationSink);
+                            }
+                            succeeded &= await ExecuteDataTransferOperation(source,
+                                      sourceBuilder.Build(),
+                                      sink,
+                                      sinkBuilder.Build(),
+                                      cancellationToken);
                         }
-                        var operationSink = GetSinkConfig(operationConfig);
-                        var sinkBuilder = new ConfigurationBuilder().AddConfiguration(sinkConfig);
-                        if (operationSink.Exists())
-                        {
-                            sinkBuilder.AddConfiguration(operationSink);
-                        }
-                        await ExecuteDataTransferOperation(source,
-                                  sourceBuilder.Build(),
-                                  sink,
-                                  sinkBuilder.Build(),
-                                  cancellationToken);
                     }
-                }
-                else
-                {
-                    await ExecuteDataTransferOperation(source, sourceConfig, sink, sinkConfig, cancellationToken);
-                }
+                    else
+                    {
+                        succeeded = await ExecuteDataTransferOperation(source, sourceConfig, sink, sinkConfig, cancellationToken);
+                    }
 
-                return 0;
+                    return succeeded ? 0 : 1;
+                }
+                catch (OperationCanceledException ex)
+                {
+                    _logger.LogDebug(ex, "Operation canceled.");
+                    Console.WriteLine();
+                    Console.WriteLine("Operation canceled. Exiting.");
+                    return 1;
+                }
             }
 
             private static IConfigurationSection GetSinkConfig(IConfiguration combinedConfig)
@@ -148,7 +159,7 @@ namespace Cosmos.DataTransfer.Core
                 return config;
             }
 
-            private async Task ExecuteDataTransferOperation(IDataSourceExtension source, IConfiguration sourceConfig, IDataSinkExtension sink, IConfiguration sinkConfig, CancellationToken cancellationToken)
+            private async Task<bool> ExecuteDataTransferOperation(IDataSourceExtension source, IConfiguration sourceConfig, IDataSinkExtension sink, IConfiguration sinkConfig, CancellationToken cancellationToken)
             {
                 _logger.LogDebug("Loaded {SettingCount} settings for source {SourceName}:\n\t\t{SettingList}",
                     sourceConfig.AsEnumerable().Count(),
@@ -168,19 +179,21 @@ namespace Cosmos.DataTransfer.Core
                     await sink.WriteAsync(data, sinkConfig, source, _loggerFactory.CreateLogger(sink.GetType().Name), cancellationToken);
 
                     _logger.LogInformation("Data transfer complete");
+                    return true;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Data transfer failed");
+                    return false;
                 }
             }
 
-            private static T GetExtensionSelection<T>(string? selectionName, List<T> extensions, string inputPrompt, CancellationToken cancellationToken)
+            private static async Task<T> GetExtensionSelection<T>(string? selectionName, List<T> extensions, string inputPrompt, CancellationToken cancellationToken)
                 where T : class, IDataTransferExtension
             {
                 if (!string.IsNullOrWhiteSpace(selectionName))
                 {
-                    var extension = extensions.FirstOrDefault(s => selectionName.Equals(s.DisplayName, StringComparison.OrdinalIgnoreCase));
+                    var extension = extensions.FirstOrDefault(s => s.MatchesExtensionSelection(selectionName));
                     if (extension != null)
                     {
                         Console.WriteLine($"Using {extension.DisplayName} {inputPrompt}");
@@ -197,10 +210,10 @@ namespace Cosmos.DataTransfer.Core
 
                 string? selection = "";
                 int input;
-                while (!int.TryParse(selection, out input) || input > extensions.Count)
+                while (!int.TryParse(selection, out input) || input > extensions.Count || input <= 0)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    selection = Console.ReadLine();
+                    selection = await Console.In.ReadLineAsync(cancellationToken);
                 }
 
                 T selected = extensions[input - 1];
@@ -208,7 +221,7 @@ namespace Cosmos.DataTransfer.Core
                 return selected;
             }
 
-            private IConfiguration BuildSettingsConfiguration(IConfiguration configuration, string? settingsPath, bool promptForFile, CancellationToken cancellationToken)
+            private async Task<IConfiguration> BuildSettingsConfiguration(IConfiguration configuration, string? settingsPath, bool promptForFile, CancellationToken cancellationToken)
             {
                 IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
                 if (!string.IsNullOrEmpty(settingsPath) && File.Exists(settingsPath))
@@ -220,7 +233,7 @@ namespace Cosmos.DataTransfer.Core
                 else if (promptForFile)
                 {
                     Console.Write("Path to settings file? (leave empty to skip): ");
-                    var path = Console.ReadLine();
+                    var path = await Console.In.ReadLineAsync(cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!string.IsNullOrWhiteSpace(path))
                     {
@@ -233,16 +246,6 @@ namespace Cosmos.DataTransfer.Core
                 return configurationBuilder
                     .AddConfiguration(configuration)
                     .Build();
-            }
-
-            private static bool IsYesResponse(string? response)
-            {
-                if (response?.Equals("y", StringComparison.CurrentCultureIgnoreCase) == true)
-                    return true;
-                if (response?.Equals("yes", StringComparison.CurrentCultureIgnoreCase) == true)
-                    return true;
-
-                return false;
             }
         }
     }

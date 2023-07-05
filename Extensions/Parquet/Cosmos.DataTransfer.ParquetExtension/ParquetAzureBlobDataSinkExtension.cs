@@ -8,6 +8,6 @@ namespace Cosmos.DataTransfer.ParquetExtension
     [Export(typeof(IDataSinkExtension))]
     public class ParquetAzureBlobDataSinkExtension : CompositeSinkExtension<AzureBlobDataSink, ParquetFormatWriter>
     {
-        public override string DisplayName => "Parquet-AzureBlob(beta)";
+        public override string DisplayName => "Parquet-AzureBlob";
     }
 }

@@ -1,4 +1,4 @@
-# Parquet Extension (beta)
+# Parquet Extension
 
 The Parquet extension provides formatter capabilities for reading from and writing to Parquet files. Read and write currently support flat object structures with string, boolean, datetime, and numeric property types. 
 
@@ -7,12 +7,12 @@ The Parquet extension provides formatter capabilities for reading from and writi
 > **Note**: When specifying the Parquet extension as the Source or Sink property in configuration, utilize the names listed below.
 
 Supported storage sinks:
-- File - **Parquet(beta)**
-- Azure Blob Storage - **Parquet-AzureBlob(beta)**
-- AWS S3 - **Parquet-AwsS3(beta)**
+- File - **Parquet**
+- Azure Blob Storage - **Parquet-AzureBlob**
+- AWS S3 - **Parquet-AwsS3**
  
 Supported storage sources:
-- File - **Parquet(beta)**
+- File - **Parquet**
 
 ## Settings
 
