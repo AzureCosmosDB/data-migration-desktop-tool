@@ -55,6 +55,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.SqlServerExtension.UnitTests", "Extensions\SqlServer\Cosmos.DataTransfer.SqlServerExtension.UnitTests\Cosmos.DataTransfer.SqlServerExtension.UnitTests.csproj", "{3E4C4ABF-D8C2-4997-A719-E756483C8D63}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Parquet", "Parquet", "{2BD63BEE-CEE8-4FF3-8A2E-373D9F4E2FE8}"
+	ProjectSection(SolutionItems) = preProject
+		Extensions\Parquet\README.md = Extensions\Parquet\README.md
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.ParquetExtension", "Extensions\Parquet\Cosmos.DataTransfer.ParquetExtension\Cosmos.DataTransfer.ParquetExtension.csproj", "{B83FEBC7-08B6-4C25-831A-EA0C08794F67}"
 EndProject
@@ -85,6 +88,12 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.CsvExtension", "Extensions\Csv\Cosmos.DataTransfer.CsvExtension\Cosmos.DataTransfer.CsvExtension.csproj", "{6A3FB90C-B837-4724-A406-214D4CEA686F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.CsvExtension.UnitTests", "Extensions\Csv\Cosmos.DataTransfer.CsvExtension.UnitTests\Cosmos.DataTransfer.CsvExtension.UnitTests.csproj", "{40AD8890-BD78-48F5-AE76-2C2FC6F15B7E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BCBBAF22-0CB5-416B-8C80-03AB2FC4D0A0}"
+	ProjectSection(SolutionItems) = preProject
+		Contributing.md = Contributing.md
+		ExampleConfigs.md = ExampleConfigs.md
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

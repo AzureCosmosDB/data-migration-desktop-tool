@@ -1,12 +1,13 @@
 ﻿using Cosmos.DataTransfer.Common;
 using Cosmos.DataTransfer.Interfaces;
 using System.ComponentModel.Composition;
-using Cosmos.DataTransfer.AwsS3Storage;
 
 namespace Cosmos.DataTransfer.JsonExtension;
 
 [Export(typeof(IDataSinkExtension))]
-public class JsonFileSink : CompositeSinkExtension<FileDataSink, JsonFormatWriter>
+public class JsonFileSink : CompositeSinkExtension<FileDataSink, JsonFormatWriter>, IAliasedDataTransferExtension
 {
-    public override string DisplayName => "JSON-File(beta)";
+    public override string DisplayName => "JSON";
+    public IEnumerable<string> Aliases => new[] { "JSON-File" };
 }
+

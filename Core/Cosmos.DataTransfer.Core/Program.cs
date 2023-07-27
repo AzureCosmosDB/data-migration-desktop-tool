@@ -41,7 +41,7 @@ class Program
                     Sink = ctx.BindingContext.ParseResult.GetValueForOption(rootCommand.Options.ElementAt(1)) as string,
                     Settings = ctx.BindingContext.ParseResult.GetValueForOption(rootCommand.Options.ElementAt(2)) as FileInfo
                 };
-                await handler.InvokeAsync(ctx);
+                ctx.ExitCode = await handler.InvokeAsync(ctx);
             }
         });
 

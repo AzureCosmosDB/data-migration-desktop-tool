@@ -7,7 +7,8 @@ using Cosmos.DataTransfer.AzureBlobStorage;
 namespace Cosmos.DataTransfer.CsvExtension;
 
 [Export(typeof(IDataSinkExtension))]
-public class CsvFileSink : CompositeSinkExtension<FileDataSink, CsvFormatWriter>
+public class CsvFileSink : CompositeSinkExtension<FileDataSink, CsvFormatWriter>, IAliasedDataTransferExtension
 {
-    public override string DisplayName => "CSV-File";
+    public override string DisplayName => "CSV";
+    public IEnumerable<string> Aliases => new[] { "CSV-File" };
 }

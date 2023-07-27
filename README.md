@@ -42,13 +42,15 @@ Multiple extensions are provided in this repository. Find the documentation for 
 
 1. [SQL Server](Extensions/SqlServer/README.md)
 
-1. [Parquet (beta)](Extensions/Parquet/README.md)
+1. [Parquet](Extensions/Parquet/README.md)
 
-1. [File Storage (beta)](Interfaces/Cosmos.DataTransfer.Common/README.md)
+1. [CSV](Extensions/Csv/README.md)
 
-1. [Azure Blob Storage (beta)](Extensions/AzureBlob/README.md)
+1. [File Storage](Interfaces/Cosmos.DataTransfer.Common/README.md)
 
-1. [AWS S3 (beta)](Extensions/AwsS3/README.md)
+1. [Azure Blob Storage](Extensions/AzureBlob/README.md)
+
+1. [AWS S3](Extensions/AwsS3/README.md)
 
 6. [Azure Cognitive Search](Extensions/CognitiveSearch/README.md)
 

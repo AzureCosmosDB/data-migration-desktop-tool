@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace Cosmos.DataTransfer.Interfaces;
@@ -18,11 +19,11 @@ public static class DataItemJsonConverter
         return Encoding.UTF8.GetString(bytes);
     }
 
-    public static void WriteDataItem(Utf8JsonWriter writer, IDataItem item, bool includeNullFields, string? objectName = null)
+    public static void WriteDataItem(Utf8JsonWriter writer, IDataItem item, bool includeNullFields, JsonEncodedText? objectName = null)
     {
         if (objectName != null)
         {
-            writer.WriteStartObject(objectName);
+            writer.WriteStartObject(objectName.Value);
         }
         else
         {
@@ -40,22 +41,23 @@ public static class DataItemJsonConverter
 
     private static void WriteFieldValue(Utf8JsonWriter writer, string fieldName, object? fieldValue, bool includeNullFields)
     {
+        var propertyName = GetAsUnescaped(fieldName);
         if (fieldValue == null)
         {
             if (includeNullFields)
             {
-                writer.WriteNull(fieldName);
+                writer.WriteNull(propertyName);
             }
         }
         else
         {
             if (fieldValue is IDataItem child)
             {
-                WriteDataItem(writer, child, includeNullFields, fieldName);
+                WriteDataItem(writer, child, includeNullFields, propertyName);
             }
             else if (fieldValue is not string && fieldValue is IEnumerable children)
             {
-                writer.WriteStartArray(fieldName);
+                writer.WriteStartArray(propertyName);
                 foreach (object arrayItem in children)
                 {
                     if (arrayItem is IDataItem arrayChild)
@@ -76,28 +78,33 @@ public static class DataItemJsonConverter
                     }
                     else
                     {
-                        writer.WriteStringValue(arrayItem.ToString());
+                        writer.WriteStringValue(GetAsUnescaped(arrayItem.ToString()!));
                     }
                 }
                 writer.WriteEndArray();
             }
             else if (TryGetNumber(fieldValue, out var number))
             {
-                writer.WriteNumber(fieldName, number);
+                writer.WriteNumber(propertyName, number);
             }
             else if (fieldValue is bool boolean)
             {
-                writer.WriteBoolean(fieldName, boolean);
+                writer.WriteBoolean(propertyName, boolean);
             }
             else if (fieldValue is DateTime date)
             {
-                writer.WriteString(fieldName, date.ToString("O"));
+                writer.WriteString(propertyName, date.ToString("O"));
             }
             else
             {
-                writer.WriteString(fieldName, fieldValue.ToString());
+                writer.WriteString(propertyName, GetAsUnescaped(fieldValue.ToString()!));
             }
         }
+    }
+
+    private static JsonEncodedText GetAsUnescaped(string text)
+    {
+        return JsonEncodedText.Encode(text, JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
     }
 
     private static bool TryGetNumber(object x, out double number)

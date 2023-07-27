@@ -7,12 +7,12 @@ The CSV extension provides formatter capabilities for reading from and writing t
 > **Note**: When specifying the CSV extension as the Source or Sink property in configuration, utilize the names listed below.
 
 Supported storage sinks:
-- File - **Csv-File**
+- File - **Csv**
 - Azure Blob Storage - **Csv-AzureBlob**
 - AWS S3 - **Csv-AwsS3**
  
 Supported storage sources:
-- File - **Csv-File**
+- File - **Csv**
 
 ## Settings
 
