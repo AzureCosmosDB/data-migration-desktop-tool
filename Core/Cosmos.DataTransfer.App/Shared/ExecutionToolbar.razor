@@ -4,10 +4,10 @@
 @inherits BlazorStateComponent
 
 <div>
-    <button class="btn btn-primary" disabled="@ExecutionState.IsExecuting" @onclick=Generate>Generate Command</button>
-    <button class="btn btn-primary" disabled="@ExecutionState.IsExecuting" @onclick=Export>Export Settings</button>
-    <button class="btn btn-success" disabled="@ExecutionState.IsExecuting" @onclick=Run>Run Job</button>
-    <button class="btn btn-secondary" disabled="@(!ExecutionState.IsExecuting)" @onclick=Cancel>Cancel</button>
+    <button class="btn btn-lg btn-primary" disabled="@ExecutionState.IsExecuting" @onclick=Generate>Generate Command</button>
+    <button class="btn btn-lg btn-primary" disabled="@ExecutionState.IsExecuting" @onclick=Export>Export Settings</button>
+    <button class="btn btn-lg btn-success" disabled="@ExecutionState.IsExecuting" @onclick=Run>Run Job</button>
+    <button class="btn btn-lg btn-danger" disabled="@(!ExecutionState.IsExecuting)" @onclick=Cancel>Cancel</button>
 </div>
 
 @code {
