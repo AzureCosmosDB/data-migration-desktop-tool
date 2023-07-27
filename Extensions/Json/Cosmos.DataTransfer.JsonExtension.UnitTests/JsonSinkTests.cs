@@ -1,4 +1,4 @@
-using Cosmos.DataTransfer.Interfaces;
+﻿using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 
@@ -86,7 +86,6 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             Assert.IsTrue(outputData.Any(o => o.Id == 3 && o.Created == randomTime));
         }
 
-
         [TestMethod]
         public async Task WriteAsync_WithDateArray_PreservesDateFormats()
         {
@@ -119,5 +118,45 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             Assert.AreEqual(DateTime.UnixEpoch, outputData?.Single().Dates?.ElementAt(2));
         }
 
+        [TestMethod]
+        public async Task WriteAsync_WithUnicode_PreservesOriginalCharacters()
+        {
+            var sink = new JsonFileSink();
+
+            const string japanese = "炎ギ因";
+            const string emoji = "✉✔✈";
+            const string text = "XXX";
+            var data = new List<DictionaryDataItem>
+            {
+                new(new Dictionary<string, object?>
+                {
+                    { "Id", 1 },
+                    { "Array", new[] { japanese, emoji, text } },
+                    { "Emoji", emoji },
+                    { japanese, text },
+                })
+            };
+
+            string outputFile = $"{DateTime.UtcNow:yy-MM-dd}_MixedUnicodeOutput.json";
+            var config = TestHelpers.CreateConfig(new Dictionary<string, string>
+            {
+                { "FilePath", outputFile }
+            });
+
+            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonFileSource(), NullLogger.Instance);
+
+            string json = await File.ReadAllTextAsync(outputFile);
+
+            Assert.IsTrue(json.Contains(japanese));
+            Assert.IsTrue(json.Contains(emoji));
+
+            var outputData = JsonConvert.DeserializeObject<List<TestDataObject>>(json);
+
+            var dataObject = outputData?.Single();
+            Assert.AreEqual(japanese, dataObject?.Array?.ElementAt(0));
+            Assert.AreEqual(emoji, dataObject?.Array?.ElementAt(1));
+            Assert.AreEqual(emoji, dataObject?.Emoji);
+            Assert.AreEqual(text, dataObject?.炎ギ因);
+        }
     }
 }
