@@ -39,7 +39,7 @@ jobs:
       with:
         dotnet-version: 7.0.x
     - name: Install MAUI Workload
-      run: dotnet workload install maui --ignore-failed-sources
+      run: dotnet workload install maui-windows --ignore-failed-sources
     - name: Restore Dependencies
       run: dotnet restore ./App/CosmosDbApp.sln
     - name: Build App
@@ -59,7 +59,7 @@ jobs:
       with:
         dotnet-version: 7.0.x
     - name: Install MAUI Workload
-      run: dotnet workload install maui --ignore-failed-sources
+      run: dotnet workload install maui-maccatalyst --ignore-failed-sources
     - name: Restore Dependencies
       run: dotnet restore ./App/CosmosDbApp.sln
     - name: Build App
