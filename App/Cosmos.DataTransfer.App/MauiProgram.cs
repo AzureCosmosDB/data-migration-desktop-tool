@@ -21,14 +21,17 @@ public static class MauiProgram
         builder.Services.AddMauiBlazorWebView();
 
         string? executionDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        string? searchDir = FindParentWithContents(executionDir, "Extensions");
+        string? searchDir = null;
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 
-        searchDir = FindParentWithContents(executionDir, "Core", ".git");
+        searchDir ??= FindParentWithContents(executionDir, "Core", ".git");
 #endif
+
+        searchDir ??= FindParentWithContents(executionDir, "Extensions");
+
         var dmtAppPath = FindPreferredCoreAppPath(searchDir, platformCoreAppName);
 
         var appSettings = new AppSettings
