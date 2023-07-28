@@ -28,7 +28,7 @@ public static class MauiProgram
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
-		appSettings.CoreAppPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..\\..\\..\\..\\..\\..\\..", "Core\\Cosmos.DataTransfer.Core", "bin\\Debug\\net6.0\\dmt.exe"));
+		appSettings.CoreAppPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..\\..\\..\\..\\..\\..", "Core\\Cosmos.DataTransfer.Core", "bin\\Debug\\net6.0\\dmt.exe"));
 #endif
 
         builder.Services.AddSingleton(appSettings);

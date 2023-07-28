@@ -9,7 +9,7 @@
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
-    <MtouchLink>None</MtouchLink>
+    <WindowsPackageType Condition="$([MSBuild]::IsOSPlatform('windows'))">None</WindowsPackageType>
 
     <!-- Display name -->
     <ApplicationTitle>Cosmos.DataTransfer.App</ApplicationTitle>
