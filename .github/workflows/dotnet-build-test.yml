@@ -48,7 +48,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: app-win-build
-        path: /home/runner/work/data-migration-desktop-tool/data-migration-desktop-tool/App/Cosmos.DataTransfer.App/bin/Debug/net7.0-windows10.0.19041.0/win10-x64 #path/to/artifact/ # or path/to/artifact  
+        path: D:\a\data-migration-desktop-tool\data-migration-desktop-tool\App\Cosmos.DataTransfer.App\bin\Debug\net7.0-windows10.0.19041.0\win10-x64 #path/to/artifact/ # or path/to/artifact  
   build-gui-mac:
     name: Build GUI projects for Mac
     runs-on: macos-12
@@ -68,4 +68,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: app-mac-build
-        path: /home/runner/work/data-migration-desktop-tool/data-migration-desktop-tool/App/Cosmos.DataTransfer.App/bin/Debug/net7.0-maccatalyst/maccatalyst-x64 #path/to/artifact/ # or path/to/artifact  
+        path: /Users/runner/work/data-migration-desktop-tool/data-migration-desktop-tool/App/Cosmos.DataTransfer.App/bin/Debug/net7.0-maccatalyst/maccatalyst-x64 #path/to/artifact/ # or path/to/artifact  
