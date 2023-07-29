@@ -58,11 +58,6 @@ public static class MauiProgram
             searchDir = Path.GetDirectoryName(searchDir);
         }
 
-        if (string.IsNullOrEmpty(searchDir))
-        {
-            return executionDir;
-        }
-
         return searchDir;
     }
 
