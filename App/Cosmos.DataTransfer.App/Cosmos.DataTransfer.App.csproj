@@ -12,7 +12,8 @@
     <WindowsPackageType Condition="$([MSBuild]::IsOSPlatform('windows'))">None</WindowsPackageType>
 
     <!-- Display name -->
-    <ApplicationTitle>Cosmos.DataTransfer.App</ApplicationTitle>
+    <ApplicationTitle>Cosmos Data Migration Tool</ApplicationTitle>
+    <AssemblyName>dmt.ui</AssemblyName>
 
     <!-- App Identifier -->
     <ApplicationId>com.companyname.cosmos.datatransfer.app</ApplicationId>
@@ -26,7 +27,6 @@
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
     <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
     <Nullable>enable</Nullable>
-    <AssemblyName>dmt.ui</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
