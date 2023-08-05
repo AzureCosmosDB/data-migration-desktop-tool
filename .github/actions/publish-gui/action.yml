@@ -1,0 +1,46 @@
+name: publish-gui
+description: Build desktop GUI application
+inputs:
+  platform:
+    description: General target platform name (windows)
+    required: true
+  platform-short:
+    description: General target platform short name (win)
+    required: true
+  runtime:
+    description: Target platform runtime (win-x64)
+    required: true
+  build-version:
+    description: Build or release version (0.0.1)
+    required: true
+  maui-workload:
+    description: Platform specific workload name for MAUI (maui-windows)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 7.0.x
+    - name: Install MAUI Workload
+      shell: bash
+      run: dotnet workload install ${{ maui-workload }} --ignore-failed-sources
+    - name: Restore Dependencies
+      shell: bash
+      run: dotnet restore ./App/CosmosDbApp.sln
+    - name: Build Core app package
+      shell: bash
+      run: |
+        dotnet publish --no-restore \
+        App/Cosmos.DataTransfer.App/Cosmos.DataTransfer.App.csproj \
+        --configuration Release \
+        --output ${{ inputs.platform-short }} \
+        --self-contained true \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=true \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=true \
+        -p:Version=${{ inputs.build-version }}

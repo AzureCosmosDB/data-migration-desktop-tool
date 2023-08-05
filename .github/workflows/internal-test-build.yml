@@ -6,15 +6,27 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 jobs:
-  build-package:
-    name: Build self-contained executables
-    runs-on: ubuntu-latest
-    container: mcr.microsoft.com/dotnet/sdk:6.0
+  build-package-win:
+    name: Build Windows self-contained executables
+    runs-on: windows-2022
     steps:
       - name: Check .NET version
         run: dotnet --version
       - name: Checkout source code
         uses: actions/checkout@v3
+      - name: Execute Action publish-gui for Windows
+        uses: ./.github/actions/publish-gui
+        id: publish-gui-win
+        with:
+          platform: windows
+          platform-short: win
+          runtime: win-x64
+          build-version: 0.0.${{ github.run_number }}
+          maui-workload: maui-windows
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 6.0.x
       - name: Execute Action build-with-plugins for Windows
         uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-win
@@ -23,6 +35,30 @@ jobs:
           platform-short: win
           runtime: win-x64
           build-version: 0.0.${{ github.run_number }}
+  build-package-mac:
+    name: Build MacOS self-contained executables
+    runs-on: macos-13
+    steps:
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '14.3'
+      - name: Check .NET version
+        run: dotnet --version
+      - name: Checkout source code
+        uses: actions/checkout@v3
+      - name: Execute Action publish-gui for MacOS
+        uses: ./.github/actions/publish-gui
+        id: publish-gui-mac
+        with:
+          platform: mac
+          platform-short: mac
+          runtime: osx-x64
+          build-version: 0.0.${{ github.run_number }}
+          maui-workload: maui-maccatalyst
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 6.0.x
       - name: Execute Action build-with-plugins for MacOS
         uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-mac
@@ -31,6 +67,15 @@ jobs:
           platform-short: mac
           runtime: osx-x64
           build-version: 0.0.${{ github.run_number }}
+  build-package-lin:
+    name: Build Linux self-contained executables
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:6.0
+    steps:
+      - name: Check .NET version
+        run: dotnet --version
+      - name: Checkout source code
+        uses: actions/checkout@v3
       - name: Execute Action build-with-plugins for Linux
         uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-linux
