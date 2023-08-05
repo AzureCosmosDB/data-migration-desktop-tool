@@ -10,6 +10,9 @@ inputs:
   runtime:
     description: Target platform runtime (win-x64)
     required: true
+  framework:
+    description: Target platform framework (net7.0-windows10.0.19041.0)
+    required: true
   build-version:
     description: Build or release version (0.0.1)
     required: true
@@ -35,6 +38,7 @@ runs:
         dotnet publish --no-restore \
         App/Cosmos.DataTransfer.App/Cosmos.DataTransfer.App.csproj \
         --configuration Release \
+        --framework ${{ inputs.framework }} \
         --output ${{ inputs.platform-short }} \
         --self-contained true \
         --runtime ${{ inputs.runtime }} \

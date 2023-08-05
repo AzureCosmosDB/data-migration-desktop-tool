@@ -21,6 +21,7 @@ jobs:
           platform: windows
           platform-short: win
           runtime: win-x64
+          framework: net7.0-windows10.0.19041.0
           build-version: 0.0.${{ github.run_number }}
           maui-workload: maui-windows
       - name: Setup .NET
@@ -53,6 +54,7 @@ jobs:
           platform: mac
           platform-short: mac
           runtime: osx-x64
+          framework: net7.0-maccatalyst
           build-version: 0.0.${{ github.run_number }}
           maui-workload: maui-maccatalyst
       - name: Setup .NET
