@@ -25,7 +25,7 @@ runs:
         dotnet-version: 7.0.x
     - name: Install MAUI Workload
       shell: bash
-      run: dotnet workload install ${{ maui-workload }} --ignore-failed-sources
+      run: dotnet workload install ${{ inputs.maui-workload }} --ignore-failed-sources
     - name: Restore Dependencies
       shell: bash
       run: dotnet restore ./App/CosmosDbApp.sln
