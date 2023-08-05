@@ -24,6 +24,7 @@ jobs:
           framework: net7.0-windows10.0.19041.0
           build-version: 0.0.${{ github.run_number }}
           maui-workload: maui-windows
+          additional-publish-args: -p:WindowsAppSDKSelfContained=true -p:GenerateAppxPackageOnBuild=false
       - name: Setup .NET
         uses: actions/setup-dotnet@v2
         with:
@@ -53,7 +54,7 @@ jobs:
         with:
           platform: mac
           platform-short: mac
-          runtime: osx-x64
+          runtime: maccatalyst-x64
           framework: net7.0-maccatalyst
           build-version: 0.0.${{ github.run_number }}
           maui-workload: maui-maccatalyst

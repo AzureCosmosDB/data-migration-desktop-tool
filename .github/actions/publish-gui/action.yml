@@ -19,6 +19,10 @@ inputs:
   maui-workload:
     description: Platform specific workload name for MAUI (maui-windows)
     required: true
+  additional-publish-args:
+    description: Additional arguments for dotnet publish
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -47,4 +51,4 @@ runs:
         -p:EnableCompressionInSingleFile=true \
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=true \
-        -p:Version=${{ inputs.build-version }}
+        -p:Version=${{ inputs.build-version }} ${{ inputs.additional-publish-args }}
