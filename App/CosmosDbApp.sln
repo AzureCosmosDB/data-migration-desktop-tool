@@ -10,6 +10,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.Ui", "C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.Web", "Cosmos.DataTransfer.Web\Cosmos.DataTransfer.Web.csproj", "{B2484E00-EBFD-4954-BBE5-492E642638F3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.App.Windows", "Cosmos.DataTransfer.App.Windows\Cosmos.DataTransfer.App.Windows.csproj", "{8D120A74-2BE7-4AA7-B265-52AE27FD9CBF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.Ui.Common", "Cosmos.DataTransfer.Ui.Common\Cosmos.DataTransfer.Ui.Common.csproj", "{2C20A170-F544-4BE1-8F90-7FFA6A601D80}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,12 +38,20 @@ Global
 		{B2484E00-EBFD-4954-BBE5-492E642638F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2484E00-EBFD-4954-BBE5-492E642638F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2484E00-EBFD-4954-BBE5-492E642638F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D120A74-2BE7-4AA7-B265-52AE27FD9CBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D120A74-2BE7-4AA7-B265-52AE27FD9CBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D120A74-2BE7-4AA7-B265-52AE27FD9CBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D120A74-2BE7-4AA7-B265-52AE27FD9CBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C20A170-F544-4BE1-8F90-7FFA6A601D80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C20A170-F544-4BE1-8F90-7FFA6A601D80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C20A170-F544-4BE1-8F90-7FFA6A601D80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C20A170-F544-4BE1-8F90-7FFA6A601D80}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		        SolutionGuid = {61F7FB11-1E47-470C-91E2-47F8143E1572}
 		SolutionGuid = {CA5FFC7E-EC76-4544-B861-BBB175A47B10}
+		        SolutionGuid = {61F7FB11-1E47-470C-91E2-47F8143E1572}
 	EndGlobalSection
 EndGlobal

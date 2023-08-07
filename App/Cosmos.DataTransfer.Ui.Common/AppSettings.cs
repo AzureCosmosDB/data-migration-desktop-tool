@@ -1,4 +1,6 @@
-﻿namespace Cosmos.DataTransfer.App
+﻿using System.Reflection;
+
+namespace Cosmos.DataTransfer.Ui.Common
 {
     public class AppSettings
     {

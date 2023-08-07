@@ -1,11 +1,9 @@
-using Cosmos.DataTransfer.Interfaces;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Cosmos.DataTransfer.Interfaces.Manifest;
-using System.Text;
-using System.Text.Json.Nodes;
 
-namespace Cosmos.DataTransfer.Ui
+namespace Cosmos.DataTransfer.Ui.Common
 {
     public static class ExtensionManifestUtility
     {

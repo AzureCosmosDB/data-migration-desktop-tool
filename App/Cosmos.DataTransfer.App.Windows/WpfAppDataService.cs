@@ -1,13 +1,17 @@
-using System.Diagnostics;
-using System.Text.Json;
-using Cosmos.DataTransfer.Interfaces.Manifest;
-using Cosmos.DataTransfer.Ui;
+﻿using Cosmos.DataTransfer.Interfaces.Manifest;
 using Cosmos.DataTransfer.Ui.Common;
-using Cosmos.DataTransfer.Ui.MessageOutput;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace Cosmos.DataTransfer.App.Data;
+namespace Cosmos.DataTransfer.App.Windows;
 
-public class AppDataService : IAppDataService
+public class WpfAppDataService : IAppDataService
 {
     private readonly AppSettings _appSettings;
     private ExtensionManifest? _sources;
@@ -44,7 +48,7 @@ public class AppDataService : IAppDataService
         return manifest;
     }
 
-    public AppDataService(AppSettings appSettings)
+    public WpfAppDataService(AppSettings appSettings)
     {
         _appSettings = appSettings;
     }
@@ -129,7 +133,7 @@ public class AppDataService : IAppDataService
                     {
                         message.Type = activeType.Value;
                     }
-                    
+
                     await sendLogMessage(message);
 
                     activeType = message.Type;

@@ -1,7 +1,5 @@
-using Cosmos.DataTransfer.Interfaces;
-using Cosmos.DataTransfer.Ui.MessageOutput;
+namespace Cosmos.DataTransfer.Ui.Common;
 
-namespace Cosmos.DataTransfer.Ui;
 public interface IAppDataService : IDataService
 {
     Task<string> BuildCommandAsync(string selectedSource, string selectedSink, IEnumerable<ExtensionSetting>? source, IEnumerable<ExtensionSetting>? sink);

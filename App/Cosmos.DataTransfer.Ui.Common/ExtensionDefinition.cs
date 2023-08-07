@@ -1,4 +1,4 @@
-﻿namespace Cosmos.DataTransfer.Ui;
+﻿namespace Cosmos.DataTransfer.Ui.Common;
 
 
 public record ExtensionDefinition(string DisplayName);

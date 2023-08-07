@@ -1,9 +1,6 @@
-using System.Collections.Generic;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Cosmos.DataTransfer.Interfaces.Manifest;
 
-namespace Cosmos.DataTransfer.Ui
+namespace Cosmos.DataTransfer.Ui.Common
 {
     public interface IDataService
     {

@@ -1,0 +1,65 @@
+﻿<Window x:Class="Cosmos.DataTransfer.App.Windows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Cosmos.DataTransfer.App.Windows"
+        xmlns:common="clr-namespace:Cosmos.DataTransfer.Ui.Common;assembly=Cosmos.DataTransfer.Ui.Common"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="800" Width="1200">
+    <Window.DataContext>
+        <local:MainViewModel />
+    </Window.DataContext>
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type common:ExtensionDefinition}">
+            <TextBlock Text="{Binding DisplayName}"/>
+        </DataTemplate>
+
+        <DataTemplate x:Key="SettingTemplate" DataType="{x:Type common:ExtensionSetting}">
+            <DockPanel>
+                <Label Content="{Binding Definition.Name}" />
+                <TextBox Text="{Binding Value}" />
+            </DockPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="3*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel x:Name="Header" Grid.Row="0" Grid.Column="0">
+
+        </DockPanel>
+
+        <ScrollViewer Grid.Row="1" Grid.Column="0">
+            <UniformGrid Rows="1">
+                <StackPanel>
+                    <TextBlock Text="Source" />
+                    <DockPanel>
+                        <Label Content="Extension: "/>
+                        <ComboBox ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding SourceSettings.Settings}" ItemTemplate="{StaticResource SettingTemplate}">
+                    </ItemsControl>
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="Sink" />
+                    <DockPanel>
+                        <Label Content="Extension: "/>
+                        <ComboBox ItemsSource="{Binding Sinks}" SelectedItem="{Binding SelectedSink}" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding SinkSettings.Settings}" ItemTemplate="{StaticResource SettingTemplate}">
+                    </ItemsControl>
+                </StackPanel>
+            </UniformGrid>
+        </ScrollViewer>
+
+        <DockPanel x:Name="Output" Grid.Row="2" Grid.Column="0">
+            <TextBlock Text="Output" DockPanel.Dock="Top"/>
+            <local:MessageLog/>
+        </DockPanel>
+    </Grid>
+</Window>

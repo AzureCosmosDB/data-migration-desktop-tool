@@ -1,8 +1,7 @@
 using System.Text.Json;
-using Cosmos.DataTransfer.Interfaces;
 using Cosmos.DataTransfer.Interfaces.Manifest;
 
-namespace Cosmos.DataTransfer.Ui
+namespace Cosmos.DataTransfer.Ui.Common
 {
     public class ExtensionSetting
     {
