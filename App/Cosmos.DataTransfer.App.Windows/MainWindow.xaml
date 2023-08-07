@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:Cosmos.DataTransfer.App.Windows"
         xmlns:common="clr-namespace:Cosmos.DataTransfer.Ui.Common;assembly=Cosmos.DataTransfer.Ui.Common"
         mc:Ignorable="d"
-        Title="MainWindow" Height="800" Width="1200">
+        Title="Azure Cosmos DB Desktop Data Migration Tool" Height="800" Width="1200"
+        FontSize="16" FontFamily="Trebuchet MS">
     <Window.DataContext>
         <local:MainViewModel />
     </Window.DataContext>
@@ -15,11 +16,62 @@
             <TextBlock Text="{Binding DisplayName}"/>
         </DataTemplate>
 
+        <DataTemplate x:Key="TextSettingTemplate" DataType="{x:Type common:ExtensionSetting}">
+            <TextBox Text="{Binding StringValue}" VerticalContentAlignment="Center" />
+        </DataTemplate>
+        <DataTemplate x:Key="BooleanSettingTemplate" DataType="{x:Type common:ExtensionSetting}">
+            <CheckBox IsChecked="{Binding BooleanValue}" VerticalContentAlignment="Center" />
+        </DataTemplate>
+        <DataTemplate x:Key="NumberSettingTemplate" DataType="{x:Type common:ExtensionSetting}">
+            <TextBox Text="{Binding IntValue}" VerticalContentAlignment="Center" PreviewTextInput="AllowOnlyNumbers" />
+        </DataTemplate>
+        <DataTemplate x:Key="FloatSettingTemplate" DataType="{x:Type common:ExtensionSetting}">
+            <TextBox Text="{Binding FloatValue}" VerticalContentAlignment="Center" PreviewTextInput="AllowOnlyFloatNumbers" />
+        </DataTemplate>
+        <DataTemplate x:Key="SelectListSettingTemplate" DataType="{x:Type common:ExtensionSetting}">
+            <ComboBox ItemsSource="{Binding Definition.ValidValues}" SelectedItem="{Binding Value}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </DataTemplate>
+        <DataTemplate x:Key="MultiLineSettingTemplate" DataType="{x:Type common:ExtensionSetting}">
+            <TextBox MinLines="8" Text="{Binding StringValue}" VerticalContentAlignment="Top" />
+        </DataTemplate>
+        <DataTemplate x:Key="DateSettingTemplate" DataType="{x:Type common:ExtensionSetting}">
+            <DatePicker SelectedDate="{Binding DateValue}" VerticalContentAlignment="Center" />
+        </DataTemplate>
+
+        <local:SettingEditorTemplateSelector x:Key="SettingEditSelector"
+                                                Default="{StaticResource TextSettingTemplate}"
+                                                Boolean="{StaticResource BooleanSettingTemplate}"
+                                                Number="{StaticResource NumberSettingTemplate}"
+                                                Float="{StaticResource FloatSettingTemplate}"
+                                                SelectList="{StaticResource SelectListSettingTemplate}"
+                                                MultiLine="{StaticResource MultiLineSettingTemplate}"
+                                                Date="{StaticResource DateSettingTemplate}"
+                                                />
+
         <DataTemplate x:Key="SettingTemplate" DataType="{x:Type common:ExtensionSetting}">
-            <DockPanel>
-                <Label Content="{Binding Definition.Name}" />
-                <TextBox Text="{Binding Value}" />
-            </DockPanel>
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition SharedSizeGroup="SettingHeader" Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <DockPanel LastChildFill="False" Margin="0,0,10,0" HorizontalAlignment="Right">
+                    <Label Content="{Binding Definition.Name}" />
+                    <TextBlock x:Name="RequiredIndicator" Foreground="Red" Visibility="Collapsed" VerticalAlignment="Center">*</TextBlock>
+                </DockPanel>
+                
+                <ContentControl Grid.Column="1" Content="{Binding}" ContentTemplateSelector="{StaticResource SettingEditSelector}"/>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Definition.IsRequired}" Value="True">
+                    <Setter TargetName="RequiredIndicator" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
     </Window.Resources>
 
@@ -31,32 +83,42 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <DockPanel x:Name="Header" Grid.Row="0" Grid.Column="0" LastChildFill="False">
-            <Button Command="{Binding GenerateCmdLineCommand}">Generate Command</Button>
-            <Button Command="{Binding ExportSettingsCommand}">Export Settings</Button>
-            <Button Command="{Binding RunJobCommand}">Run Job</Button>
-            <Button Command="{Binding CancelCommand}">Cancel</Button>
+        <DockPanel x:Name="Header" Grid.Row="0" Grid.Column="0" LastChildFill="False" Background="#FF212529">
+            <Button Command="{Binding GenerateCmdLineCommand}" Style="{DynamicResource ToolbarButton}">Generate Command</Button>
+            <Button Command="{Binding ExportSettingsCommand}" Style="{DynamicResource ToolbarButton}">Export Settings</Button>
+            <Button Command="{Binding RunJobCommand}" Style="{DynamicResource ToolbarButton}" Background="#FF198754">Run Job</Button>
+            <Button Command="{Binding CancelCommand}" Style="{DynamicResource ToolbarButton}" Background="#FFA13636">Cancel</Button>
+
+            <TextBlock DockPanel.Dock="Right" Margin="20,5" VerticalAlignment="Center">
+                <Hyperlink Click="Hyperlink_Click">About</Hyperlink>
+            </TextBlock>
         </DockPanel>
 
         <ScrollViewer Grid.Row="1" Grid.Column="0">
             <UniformGrid Rows="1">
                 <StackPanel>
-                    <TextBlock Text="Source" />
-                    <DockPanel>
+                    <TextBlock Text="Source" Style="{DynamicResource H1}" />
+                    <DockPanel Margin="10">
                         <Label Content="Extension: "/>
                         <ComboBox ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" />
                     </DockPanel>
-                    <ItemsControl ItemsSource="{Binding SourceSettings.Settings}" ItemTemplate="{StaticResource SettingTemplate}">
-                    </ItemsControl>
+                    <Border Style="{DynamicResource SettingsBorder}">
+                        <ItemsControl ItemsSource="{Binding SourceSettings.Settings}" ItemTemplate="{StaticResource SettingTemplate}"
+                                      Grid.IsSharedSizeScope="True">
+                        </ItemsControl>
+                    </Border>
                 </StackPanel>
                 <StackPanel>
-                    <TextBlock Text="Sink" />
-                    <DockPanel>
+                    <TextBlock Text="Sink" Style="{DynamicResource H1}"/>
+                    <DockPanel Margin="10">
                         <Label Content="Extension: "/>
                         <ComboBox ItemsSource="{Binding Sinks}" SelectedItem="{Binding SelectedSink}" />
                     </DockPanel>
-                    <ItemsControl ItemsSource="{Binding SinkSettings.Settings}" ItemTemplate="{StaticResource SettingTemplate}">
-                    </ItemsControl>
+                    <Border Style="{DynamicResource SettingsBorder}">
+                        <ItemsControl ItemsSource="{Binding SinkSettings.Settings}" ItemTemplate="{StaticResource SettingTemplate}"
+                                      Grid.IsSharedSizeScope="True">
+                        </ItemsControl>
+                    </Border>
                 </StackPanel>
             </UniformGrid>
         </ScrollViewer>

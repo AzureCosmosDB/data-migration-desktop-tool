@@ -1,37 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Threading.Tasks;
 using System.Threading;
-using System.Windows;
+using System.Threading.Tasks;
 using Cosmos.DataTransfer.App.Windows.Framework;
 using Cosmos.DataTransfer.Interfaces.Manifest;
 using Cosmos.DataTransfer.Ui.Common;
-using System.Diagnostics.Metrics;
-using System.Windows.Input;
-using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
-using System.Windows.Threading;
 using CommunityToolkit.Mvvm.Input;
+using Cosmos.DataTransfer.App.Windows.Actions;
 
 namespace Cosmos.DataTransfer.App.Windows;
 
 public class MainViewModel : ViewModelBase
 {
-    private readonly IAppDataService _dataService;
-
     public MainViewModel()
     {
-        GenerateCmdLineCommand = new RelayCommand(GenerateCmdLine);
-        ExportSettingsCommand = new RelayCommand(ExportSettings);
-        RunJobCommand = new RelayCommand(RunJob);
-        CancelCommand = new RelayCommand(Cancel);
+        GenerateCmdLineCommand = new AsyncRelayCommand(new GenerateCommandLineAction(this).Execute, () => !IsExecuting);
+        ExportSettingsCommand = new AsyncRelayCommand(new ExportSettingsAction(this).Execute, () => !IsExecuting);
+        RunJobCommand = new AsyncRelayCommand(new RunJobAction(this).Execute, () => !IsExecuting);
+        CancelCommand = new AsyncRelayCommand(Cancel, () => IsExecuting);
 
         var appSettings = App.Current.Settings;
         if (appSettings == null)
@@ -39,7 +27,7 @@ public class MainViewModel : ViewModelBase
             throw new InvalidOperationException();
         }
 
-        _dataService = new WpfAppDataService(appSettings);
+        DataService = new WpfAppDataService(appSettings);
 
         Initialize();
 
@@ -51,10 +39,15 @@ public class MainViewModel : ViewModelBase
 
     private async void Initialize()
     {
-        var extensions = await _dataService.GetExtensionsAsync();
+        var extensions = await DataService.GetExtensionsAsync();
         Sources.AddRange(extensions.Sources);
         Sinks.AddRange(extensions.Sinks);
     }
+
+    public IRelayCommand ExportSettingsCommand { get; }
+    public IRelayCommand RunJobCommand { get; }
+    public IRelayCommand CancelCommand { get; }
+    public IRelayCommand GenerateCmdLineCommand { get; }
 
     public ObservableCollection<ExtensionDefinition> Sources { get; } = new();
     public ObservableCollection<ExtensionDefinition> Sinks { get; } = new();
@@ -73,7 +66,7 @@ public class MainViewModel : ViewModelBase
                 }
                 else
                 {
-                    SourceSettings = _dataService.GetSettingsAsync(_selectedSource.DisplayName, ExtensionDirection.Source)
+                    SourceSettings = DataService.GetSettingsAsync(_selectedSource.DisplayName, ExtensionDirection.Source)
                         .GetAwaiter().GetResult();
                 }
             }
@@ -94,7 +87,7 @@ public class MainViewModel : ViewModelBase
                 }
                 else
                 {
-                    SinkSettings = _dataService.GetSettingsAsync(_selectedSink.DisplayName, ExtensionDirection.Sink)
+                    SinkSettings = DataService.GetSettingsAsync(_selectedSink.DisplayName, ExtensionDirection.Sink)
                         .GetAwaiter().GetResult();
                 }
             }
@@ -110,7 +103,6 @@ public class MainViewModel : ViewModelBase
     }
 
     private ExtensionSettings? _sourceSettings;
-    private bool _isExecuting;
 
     public ExtensionSettings? SourceSettings
     {
@@ -118,119 +110,40 @@ public class MainViewModel : ViewModelBase
         set => SetProperty(ref _sourceSettings, value);
     }
 
-    public ICommand ExportSettingsCommand { get; }
+    public CancellationTokenSource? CurrentExecutionAction { get; set; }
+    private bool _isExecuting;
 
-    private void ExportSettings()
+    public bool IsExecuting
     {
-        CurrentExecutionAction = new CancellationTokenSource();
-        IsExecuting = true;
-
-        ThenReset(ExecuteExportSettings(CurrentExecutionAction.Token));
-    }
-
-    private async Task ExecuteExportSettings(CancellationToken cancellationToken)
-    {
-        try
+        get => _isExecuting;
+        set
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var output = await _dataService.BuildSettingsAsync(SelectedSource?.DisplayName ?? throw new InvalidOperationException("No Source selected"),
-                SelectedSink?.DisplayName ?? throw new InvalidOperationException("No Sink selected"),
-                SourceSettings?.Settings,
-                SinkSettings?.Settings);
-
-            Messenger.Log(LogMessage.Data(output));
-        }
-        catch (Exception ex)
-        {
-            Messenger.Log(LogMessage.Error(ex.Message));
+            if (SetProperty(ref _isExecuting, value))
+            {
+                GenerateCmdLineCommand.NotifyCanExecuteChanged();
+                ExportSettingsCommand.NotifyCanExecuteChanged();
+                RunJobCommand.NotifyCanExecuteChanged();
+                CancelCommand.NotifyCanExecuteChanged();
+            }
         }
     }
 
-    public ICommand RunJobCommand { get; }
+    public IAppDataService DataService { get; }
 
-    private void RunJob()
+    public IMessenger GetMessenger() => Messenger;
+
+    private async Task Cancel()
     {
-        CurrentExecutionAction = new CancellationTokenSource();
-        IsExecuting = true;
-
-        ThenReset(ExecuteRunJob(CurrentExecutionAction.Token));
+        CancelExecution(false);
     }
 
-    private async Task ExecuteRunJob(CancellationToken cancellationToken)
+    public void CancelExecution(bool completed)
     {
-        try
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            bool completed = await _dataService.ExecuteWithSettingsAsync(SelectedSource?.DisplayName ?? throw new InvalidOperationException("No Source selected"),
-                SelectedSink?.DisplayName ?? throw new InvalidOperationException("No Sink selected"),
-                SourceSettings?.Settings,
-                SinkSettings?.Settings,
-                async m => Messenger.Log(m),
-                cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            Messenger.Log(LogMessage.Error(ex.Message));
-        }
-    }
-
-    public ICommand CancelCommand { get; }
-
-    private async void Cancel()
-    {
-        await CancelExecution(false);
-    }
-
-    public ICommand GenerateCmdLineCommand { get; }
-
-    private void GenerateCmdLine()
-    {
-        CurrentExecutionAction = new CancellationTokenSource();
-        IsExecuting = true;
-
-        ThenReset(ExecuteGenerateCmdLine(CurrentExecutionAction.Token));
-    }
-
-    public void ThenReset(Task task)
-    {
-        task.ContinueWith(t =>
-        {
-            CancelExecution(true);
-        });
-    }
-
-    protected async Task CancelExecution(bool Completed)
-    {
-        if (!Completed)
+        if (!completed)
         {
             CurrentExecutionAction?.Cancel();
         }
         CurrentExecutionAction = null;
         IsExecuting = false;
-    }
-
-    public CancellationTokenSource? CurrentExecutionAction { get; set; }
-
-    public bool IsExecuting
-    {
-        get => _isExecuting;
-        set => SetProperty(ref _isExecuting, value);
-    }
-
-    private async Task ExecuteGenerateCmdLine(CancellationToken cancellationToken)
-    {
-        try
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var output = await _dataService.BuildCommandAsync(SelectedSource?.DisplayName ?? throw new InvalidOperationException("No Source selected"),
-                SelectedSink?.DisplayName ?? throw new InvalidOperationException("No Sink selected"),
-                SourceSettings?.Settings,
-                SinkSettings?.Settings);
-            Messenger.Log(LogMessage.Data(output));
-        }
-        catch (Exception ex)
-        {
-            Messenger.Log(LogMessage.Error(ex.Message));
-        }
     }
 }
