@@ -14,32 +14,46 @@ using Cosmos.DataTransfer.App.Windows.Framework;
 using Cosmos.DataTransfer.Interfaces.Manifest;
 using Cosmos.DataTransfer.Ui.Common;
 using System.Diagnostics.Metrics;
+using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Windows.Threading;
+using CommunityToolkit.Mvvm.Input;
 
 namespace Cosmos.DataTransfer.App.Windows;
 
 public class MainViewModel : ViewModelBase
 {
-    private readonly IAppDataService _appDataService;
+    private readonly IAppDataService _dataService;
 
     public MainViewModel()
     {
+        GenerateCmdLineCommand = new RelayCommand(GenerateCmdLine);
+        ExportSettingsCommand = new RelayCommand(ExportSettings);
+        RunJobCommand = new RelayCommand(RunJob);
+        CancelCommand = new RelayCommand(Cancel);
+
         var appSettings = App.Current.Settings;
         if (appSettings == null)
         {
             throw new InvalidOperationException();
         }
 
-        _appDataService = new WpfAppDataService(appSettings);
-        
+        _dataService = new WpfAppDataService(appSettings);
+
         Initialize();
 
         if (File.Exists(appSettings.CoreAppPath))
             Messenger.Log(new LogMessage($"Using DMT application at path '{appSettings.CoreAppPath}'."));
         else
             Messenger.Log(LogMessage.Error($"DMT application not found. Attempted to use path '{appSettings.CoreAppPath}'."));
+    }
+
+    private async void Initialize()
+    {
+        var extensions = await _dataService.GetExtensionsAsync();
+        Sources.AddRange(extensions.Sources);
+        Sinks.AddRange(extensions.Sinks);
     }
 
     public ObservableCollection<ExtensionDefinition> Sources { get; } = new();
@@ -59,7 +73,7 @@ public class MainViewModel : ViewModelBase
                 }
                 else
                 {
-                    SourceSettings = _appDataService.GetSettingsAsync(_selectedSource.DisplayName, ExtensionDirection.Source)
+                    SourceSettings = _dataService.GetSettingsAsync(_selectedSource.DisplayName, ExtensionDirection.Source)
                         .GetAwaiter().GetResult();
                 }
             }
@@ -80,7 +94,7 @@ public class MainViewModel : ViewModelBase
                 }
                 else
                 {
-                    SinkSettings = _appDataService.GetSettingsAsync(_selectedSink.DisplayName, ExtensionDirection.Sink)
+                    SinkSettings = _dataService.GetSettingsAsync(_selectedSink.DisplayName, ExtensionDirection.Sink)
                         .GetAwaiter().GetResult();
                 }
             }
@@ -96,6 +110,7 @@ public class MainViewModel : ViewModelBase
     }
 
     private ExtensionSettings? _sourceSettings;
+    private bool _isExecuting;
 
     public ExtensionSettings? SourceSettings
     {
@@ -103,10 +118,119 @@ public class MainViewModel : ViewModelBase
         set => SetProperty(ref _sourceSettings, value);
     }
 
-    private async void Initialize()
+    public ICommand ExportSettingsCommand { get; }
+
+    private void ExportSettings()
     {
-        var extensions = await _appDataService.GetExtensionsAsync();
-        Sources.AddRange(extensions.Sources);
-        Sinks.AddRange(extensions.Sinks);
+        CurrentExecutionAction = new CancellationTokenSource();
+        IsExecuting = true;
+
+        ThenReset(ExecuteExportSettings(CurrentExecutionAction.Token));
+    }
+
+    private async Task ExecuteExportSettings(CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var output = await _dataService.BuildSettingsAsync(SelectedSource?.DisplayName ?? throw new InvalidOperationException("No Source selected"),
+                SelectedSink?.DisplayName ?? throw new InvalidOperationException("No Sink selected"),
+                SourceSettings?.Settings,
+                SinkSettings?.Settings);
+
+            Messenger.Log(LogMessage.Data(output));
+        }
+        catch (Exception ex)
+        {
+            Messenger.Log(LogMessage.Error(ex.Message));
+        }
+    }
+
+    public ICommand RunJobCommand { get; }
+
+    private void RunJob()
+    {
+        CurrentExecutionAction = new CancellationTokenSource();
+        IsExecuting = true;
+
+        ThenReset(ExecuteRunJob(CurrentExecutionAction.Token));
+    }
+
+    private async Task ExecuteRunJob(CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            bool completed = await _dataService.ExecuteWithSettingsAsync(SelectedSource?.DisplayName ?? throw new InvalidOperationException("No Source selected"),
+                SelectedSink?.DisplayName ?? throw new InvalidOperationException("No Sink selected"),
+                SourceSettings?.Settings,
+                SinkSettings?.Settings,
+                async m => Messenger.Log(m),
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Messenger.Log(LogMessage.Error(ex.Message));
+        }
+    }
+
+    public ICommand CancelCommand { get; }
+
+    private async void Cancel()
+    {
+        await CancelExecution(false);
+    }
+
+    public ICommand GenerateCmdLineCommand { get; }
+
+    private void GenerateCmdLine()
+    {
+        CurrentExecutionAction = new CancellationTokenSource();
+        IsExecuting = true;
+
+        ThenReset(ExecuteGenerateCmdLine(CurrentExecutionAction.Token));
+    }
+
+    public void ThenReset(Task task)
+    {
+        task.ContinueWith(t =>
+        {
+            CancelExecution(true);
+        });
+    }
+
+    protected async Task CancelExecution(bool Completed)
+    {
+        if (!Completed)
+        {
+            CurrentExecutionAction?.Cancel();
+        }
+        CurrentExecutionAction = null;
+        IsExecuting = false;
+    }
+
+    public CancellationTokenSource? CurrentExecutionAction { get; set; }
+
+    public bool IsExecuting
+    {
+        get => _isExecuting;
+        set => SetProperty(ref _isExecuting, value);
+    }
+
+    private async Task ExecuteGenerateCmdLine(CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var output = await _dataService.BuildCommandAsync(SelectedSource?.DisplayName ?? throw new InvalidOperationException("No Source selected"),
+                SelectedSink?.DisplayName ?? throw new InvalidOperationException("No Sink selected"),
+                SourceSettings?.Settings,
+                SinkSettings?.Settings);
+            Messenger.Log(LogMessage.Data(output));
+        }
+        catch (Exception ex)
+        {
+            Messenger.Log(LogMessage.Error(ex.Message));
+        }
     }
 }

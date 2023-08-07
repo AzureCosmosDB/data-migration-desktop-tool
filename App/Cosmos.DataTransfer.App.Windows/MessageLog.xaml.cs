@@ -36,11 +36,27 @@ namespace Cosmos.DataTransfer.App.Windows
                     {
                         Dispatcher.Invoke(() =>
                         {
-                            ItemScroll.ScrollToBottom();
+                            FindScrollViewer(DocumentScroll)?.ScrollToBottom();
                         }, System.Windows.Threading.DispatcherPriority.Background);
                     }
                 };
             }
+        }
+
+        public static ScrollViewer? FindScrollViewer(DependencyObject parent)
+        {
+            if (VisualTreeHelper.GetChildrenCount(parent) == 0)
+            {
+                return null;
+            }
+
+            var firstChild = VisualTreeHelper.GetChild(parent, 0);
+            if (firstChild == null)
+            {
+                return null;
+            }
+
+            return firstChild as ScrollViewer ?? FindScrollViewer(firstChild);
         }
     }
 }

@@ -9,26 +9,8 @@
              d:DesignHeight="450" d:DesignWidth="800"
              d:DataContext="{d:DesignInstance Type={x:Type local:LogViewModel}}">
     <Grid x:Name="LayoutRoot">
-        <ScrollViewer x:Name="ItemScroll">
-            <ItemsControl ItemsSource="{Binding Messages}" Background="Black" x:Name="LogItems">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid x:Name="ItemLayout" TextBlock.Foreground="White">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding Path=Time, StringFormat='yyyy-MM-dd HH:mm:ss'}" Grid.Column="0"/>
-                            <TextBlock Text="{Binding Path=Text}" Grid.Column="1" TextWrapping="Wrap"/>
-                        </Grid>
-                        <DataTemplate.Triggers>
-                            <DataTrigger Binding="{Binding Type}" Value="{x:Static common:MessageType.Error}">
-                            	<Setter TargetName="ItemLayout" Property="TextBlock.Foreground" Value="Red" />
-                            </DataTrigger>
-                        </DataTemplate.Triggers>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <FlowDocumentScrollViewer x:Name="DocumentScroll" Document="{Binding Document}"
+                                  Background="Black">
+        </FlowDocumentScrollViewer>
     </Grid>
 </UserControl>

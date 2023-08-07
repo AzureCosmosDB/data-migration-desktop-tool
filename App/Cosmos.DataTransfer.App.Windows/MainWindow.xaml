@@ -26,12 +26,16 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="3*"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <DockPanel x:Name="Header" Grid.Row="0" Grid.Column="0">
-
+        <DockPanel x:Name="Header" Grid.Row="0" Grid.Column="0" LastChildFill="False">
+            <Button Command="{Binding GenerateCmdLineCommand}">Generate Command</Button>
+            <Button Command="{Binding ExportSettingsCommand}">Export Settings</Button>
+            <Button Command="{Binding RunJobCommand}">Run Job</Button>
+            <Button Command="{Binding CancelCommand}">Cancel</Button>
         </DockPanel>
 
         <ScrollViewer Grid.Row="1" Grid.Column="0">
@@ -57,8 +61,9 @@
             </UniformGrid>
         </ScrollViewer>
 
-        <DockPanel x:Name="Output" Grid.Row="2" Grid.Column="0">
-            <TextBlock Text="Output" DockPanel.Dock="Top"/>
+        <GridSplitter Grid.Row="2" Grid.Column="0" Height="4" HorizontalAlignment="Stretch" VerticalAlignment="Center" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
+        <DockPanel x:Name="Output" Grid.Row="3" Grid.Column="0">
+            <TextBlock Text="Output" DockPanel.Dock="Top" Margin="5"/>
             <local:MessageLog/>
         </DockPanel>
     </Grid>
