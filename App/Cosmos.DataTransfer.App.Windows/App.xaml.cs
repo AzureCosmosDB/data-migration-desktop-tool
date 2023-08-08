@@ -19,8 +19,6 @@ public partial class App : Application
     public App()
     {
         Services = ConfigureServices();
-
-        InitializeComponent();
     }
 
     public AppSettings? Settings => Services.GetService<AppSettings>();

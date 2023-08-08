@@ -39,9 +39,16 @@ public class MainViewModel : ViewModelBase
 
     private async void Initialize()
     {
-        var extensions = await DataService.GetExtensionsAsync();
-        Sources.AddRange(extensions.Sources);
-        Sinks.AddRange(extensions.Sinks);
+        try
+        {
+            var extensions = await DataService.GetExtensionsAsync();
+            Sources.AddRange(extensions.Sources);
+            Sinks.AddRange(extensions.Sinks);
+        }
+        catch (Exception ex)
+        {
+            Messenger.Log(LogMessage.Error($"Failed to load extensions"));
+        }
     }
 
     public IRelayCommand ExportSettingsCommand { get; }

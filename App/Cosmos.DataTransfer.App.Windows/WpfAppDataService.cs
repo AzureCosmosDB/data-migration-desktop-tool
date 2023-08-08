@@ -106,6 +106,11 @@ public class WpfAppDataService : IAppDataService
 
     private async Task<bool> RunCoreAppAsync(string arguments, Func<LogMessage, Task> sendLogMessage, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrEmpty(_appSettings.CoreAppPath))
+        {
+            throw new InvalidOperationException();
+        }
+
         var process = Process.Start(new ProcessStartInfo
         {
             FileName = _appSettings.CoreAppPath,
