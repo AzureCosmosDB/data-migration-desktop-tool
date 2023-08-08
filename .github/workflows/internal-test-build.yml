@@ -56,10 +56,6 @@ jobs:
           -p:DebugType=embedded \
           -p:IncludeNativeLibrariesForSelfExtract=true \
           -p:Version=0.0.${{ github.run_number }}
-      - name: Setup .NET 6
-        uses: actions/setup-dotnet@v2
-        with:
-          dotnet-version: 6.0.x
       - name: Execute Action build-with-plugins for Windows
         uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-win
