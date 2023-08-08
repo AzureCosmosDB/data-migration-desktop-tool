@@ -34,7 +34,6 @@ jobs:
   build-package-win:
     name: Build self-contained Windows executables
     runs-on: windows-2022
-    container: mcr.microsoft.com/dotnet/sdk:6.0
     steps:
       - name: Check .NET version
         run: dotnet --version
