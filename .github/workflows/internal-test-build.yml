@@ -43,6 +43,14 @@ jobs:
         uses: actions/setup-dotnet@v2
         with:
           dotnet-version: 7.0.x
+      - name: Execute Action build-with-plugins for Windows
+        uses: ./.github/actions/build-with-plugins
+        id: build-with-plugins-win
+        with:
+          platform: windows
+          platform-short: win
+          runtime: win-x64
+          build-version: 0.0.${{ github.run_number }}
       - name: Build Windows desktop package
         shell: bash
         run: |
@@ -56,11 +64,8 @@ jobs:
           -p:DebugType=embedded \
           -p:IncludeNativeLibrariesForSelfExtract=true \
           -p:Version=0.0.${{ github.run_number }}
-      - name: Execute Action build-with-plugins for Windows
-        uses: ./.github/actions/build-with-plugins
-        id: build-with-plugins-win
+      - name: Upload gui package
+        uses: actions/upload-artifact@v3
         with:
-          platform: windows
-          platform-short: win
-          runtime: win-x64
-          build-version: 0.0.${{ github.run_number }}
+          name: win-gui-package
+          path: win/
