@@ -63,6 +63,7 @@ jobs:
           -p:PublishSingleFile=true \
           -p:DebugType=embedded \
           -p:IncludeNativeLibrariesForSelfExtract=true \
+          -p:EnableCompressionInSingleFile=true \
           -p:Version=0.0.${{ github.run_number }}
       - name: Upload gui package
         uses: actions/upload-artifact@v3
