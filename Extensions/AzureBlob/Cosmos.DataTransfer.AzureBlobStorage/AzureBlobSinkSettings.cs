@@ -18,4 +18,19 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
 
         public int? MaxBlockSizeinKB { get; set; }
     }
+
+    public class AzureBlobSourceSettings : IDataExtensionSettings
+    {
+        [Required]
+        [SensitiveValue]
+        public string ConnectionString { get; set; } = null!;
+
+        [Required]
+        public string ContainerName { get; set; } = null!;
+
+        [Required]
+        public string BlobName { get; set; } = null!;
+
+        public int? ReadBufferSizeInKB { get; set; }
+    }
 }
