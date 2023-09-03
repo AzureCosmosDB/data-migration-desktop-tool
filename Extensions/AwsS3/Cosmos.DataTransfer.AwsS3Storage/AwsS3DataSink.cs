@@ -11,12 +11,12 @@ namespace Cosmos.DataTransfer.AwsS3Storage
             var settings = config.Get<AwsS3SinkSettings>();
             settings.Validate();
 
-            logger.LogInformation("Saving file to AWS S3 Bucket '{BucketName}'", settings.S3BucketName);
+            logger.LogInformation("Saving file {File} to AWS S3 Bucket '{BucketName}'", settings.FileName, settings.S3BucketName);
 
-            S3Writer.InitializeS3Client(settings.S3AccessKey, settings.S3SecretKey, settings.S3Region);
+            using var s3 = new S3Client(settings.S3AccessKey, settings.S3SecretKey, settings.S3Region);
             await using var stream = new MemoryStream();
             await writeToStream(stream);
-            await S3Writer.WriteToS3(settings.S3BucketName, stream, settings.FileName, cancellationToken);
+            await s3.WriteToS3(settings.S3BucketName, stream, settings.FileName, cancellationToken);
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()

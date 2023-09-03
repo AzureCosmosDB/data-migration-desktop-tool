@@ -5,8 +5,8 @@ using System.ComponentModel.Composition;
 
 namespace Cosmos.DataTransfer.ParquetExtension;
 
-[Export(typeof(IDataSinkExtension))]
-public class ParquetAwsS3DataSinkExtension : CompositeSinkExtension<AwsS3DataSink, ParquetFormatWriter>
+[Export(typeof(IDataSourceExtension))]
+public class ParquetAwsS3DataSourceExtension : CompositeSourceExtension<AwsS3DataSource, ParquetFormatReader>
 {
     public override string DisplayName => "Parquet-AWSS3";
 }

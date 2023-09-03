@@ -15,7 +15,7 @@ public class AzureBlobDataSource : IComposableDataSource
         var settings = config.Get<AzureBlobSourceSettings>();
         settings.Validate();
 
-        logger.LogInformation("Saving file '{File}' to Azure Blob Container '{ContainerName}'", settings.BlobName, settings.ContainerName);
+        logger.LogInformation("Reading file '{File}' from Azure Blob Container '{ContainerName}'", settings.BlobName, settings.ContainerName);
 
         var account = new BlobContainerClient(settings.ConnectionString, settings.ContainerName);
         var blob = account.GetBlockBlobClient(settings.BlobName);
