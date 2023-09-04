@@ -1,4 +1,5 @@
-﻿using Cosmos.DataTransfer.Interfaces;
+﻿using System.Runtime.CompilerServices;
+using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -6,7 +7,7 @@ namespace Cosmos.DataTransfer.AwsS3Storage;
 
 public class AwsS3DataSource : IComposableDataSource
 {
-    public async IAsyncEnumerable<Stream?> ReadSourceAsync(IConfiguration config, ILogger logger, CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<Stream?> ReadSourceAsync(IConfiguration config, ILogger logger, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var settings = config.Get<AwsS3SourceSettings>();
         settings.Validate();

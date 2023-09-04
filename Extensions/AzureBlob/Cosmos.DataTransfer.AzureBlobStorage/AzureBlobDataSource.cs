@@ -23,7 +23,7 @@ public class AzureBlobDataSource : IComposableDataSource
         if (!existsResponse)
             yield break;
 
-        var readStream = await blob.OpenReadAsync(new BlobOpenReadOptions(true)
+        var readStream = await blob.OpenReadAsync(new BlobOpenReadOptions(false)
         {
             BufferSize = settings.ReadBufferSizeInKB,
         }, cancellationToken: cancellationToken);

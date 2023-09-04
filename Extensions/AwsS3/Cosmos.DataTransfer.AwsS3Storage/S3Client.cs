@@ -17,7 +17,6 @@ namespace Cosmos.DataTransfer.AwsS3Storage
 
         public async Task WriteToS3(string bucketName, Stream data, string filename, CancellationToken cancellationToken)
         {
-            await _s3Client.EnsureBucketExistsAsync(bucketName);
             var ftu = new TransferUtility(_s3Client);
             await ftu.UploadAsync(data, bucketName, filename, cancellationToken);
         }
