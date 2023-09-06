@@ -5,8 +5,8 @@ using Cosmos.DataTransfer.Interfaces;
 
 namespace Cosmos.DataTransfer.JsonExtension;
 
-[Export(typeof(IDataSinkExtension))]
-public class JsonAzureBlobSink : CompositeSinkExtension<AzureBlobDataSink, JsonFormatWriter>
+[Export(typeof(IDataSourceExtension))]
+public class JsonAzureBlobSource : CompositeSourceExtension<AzureBlobDataSource, JsonFormatReader>
 {
     public override string DisplayName => "JSON-AzureBlob";
 }

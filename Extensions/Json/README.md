@@ -13,6 +13,8 @@ Supported storage sinks:
  
 Supported storage sources:
 - File - **Json**
+- Azure Blob Storage - **Json-AzureBlob**
+- AWS S3 - **Json-AwsS3**
 
 ## Settings
 

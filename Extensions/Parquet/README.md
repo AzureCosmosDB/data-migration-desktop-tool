@@ -13,6 +13,8 @@ Supported storage sinks:
  
 Supported storage sources:
 - File - **Parquet**
+- Azure Blob Storage - **Parquet-AzureBlob**
+- AWS S3 - **Parquet-AwsS3**
 
 ## Settings
 

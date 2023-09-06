@@ -58,7 +58,7 @@ public static class DataItemJsonConverter
             else if (fieldValue is not string && fieldValue is IEnumerable children)
             {
                 writer.WriteStartArray(propertyName);
-                foreach (object arrayItem in children)
+                foreach (object? arrayItem in children)
                 {
                     if (arrayItem is IDataItem arrayChild)
                     {
@@ -75,6 +75,10 @@ public static class DataItemJsonConverter
                     else if (arrayItem is DateTime date)
                     {
                         writer.WriteStringValue(date.ToString("O"));
+                    }
+                    else if (arrayItem is null)
+                    {
+                        writer.WriteNullValue();
                     }
                     else
                     {
@@ -107,7 +111,7 @@ public static class DataItemJsonConverter
         return JsonEncodedText.Encode(text, JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
     }
 
-    private static bool TryGetNumber(object x, out double number)
+    private static bool TryGetNumber(object? x, out double number)
     {
         if (x is float f)
         {

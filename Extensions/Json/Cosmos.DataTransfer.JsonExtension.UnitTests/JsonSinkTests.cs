@@ -158,5 +158,37 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             Assert.AreEqual(emoji, dataObject?.Emoji);
             Assert.AreEqual(text, dataObject?.炎ギ因);
         }
+
+        [TestMethod]
+        public async Task WriteAsync_WithNullArrayValues_Succeeds()
+        {
+            var sink = new JsonFileSink();
+
+            var now = DateTime.UtcNow;
+            var randomTime = DateTime.UtcNow.AddMinutes(Random.Shared.NextDouble() * 10000);
+            var data = new List<DictionaryDataItem>
+            {
+                new(new Dictionary<string, object?>
+                {
+                    { "Id", 1 },
+                    { "Array", new[] { "A", null, "C", "D" } },
+                })
+            };
+
+            string outputFile = $"{now:yy-MM-dd}_NullArrayOutput.json";
+            var config = TestHelpers.CreateConfig(new Dictionary<string, string>
+            {
+                { "FilePath", outputFile }
+            });
+
+            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonFileSource(), NullLogger.Instance);
+
+            string json = await File.ReadAllTextAsync(outputFile);
+            var outputData = JsonConvert.DeserializeObject<List<TestDataObject>>(json);
+
+            Assert.AreEqual("A", outputData?.Single().Array?.ElementAt(0));
+            Assert.AreEqual(null, outputData?.Single().Array?.ElementAt(1));
+            Assert.AreEqual("C", outputData?.Single().Array?.ElementAt(2));
+        }
     }
 }

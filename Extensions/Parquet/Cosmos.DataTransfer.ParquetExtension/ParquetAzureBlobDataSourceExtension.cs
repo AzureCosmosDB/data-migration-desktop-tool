@@ -5,8 +5,8 @@ using System.ComponentModel.Composition;
 
 namespace Cosmos.DataTransfer.ParquetExtension;
 
-[Export(typeof(IDataSinkExtension))]
-public class ParquetAzureBlobDataSinkExtension : CompositeSinkExtension<AzureBlobDataSink, ParquetFormatWriter>
+[Export(typeof(IDataSourceExtension))]
+public class ParquetAzureBlobDataSourceExtension : CompositeSourceExtension<AzureBlobDataSource, ParquetFormatReader>
 {
     public override string DisplayName => "Parquet-AzureBlob";
 }
