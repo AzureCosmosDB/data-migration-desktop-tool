@@ -68,5 +68,5 @@ jobs:
       - name: Upload gui package
         uses: actions/upload-artifact@v3
         with:
-          name: win-gui-package
+          name: windows-gui-package
           path: win/
