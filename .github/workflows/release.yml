@@ -7,8 +7,13 @@ jobs:
   github-release:
     name: Create GitHub release
     runs-on: ubuntu-latest
-    needs: build-package
+    needs: build-package-win
     steps:
+      - name: Download Windows GUI x64 package
+        uses: actions/download-artifact@v3
+        with:
+          name: windows-gui-package
+          path: windows-gui-package
       - name: Download Windows x64 package
         uses: actions/download-artifact@v3
         with:
@@ -26,6 +31,7 @@ jobs:
           path: linux-package
       - name: Package output files
         run: |
+          zip -r dmt-gui-${{ github.event.release.tag_name }}-win-x64.zip windows-gui-package/*
           zip -r dmt-${{ github.event.release.tag_name }}-win-x64.zip windows-package/*
           zip -r dmt-${{ github.event.release.tag_name }}-mac-x64.zip mac-package/*
           zip -r dmt-${{ github.event.release.tag_name }}-linux-x64.zip linux-package/*
@@ -33,6 +39,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
+            dmt-gui-${{ github.event.release.tag_name }}-win-x64.zip
             dmt-${{ github.event.release.tag_name }}-win-x64.zip
             dmt-${{ github.event.release.tag_name }}-mac-x64.zip
             dmt-${{ github.event.release.tag_name }}-linux-x64.zip
@@ -45,14 +52,6 @@ jobs:
         run: dotnet --version
       - name: Checkout source code
         uses: actions/checkout@v3
-      - name: Execute Action build-with-plugins for Windows
-        uses: ./.github/actions/build-with-plugins
-        id: build-with-plugins-win
-        with:
-          platform: windows
-          platform-short: win
-          runtime: win-x64
-          build-version: ${{ github.event.release.tag_name }}
       - name: Execute Action build-with-plugins for MacOS
         uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-mac
@@ -69,3 +68,43 @@ jobs:
           platform-short: linux
           runtime: linux-x64
           build-version: ${{ github.event.release.tag_name }}
+  build-package-win:
+    name: Build self-contained Windows executables
+    runs-on: windows-2022
+    needs: build-package
+    steps:
+      - name: Check .NET version
+        run: dotnet --version
+      - name: Checkout source code
+        uses: actions/checkout@v3
+      - name: Setup .NET 7
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 7.0.x
+      - name: Execute Action build-with-plugins for Windows
+        uses: ./.github/actions/build-with-plugins
+        id: build-with-plugins-win
+        with:
+          platform: windows
+          platform-short: win
+          runtime: win-x64
+          build-version: ${{ github.event.release.tag_name }}
+      - name: Build Windows desktop package
+        shell: bash
+        run: |
+          dotnet publish \
+          App/Cosmos.DataTransfer.App.Windows/Cosmos.DataTransfer.App.Windows.csproj \
+          --configuration Release \
+          --output win \
+          --self-contained true \
+          --runtime win-x64 \
+          -p:PublishSingleFile=true \
+          -p:DebugType=embedded \
+          -p:IncludeNativeLibrariesForSelfExtract=true \
+          -p:EnableCompressionInSingleFile=true \
+          -p:Version=${{ github.event.release.tag_name }}
+      - name: Upload gui package
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-gui-package
+          path: win/

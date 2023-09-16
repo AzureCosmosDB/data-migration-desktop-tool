@@ -29,46 +29,46 @@ jobs:
       with:
         name: debug-build
         path: /home/runner/work/data-migration-desktop-tool/data-migration-desktop-tool/Core/Cosmos.DataTransfer.Core/bin/Debug/net6.0 #path/to/artifact/ # or path/to/artifact  
-  build-gui-win:
-    name: Build GUI projects for Windows
-    runs-on: windows-2022
-    steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: 7.0.x
-    - name: Install MAUI Workload
-      run: dotnet workload install maui-windows --ignore-failed-sources
-    - name: Restore Dependencies
-      run: dotnet restore ./App/CosmosDbApp.sln
-    - name: Build App
-      run: dotnet build --no-restore ./App/CosmosDbApp.sln
-    - name: Debug Build Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: app-win-build
-        path: D:\a\data-migration-desktop-tool\data-migration-desktop-tool\App\Cosmos.DataTransfer.App\bin\Debug\net7.0-windows10.0.19041.0\win10-x64 #path/to/artifact/ # or path/to/artifact  
-  build-gui-mac:
-    name: Build GUI projects for Mac
-    runs-on: macos-13
-    steps:
-    - uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '14.3'
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: 7.0.x
-    - name: Install MAUI Workload
-      run: dotnet workload install maui-maccatalyst --ignore-failed-sources
-    - name: Restore Dependencies
-      run: dotnet restore ./App/CosmosDbApp.sln
-    - name: Build App
-      run: dotnet build --no-restore ./App/CosmosDbApp.sln
-    - name: Debug Build Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: app-mac-build
-        path: /Users/runner/work/data-migration-desktop-tool/data-migration-desktop-tool/App/Cosmos.DataTransfer.App/bin/Debug/net7.0-maccatalyst/maccatalyst-x64 #path/to/artifact/ # or path/to/artifact  
+  # build-gui-win:
+  #   name: Build GUI projects for Windows
+  #   runs-on: windows-2022
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - name: Setup .NET
+  #     uses: actions/setup-dotnet@v2
+  #     with:
+  #       dotnet-version: 7.0.x
+  #   - name: Install MAUI Workload
+  #     run: dotnet workload install maui-windows --ignore-failed-sources
+  #   - name: Restore Dependencies
+  #     run: dotnet restore ./App/CosmosDbApp.sln
+  #   - name: Build App
+  #     run: dotnet build --no-restore ./App/CosmosDbApp.sln
+  #   - name: Debug Build Artifact
+  #     uses: actions/upload-artifact@v3
+  #     with:
+  #       name: app-win-build
+  #       path: D:\a\data-migration-desktop-tool\data-migration-desktop-tool\App\Cosmos.DataTransfer.App\bin\Debug\net7.0-windows10.0.19041.0\win10-x64 #path/to/artifact/ # or path/to/artifact  
+  # build-gui-mac:
+  #   name: Build GUI projects for Mac
+  #   runs-on: macos-13
+  #   steps:
+  #   - uses: maxim-lobanov/setup-xcode@v1
+  #     with:
+  #       xcode-version: '14.3'
+  #   - uses: actions/checkout@v3
+  #   - name: Setup .NET
+  #     uses: actions/setup-dotnet@v2
+  #     with:
+  #       dotnet-version: 7.0.x
+  #   - name: Install MAUI Workload
+  #     run: dotnet workload install maui-maccatalyst --ignore-failed-sources
+  #   - name: Restore Dependencies
+  #     run: dotnet restore ./App/CosmosDbApp.sln
+  #   - name: Build App
+  #     run: dotnet build --no-restore ./App/CosmosDbApp.sln
+  #   - name: Debug Build Artifact
+  #     uses: actions/upload-artifact@v3
+  #     with:
+  #       name: app-mac-build
+  #       path: /Users/runner/work/data-migration-desktop-tool/data-migration-desktop-tool/App/Cosmos.DataTransfer.App/bin/Debug/net7.0-maccatalyst/maccatalyst-x64 #path/to/artifact/ # or path/to/artifact  
