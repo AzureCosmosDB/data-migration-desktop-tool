@@ -45,12 +45,16 @@ public class JsonFormatReader : IFormattedDataReader
 
         try
         {
-            jsonStream.Seek(0, SeekOrigin.Begin);
+            if (jsonStream is { CanSeek: true })
+            {
+                jsonStream.Seek(0, SeekOrigin.Begin);
+            }
             return JsonSerializer.DeserializeAsyncEnumerable<Dictionary<string, object?>>(jsonStream, cancellationToken: cancellationToken);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // list failed
+            logger.LogError(ex, "Failed to read JSON list from '{Content}'", ReadTextForLogging(jsonStream, logger));
         }
 
         return null;

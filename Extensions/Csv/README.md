@@ -13,6 +13,8 @@ Supported storage sinks:
  
 Supported storage sources:
 - File - **Csv**
+- Azure Blob Storage - **Csv-AzureBlob**
+- AWS S3 - **Csv-AwsS3**
 
 ## Settings
 

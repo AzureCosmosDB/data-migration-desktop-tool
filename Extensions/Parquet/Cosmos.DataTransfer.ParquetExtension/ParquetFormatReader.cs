@@ -23,7 +23,17 @@ namespace Cosmos.DataTransfer.ParquetExtension
 
                 if (source != null)
                 {
-                    using ParquetReader reader = await ParquetReader.CreateAsync(source, cancellationToken: cancellationToken);
+                    var seekableStream = source;
+                    using var tempStream = new MemoryStream();
+                    if (source.CanSeek == false || !source.TryGetSize(out _))
+                    {
+                        logger.LogInformation("Source stream is not seekable or size is not known. Copying to temporary stream.");
+                        await seekableStream.CopyToAsync(tempStream, cancellationToken);
+                        tempStream.Position = 0;
+                        seekableStream = tempStream;
+                    }
+
+                    using ParquetReader reader = await ParquetReader.CreateAsync(seekableStream, cancellationToken: cancellationToken);
                     var coldata = new List<DataColumn>();
                     var numberofrows = 0;
                     //check if number of rows are same for each column.
