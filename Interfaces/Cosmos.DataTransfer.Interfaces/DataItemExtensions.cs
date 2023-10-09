@@ -18,15 +18,25 @@ public static class DataItemExtensions
 
         var fields = source.GetFieldNames().ToList();
         var item = new ExpandoObject();
-        if (requireStringId && !fields.Contains("id", StringComparer.CurrentCultureIgnoreCase))
+        
+        /*
+         * If the item contains a lowercase id field, we can take it as is.
+         * If we have an uppercase Id or ID field, but no lowercase id, we will rename it to id.
+         * Then it can be used i.e. as CosmosDB primary key, when `requireStringId` is set to true.         
+         */
+        var containsLowercaseIdField = fields.Contains("id", StringComparer.CurrentCulture);
+        var containsAnyIdField = fields.Contains("id", StringComparer.CurrentCultureIgnoreCase);
+        
+        if (requireStringId && !containsAnyIdField)
         {
             item.TryAdd("id", Guid.NewGuid().ToString());
         }
+        
         foreach (string field in fields)
         {
             object? value = source.GetValue(field);
             var fieldName = field;
-            if (string.Equals(field, "id", StringComparison.CurrentCultureIgnoreCase) && requireStringId)
+            if (string.Equals(field, "id", StringComparison.CurrentCultureIgnoreCase) && requireStringId && !containsLowercaseIdField)
             {
                 value = value?.ToString();
                 fieldName = "id";
