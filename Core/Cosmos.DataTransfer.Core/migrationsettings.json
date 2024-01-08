@@ -1,9 +1,11 @@
 {
-  "Source": null,
-  "Sink": null,
-  "SourceSettings": {    
+  "Source": "Cosmos-nosql",
+  "Sink": "Mongo",
+  "SourceSettings": {
+
   },
-  "SinkSettings": {    
+  "SinkSettings": {
+
   },
   "Operations": [
     //{
