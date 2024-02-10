@@ -59,7 +59,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     containerProperties.PartitionKeyPath = settings.PartitionKeyPath;
                 }
 
-                ThroughputProperties? throughputProperties = settings.IsServerlessAccount || settings.CreatedContainerMaxThroughput == 0
+                ThroughputProperties? throughputProperties = settings.IsServerlessAccount || settings.UseSharedThroughput
                     ? null
                     : settings.UseAutoscaleForCreatedContainer
                     ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
