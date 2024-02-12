@@ -13,6 +13,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public int? CreatedContainerMaxThroughput { get; set; }
         public bool UseAutoscaleForCreatedContainer { get; set; } = true;
         public bool IsServerlessAccount { get; set; } = false;
+        public bool UseSharedThroughput { get; set; } = false;
         public DataWriteMode WriteMode { get; set; } = DataWriteMode.Insert;
         public List<string>? PartitionKeyPaths { get; set; }
 
