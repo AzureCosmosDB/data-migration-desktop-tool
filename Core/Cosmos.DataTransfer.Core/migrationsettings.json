@@ -1,6 +1,6 @@
 {
-  "Source": "Cosmos-nosql",
-  "Sink": "Mongo",
+  "Source": "",
+  "Sink": "",
   "SourceSettings": {
 
   },

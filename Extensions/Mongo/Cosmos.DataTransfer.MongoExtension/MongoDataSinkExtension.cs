@@ -15,7 +15,7 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
 
     public async Task WriteAsync(IAsyncEnumerable<IDataItem> dataItems, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
     {
-        var settings = config.Get<MongoSinkSettings>();
+        var settings = config.Get<MongoSinkSettings>();        
         settings.Validate();
 
         if (!string.IsNullOrEmpty(settings.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName) && !string.IsNullOrEmpty(settings.Collection))
@@ -36,7 +36,7 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
             var repo = context.GetRepository<BsonDocument>(settings.Collection);
             var batchSize = settings.BatchSize ?? 1000;
             var objects = new List<BsonDocument>();
-            int itemCount = 0;
+            int itemCount = 0;            
             await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
                 var dict = item.BuildDynamicObjectTree();
@@ -51,7 +51,7 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
                             DeploymentName = settings.OpenAIDeploymentName,
                             Input = { valtoemb }
                         };
-                        var vector = await client.GetEmbeddingsAsync(options,cancellationToken);
+                        var vector = await client.GetEmbeddingsAsync(options,cancellationToken);                        
                         if (vector != null)
                         {
                             dict?.TryAdd(settings.DestPropEmbedding, vector.Value.Data[0].Embedding.ToArray());

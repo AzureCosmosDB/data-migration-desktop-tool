@@ -99,6 +99,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.PostgresqlExtension", "Extensions\PostgreSQL\Cosmos.DataTransfer.PostgresqlExtension.csproj", "{85820167-DB94-458B-B09B-9E823996C692}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PostgreSQL", "PostgreSQL", "{1B927C5F-50FC-42A6-BAF6-B00E6D760543}"
+	ProjectSection(SolutionItems) = preProject
+		Extensions\PostgreSQL\README.md = Extensions\PostgreSQL\README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

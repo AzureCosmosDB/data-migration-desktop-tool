@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualBasic;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,24 @@ namespace Cosmos.DataTransfer.PostgresqlExtension
             PostgreType = Convert(coltype);
         }
 
+        public PostgreDataCol(string colname, NpgsqlTypes.NpgsqlDbType postgreType)
+        {
+            ColumnName = colname;            
+            PostgreType = postgreType;
+            ColumnType = Convert(postgreType);
+        }
+
+        public PostgreDataCol(string colname, string postgredatatye)
+        {
+            ColumnName = colname;            
+            PostgreType = Convert(postgredatatye);
+            ColumnType = Convert(PostgreType);
+        }
+
+        public PostgreDataCol()
+        {
+        }
+
         public Dictionary<long, object> SparseColumnData { get; } = new Dictionary<long, object>();
 
         
@@ -35,11 +54,62 @@ namespace Cosmos.DataTransfer.PostgresqlExtension
             SparseColumnData[row] = value;
         }
 
+        public Type Convert(NpgsqlTypes.NpgsqlDbType coltype)
+        {
+            return coltype switch
+            {
+                NpgsqlTypes.NpgsqlDbType.Varchar => typeof(string),
+                NpgsqlTypes.NpgsqlDbType.Integer => typeof(int),
+                NpgsqlTypes.NpgsqlDbType.Bigint => typeof(long),
+                NpgsqlTypes.NpgsqlDbType.Boolean => typeof(bool),
+                NpgsqlTypes.NpgsqlDbType.Timestamp => typeof(DateTime),
+                NpgsqlTypes.NpgsqlDbType.Double => typeof(double),
+                NpgsqlTypes.NpgsqlDbType.Real => typeof(float),
+                NpgsqlTypes.NpgsqlDbType.Numeric => typeof(decimal),
+                NpgsqlTypes.NpgsqlDbType.Bytea => typeof(byte[]),
+                NpgsqlTypes.NpgsqlDbType.Uuid => typeof(Guid),
+                NpgsqlTypes.NpgsqlDbType.Char => typeof(char),
+                NpgsqlTypes.NpgsqlDbType.Interval => typeof(TimeSpan),
+                NpgsqlTypes.NpgsqlDbType.TimestampTz => typeof(DateTimeOffset),
+                NpgsqlTypes.NpgsqlDbType.Smallint => typeof(short),
+                NpgsqlTypes.NpgsqlDbType.Unknown => typeof(DBNull),
+                _ => typeof(DBNull),
+            };
+        }
+
+        public NpgsqlTypes.NpgsqlDbType Convert(string postgredattype)
+        {
+            return postgredattype.ToLower() switch
+            {
+                "varchar" =>NpgsqlTypes.NpgsqlDbType.Varchar,
+                "int8" => NpgsqlTypes.NpgsqlDbType.Bigint,
+                "int4" => NpgsqlTypes.NpgsqlDbType.Integer,
+                "int2" => NpgsqlTypes.NpgsqlDbType.Smallint,
+                "bool" => NpgsqlTypes.NpgsqlDbType.Boolean,
+                "timestamp" => NpgsqlTypes.NpgsqlDbType.Timestamp,
+                "timestamptz" => NpgsqlTypes.NpgsqlDbType.TimestampTz,
+                "float8" => NpgsqlTypes.NpgsqlDbType.Double,
+                "float4" => NpgsqlTypes.NpgsqlDbType.Real,
+                "numeric" => NpgsqlTypes.NpgsqlDbType.Numeric,
+                "bytea" => NpgsqlTypes.NpgsqlDbType.Bytea,
+                "char" => NpgsqlTypes.NpgsqlDbType.Char,
+                "interval" => NpgsqlTypes.NpgsqlDbType.Interval,
+                "int2vector"=> NpgsqlTypes.NpgsqlDbType.Array,
+                "jsonb" => NpgsqlTypes.NpgsqlDbType.Jsonb,
+                "name" => NpgsqlTypes.NpgsqlDbType.Name,
+                "oid" => NpgsqlTypes.NpgsqlDbType.Oid,
+                "text" => NpgsqlTypes.NpgsqlDbType.Text,
+                "unknown" =>NpgsqlTypes.NpgsqlDbType.Unknown,
+                _ => NpgsqlTypes.NpgsqlDbType.Unknown,
+            };
+        }
+
         public NpgsqlTypes.NpgsqlDbType Convert(Type coltype)
         {
             if (coltype.Name == "Missing")
             {
-                return NpgsqlTypes.NpgsqlDbType.Unknown;
+                return //NpgsqlTypes.NpgsqlDbType.Varchar;
+                    NpgsqlTypes.NpgsqlDbType.Unknown;
             }
             return coltype switch
             {
