@@ -160,9 +160,9 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
 
 ## Using the command line
 
-1. Ensure the project is [built](#build-the-solution). 
+1. Download the latest [release](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases), or ensure the project is [built](#build-the-solution).
 
-2. The **Extensions** folder contains the plug-ins available for use in the migration. Each extension is located in a folder with the name of the data source. For example, the Cosmos DB extension is located in the folder **Cosmos**. Before running the application, you can open the **Extensions** folder and remove any folders for the extensions that are not required for the migration.
+2. The **Extensions** folder contains the [plug-ins available](#extension-documentation) for use in the migration. Each extension is located in a folder with the name of the data source. For example, the Cosmos DB extension is located in the folder **Cosmos**. Before running the application, you can open the **Extensions** folder and remove any folders for the extensions that are not required for the migration.
 
 3. In the root of the build folder, locate the **migrationsettings.json** and update settings as documented in the [Extension documentation](#extension-documentation). Example file (similar to tutorial above):
 
@@ -183,14 +183,26 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
         }
     }
     ```
+
 > **Note**: **migrationsettings.json** can also be configured to execute multiple data transfer operations with a single run command. To do this, include an `Operations` property consisting of an array of objects that include `SourceSettings` and `SinkSettings` properties using the same format as those shown above for single operations. Additional details and examples can be found in [this blog post](https://codemindinterface.com/2023/03/cosmos-tool-operations/).
-    
+
 4. Execute the program using the following command:
+
+    **Using Windows**
 
     ```bash
     dmt.exe
     ```
-> **Note**: Use the `--settings` option with a file path to specify a different settings file (overriding the default **migrationsettings.json** file). This facilitates automating running of different migration jobs in a programmatic loop.
+
+    > **Note**: Use the `--settings` option with a file path to specify a different settings file (overriding the default **migrationsettings.json** file). This facilitates automating running of different migration jobs in a programmatic loop.
+
+    **Using macOS**
+
+    ```bash
+    ./dmt
+    ```
+
+    > **Note**: Before you run the tool on macOS, you'll need to follow Apple's instructions on how to [Open a Mac app from an unidentified developer](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac).
 
 ## Creating Extensions
 
