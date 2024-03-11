@@ -191,7 +191,6 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
     **Using Windows**
 
     ```bash
-    // Windows
     dmt.exe
     ```
 
