@@ -8,6 +8,8 @@ jobs:
     name: Create GitHub release
     runs-on: ubuntu-latest
     needs: build-package
+    permissions:
+      contents: write
     steps:
       - name: Download Windows x64 package
         uses: actions/download-artifact@v3
