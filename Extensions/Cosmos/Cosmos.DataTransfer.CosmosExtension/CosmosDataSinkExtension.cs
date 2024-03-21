@@ -151,7 +151,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         return t.Result;
                     }
 
-                    return new ItemResult(null, HttpStatusCode.InternalServerError);
+                    return new ItemResult(null, mode, HttpStatusCode.InternalServerError);
                 }, cancellationToken);
             return task;
         }
@@ -179,6 +179,16 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     var upsertResponse = await container.UpsertItemAsync(item, cancellationToken: cancellationToken);
                     statusCode = upsertResponse.StatusCode;
                     break;
+                case DataWriteMode.DeleteStream:
+                    ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
+                    var deleteMessage = await container.DeleteItemStreamAsync(itemId, new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken);
+                    statusCode = deleteMessage.StatusCode;
+                    break;
+                case DataWriteMode.Delete:
+                    ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
+                    var deleteResponse = await container.DeleteItemAsync<ExpandoObject>(itemId, new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken);
+                    statusCode = deleteResponse.StatusCode;
+                    break;
             }
 
             if (statusCode == null)
@@ -186,7 +196,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 throw new ArgumentOutOfRangeException(nameof(mode), $"Invalid data write mode specified: {mode}");
             }
 
-            return new ItemResult(itemId, statusCode.Value);
+            return new ItemResult(itemId, mode, statusCode.Value);
         }
 
         private static MemoryStream CreateItemStream(ExpandoObject item)
@@ -205,9 +215,10 @@ namespace Cosmos.DataTransfer.CosmosExtension
             yield return new CosmosSinkSettings();
         }
 
-        public record ItemResult(string? Id, HttpStatusCode StatusCode)
+        public record ItemResult(string? Id, DataWriteMode DataWriteMode, HttpStatusCode StatusCode)
         {
-            public bool IsSuccess => StatusCode is HttpStatusCode.OK or HttpStatusCode.Created;
+            public bool IsSuccess => StatusCode is HttpStatusCode.OK or HttpStatusCode.Created ||
+                (StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound && DataWriteMode is DataWriteMode.Delete or DataWriteMode.DeleteStream);
             public int ItemCount => IsSuccess ? 1 : 0;
         }
     }
