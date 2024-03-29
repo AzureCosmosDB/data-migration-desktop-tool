@@ -9,36 +9,56 @@ public static class DataItemExtensions
     /// </summary>
     /// <param name="source"></param>
     /// <param name="requireStringId">If true, adds a new GUID "id" field to any top level items where one is not already present.</param>
+    /// <param name="preserveMixedCaseIds">If true, disregards differently cased "id" fields for purposes of required "id" and passes them through.</param>
     /// <returns>A dynamic object containing the entire data structure.</returns>
     /// <remarks>The returned ExpandoObject can be used directly as an IDictionary.</remarks>
-    public static ExpandoObject? BuildDynamicObjectTree(this IDataItem? source, bool requireStringId = false)
+    public static ExpandoObject? BuildDynamicObjectTree(this IDataItem? source, bool requireStringId = false, bool ignoreNullValues = false, bool preserveMixedCaseIds = false)
     {
-        if (source == null)
+        if (source == null) 
+        {
             return null;
+        }
 
         var fields = source.GetFieldNames().ToList();
         var item = new ExpandoObject();
-        
+
         /*
          * If the item contains a lowercase id field, we can take it as is.
-         * If we have an uppercase Id or ID field, but no lowercase id, we will rename it to id.
+         * If we have an uppercase Id or ID field, but no lowercase id, we will rename it to id, unless `preserveMixedCaseIds` is set to true.
+         * If `preserveMixedCaseIds` is set to true, any differently cased "id" fields will be passed through as normal properties with no casing change and a separate "id" will be generated.
          * Then it can be used i.e. as CosmosDB primary key, when `requireStringId` is set to true.         
          */
         var containsLowercaseIdField = fields.Contains("id", StringComparer.CurrentCulture);
         var containsAnyIdField = fields.Contains("id", StringComparer.CurrentCultureIgnoreCase);
-        
-        if (requireStringId && !containsAnyIdField)
+
+        if (requireStringId)
         {
-            item.TryAdd("id", Guid.NewGuid().ToString());
+            bool mismatchedIdCasing = preserveMixedCaseIds && !containsLowercaseIdField;
+            if (!containsAnyIdField || mismatchedIdCasing)
+            {
+                item.TryAdd("id", Guid.NewGuid().ToString());
+            }
         }
-        
+
         foreach (string field in fields)
         {
             object? value = source.GetValue(field);
-            var fieldName = field;
-            if (string.Equals(field, "id", StringComparison.CurrentCultureIgnoreCase) && requireStringId)
+            if (ignoreNullValues && value == null) 
             {
-                if (!containsLowercaseIdField)
+                continue;
+            }
+
+            var fieldName = field;
+            if (requireStringId && string.Equals(field, "id", StringComparison.CurrentCultureIgnoreCase))
+            {
+                if (preserveMixedCaseIds)
+                {
+                    if (string.Equals(field, "id", StringComparison.CurrentCulture))
+                    {
+                        value = value?.ToString();
+                    }
+                }
+                else if (!containsLowercaseIdField)
                 {
                     value = value?.ToString();
                     fieldName = "id";

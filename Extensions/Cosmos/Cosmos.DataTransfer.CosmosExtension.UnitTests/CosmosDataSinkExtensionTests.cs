@@ -1,4 +1,5 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
 {
@@ -53,6 +54,83 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             Assert.AreEqual(1, secondSubArray.Length);
 
             Assert.AreEqual("sub2-1", secondSubArray[0].id);
+        }
+
+        [TestMethod]
+        public void BuildDynamicObjectTree_WithAnyCaseIds_UsesSourceIdValue()
+        {
+            var numeric = Random.Shared.Next();
+            var lower = Guid.NewGuid().ToString();
+            var upper = Guid.NewGuid().ToString();
+            var mixed = Guid.NewGuid().ToString();
+            var reversed = Guid.NewGuid().ToString();
+            var item = new CosmosDictionaryDataItem(new Dictionary<string, object?>()
+            {
+                { "id", numeric },
+            });
+
+            dynamic obj = item.BuildDynamicObjectTree(requireStringId: true, preserveMixedCaseIds: false)!;
+            Assert.AreEqual(numeric.ToString(), obj.id);
+
+            item = new CosmosDictionaryDataItem(new Dictionary<string, object?>()
+            {
+                { "id", lower },
+            });
+
+            obj = item.BuildDynamicObjectTree(requireStringId: true, preserveMixedCaseIds: false)!;
+            Assert.AreEqual(lower, obj.id);
+
+            item = new CosmosDictionaryDataItem(new Dictionary<string, object?>()
+            {
+                { "ID", upper },
+            });
+            obj = item.BuildDynamicObjectTree(requireStringId: true, preserveMixedCaseIds: false)!;
+            Assert.AreEqual(upper, obj.id);
+
+            item = new CosmosDictionaryDataItem(new Dictionary<string, object?>()
+            {
+                { "Id", mixed },
+            });
+            obj = item.BuildDynamicObjectTree(requireStringId: true, preserveMixedCaseIds: false)!;
+            Assert.AreEqual(mixed, obj.id);
+
+            item = new CosmosDictionaryDataItem(new Dictionary<string, object?>()
+            {
+                { "iD", reversed },
+            });
+            obj = item.BuildDynamicObjectTree(requireStringId: true, preserveMixedCaseIds: false)!;
+            Assert.AreEqual(reversed, obj.id);
+        }
+
+        [TestMethod]
+        public void BuildDynamicObjectTree_WithPreservedMixedCaseIds_PassesThroughSourceValues()
+        {
+            var id = Random.Shared.Next();
+            var upper = Guid.NewGuid().ToString();
+            var mixed = Guid.NewGuid().ToString();
+            var item = new CosmosDictionaryDataItem(new Dictionary<string, object?>()
+            {
+                { "id", id },
+                { "ID", upper },
+                { "Id", mixed }
+            });
+
+            dynamic obj = item.BuildDynamicObjectTree(requireStringId: true, preserveMixedCaseIds: true)!;
+            Assert.AreEqual(id.ToString(), obj.id);
+            Assert.AreEqual(upper, obj.ID);
+            Assert.AreEqual(mixed, obj.Id);
+
+            item = new CosmosDictionaryDataItem(new Dictionary<string, object?>()
+            {
+                { "ID", upper },
+                { "Id", mixed }
+            });
+            obj = item.BuildDynamicObjectTree(requireStringId: true, preserveMixedCaseIds: true)!;
+            Assert.AreEqual(upper, obj.ID);
+            Assert.AreEqual(mixed, obj.Id);
+            string? cosmosId = obj.id;
+            Assert.IsNotNull(cosmosId);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(cosmosId));
         }
     }
 }

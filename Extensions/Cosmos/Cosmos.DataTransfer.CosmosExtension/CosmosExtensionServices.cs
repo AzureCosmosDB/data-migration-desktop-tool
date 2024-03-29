@@ -23,6 +23,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 EnableContentResponseOnWrite = false,
                 Serializer = new RawJsonCosmosSerializer(),
             };
+            
+            if (settings is CosmosSinkSettings sinkSettings) 
+            {
+                clientOptions.SerializerOptions = new CosmosSerializationOptions 
+                {
+                    IgnoreNullValues = sinkSettings.IgnoreNullValues
+                };
+            }
 
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)
