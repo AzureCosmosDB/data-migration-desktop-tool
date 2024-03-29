@@ -22,6 +22,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 AllowBulkExecution = true,
                 EnableContentResponseOnWrite = false,
             };
+            
+            if (settings is CosmosSinkSettings sinkSettings) 
+            {
+                clientOptions.SerializerOptions = new CosmosSerializationOptions 
+                {
+                    IgnoreNullValues = sinkSettings.IgnoreNullValues
+                };
+            }
 
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)
