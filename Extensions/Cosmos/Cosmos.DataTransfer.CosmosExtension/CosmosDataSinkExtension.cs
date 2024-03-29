@@ -93,7 +93,10 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 }
             }
 
-            var convertedObjects = dataItems.Select(di => di.BuildDynamicObjectTree(true)).Where(o => o != null).OfType<ExpandoObject>();
+            var convertedObjects = dataItems
+                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, preserveMixedCaseIds: settings.PreserveMixedCaseIds))
+                .Where(o => o != null)
+                .OfType<ExpandoObject>();
             var batches = convertedObjects.Buffer(settings.BatchSize);
             var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
             await foreach (var batch in batches.WithCancellation(cancellationToken))
