@@ -12,10 +12,12 @@ public static class DataItemExtensions
     /// <param name="preserveMixedCaseIds">If true, disregards differently cased "id" fields for purposes of required "id" and passes them through.</param>
     /// <returns>A dynamic object containing the entire data structure.</returns>
     /// <remarks>The returned ExpandoObject can be used directly as an IDictionary.</remarks>
-    public static ExpandoObject? BuildDynamicObjectTree(this IDataItem? source, bool requireStringId = false, bool preserveMixedCaseIds = false)
+    public static ExpandoObject? BuildDynamicObjectTree(this IDataItem? source, bool requireStringId = false, bool ignoreNullValues = false, bool preserveMixedCaseIds = false)
     {
-        if (source == null)
+        if (source == null) 
+        {
             return null;
+        }
 
         var fields = source.GetFieldNames().ToList();
         var item = new ExpandoObject();
@@ -41,6 +43,11 @@ public static class DataItemExtensions
         foreach (string field in fields)
         {
             object? value = source.GetValue(field);
+            if (ignoreNullValues && value == null) 
+            {
+                continue;
+            }
+
             var fieldName = field;
             if (requireStringId && string.Equals(field, "id", StringComparison.CurrentCultureIgnoreCase))
             {

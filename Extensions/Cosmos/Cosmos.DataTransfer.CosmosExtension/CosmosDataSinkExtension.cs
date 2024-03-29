@@ -89,12 +89,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 addedCount += i;
                 if (addedCount % 500 == 0)
                 {
-                    logger.LogInformation("{AddedCount} records added after {TotalSeconds}s", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
+                    logger.LogInformation("{AddedCount} records added after {TotalSeconds}s ({AddRate} records/s)", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}", $"{(int)(addedCount / (timer.ElapsedMilliseconds / 1000.0))}");
                 }
             }
 
             var convertedObjects = dataItems
-                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, preserveMixedCaseIds: settings.PreserveMixedCaseIds))
+                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, ignoreNullValues: settings.IgnoreNullValues, preserveMixedCaseIds: settings.PreserveMixedCaseIds))
                 .Where(o => o != null)
                 .OfType<ExpandoObject>();
             var batches = convertedObjects.Buffer(settings.BatchSize);
@@ -114,7 +114,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 throw new Exception($"Only {addedCount} of {inputCount} records were added to Cosmos");
             }
 
-            logger.LogInformation("Added {AddedCount} total records in {TotalSeconds}s", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
+            logger.LogInformation("Added {AddedCount} total records in {TotalSeconds}s ({AddRate} records/s)", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}", $"{(int)(addedCount / (timer.ElapsedMilliseconds / 1000.0))}");
         }
 
         private static AsyncRetryPolicy GetRetryPolicy(int maxRetryCount, int initialRetryDuration)

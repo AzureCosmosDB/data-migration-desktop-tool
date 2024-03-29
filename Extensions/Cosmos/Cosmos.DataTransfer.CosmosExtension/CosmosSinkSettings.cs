@@ -16,6 +16,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public bool UseSharedThroughput { get; set; } = false;
         public bool PreserveMixedCaseIds { get; set; } = false;
         public DataWriteMode WriteMode { get; set; } = DataWriteMode.Insert;
+        public bool IgnoreNullValues { get; set; } = false;
         public List<string>? PartitionKeyPaths { get; set; }
 
         public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
