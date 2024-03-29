@@ -1,16 +1,16 @@
 ﻿using System.ComponentModel.Composition;
 using System.Runtime.CompilerServices;
 using Cosmos.DataTransfer.Interfaces;
-using Cosmos.DataTransfer.MongoVectorExtension.Settings;
+using Cosmos.DataTransfer.MongoExtension.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
-namespace Cosmos.DataTransfer.MongoVectorExtension;
+namespace Cosmos.DataTransfer.MongoExtension;
 [Export(typeof(IDataSourceExtension))]
-internal class MongoVectorDataSourceExtension : IDataSourceExtensionWithSettings
+internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 {
-    public string DisplayName => $"MongoDB-Vector{ExtensionExtensions.BetaExtensionTag}";
+    public string DisplayName => "MongoDB";
 
     public async IAsyncEnumerable<IDataItem> ReadAsync(IConfiguration config, ILogger logger, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {

@@ -20,6 +20,28 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
 
 ### Sink
 
+```json
+{
+    "ConnectionString": "",
+    "DatabaseName: "",
+    "Collection": ""
+}
+```
+
+# MongoDB Vector Extension (Beta)
+
+The MongoDB Vector extension is a Sink only extension that builds on the MongoDB extension by providing additional capabilities for generating embeddings using Azure OpenAI APIs.
+
+> **Note**: When specifying the MongoDB Vector extension as the Sink property in configuration, utilize the name **MongoDB-Vector(beta)**.
+
+## Settings
+
+The settings are based on the MongoDB extension settings with additional parameters for generating embeddings.
+
+### Additional Sink Settings
+
+The sink settings require the following additional parameters:
+
 - `GenerateEmbedding`: If set to true, the sink will generate embeddings for the records before writing them to the database. The sink requires the `OpenAIUrl`, `OpenAIKey`, and `OpenAIDeploymentModel` parameters to be set. Following paramaters are required if this is true
 - `OpenAIUrl`: The URL of the OpenAI API
 - `OpenAIKey`: The API key for the OpenAI API
@@ -41,3 +63,4 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
     "DestPropEmbedding": ""
 }
 ```
+

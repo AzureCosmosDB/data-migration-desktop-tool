@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace Cosmos.DataTransfer.MongoVectorExtension;
+namespace Cosmos.DataTransfer.MongoExtension;
 
 public interface IRepository<TDocument>
 {

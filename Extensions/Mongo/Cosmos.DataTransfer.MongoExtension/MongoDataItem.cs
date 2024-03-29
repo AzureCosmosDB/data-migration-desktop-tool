@@ -1,7 +1,7 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
 using MongoDB.Bson;
 
-namespace Cosmos.DataTransfer.MongoVectorExtension;
+namespace Cosmos.DataTransfer.MongoExtension;
 public class MongoDataItem : IDataItem
 {
     private readonly BsonDocument record;

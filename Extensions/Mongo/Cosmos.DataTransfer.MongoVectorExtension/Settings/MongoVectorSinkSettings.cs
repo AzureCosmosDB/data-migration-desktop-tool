@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Cosmos.DataTransfer.MongoExtension.Settings;
 
 namespace Cosmos.DataTransfer.MongoVectorExtension.Settings;
 public class MongoVectorSinkSettings : MongoBaseSettings

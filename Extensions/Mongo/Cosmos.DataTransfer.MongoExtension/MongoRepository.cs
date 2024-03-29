@@ -1,7 +1,7 @@
 ﻿using System.Linq.Expressions;
 using MongoDB.Driver;
 
-namespace Cosmos.DataTransfer.MongoVectorExtension;
+namespace Cosmos.DataTransfer.MongoExtension;
 
 public class MongoRepository<TDocument> : IRepository<TDocument>
 {

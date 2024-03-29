@@ -2,6 +2,7 @@
 using Azure;
 using Azure.AI.OpenAI;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.MongoExtension;
 using Cosmos.DataTransfer.MongoVectorExtension.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
