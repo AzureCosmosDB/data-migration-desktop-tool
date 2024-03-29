@@ -9,8 +9,5 @@ namespace Cosmos.DataTransfer.PostgresqlExtension.Settings
         [Required]
         [SensitiveValue]
         public string? ConnectionString { get; set; }
-
-        //[Required]
-        //public string? Database { get; set; }
     }
 }

@@ -6,11 +6,11 @@
 
         public DictionaryDataItem(IDictionary<string, object?> items)
         {
-            Items = items;            
+            Items = items;
         }
 
         public IEnumerable<string> GetFieldNames()
-        {            
+        {
             return Items.Keys;
         }
 
