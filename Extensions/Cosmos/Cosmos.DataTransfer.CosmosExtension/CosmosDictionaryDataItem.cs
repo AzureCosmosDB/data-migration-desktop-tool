@@ -1,4 +1,5 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Cosmos.DataTransfer.CosmosExtension
@@ -31,11 +32,13 @@ namespace Cosmos.DataTransfer.CosmosExtension
         {
             if (value is JObject element)
             {
-                return new CosmosDictionaryDataItem(element.ToObject<IDictionary<string, object?>>().ToDictionary(k => k.Key, v => v.Value));
+                return new CosmosDictionaryDataItem(element.ToObject<IDictionary<string, object?>>(JsonSerializer.Create(RawJsonCosmosSerializer.DefaultSettings))
+                    .ToDictionary(k => k.Key, v => v.Value));
             }
             if (value is JArray array)
             {
-                return array.ToObject<List<object?>>().Select(GetChildObject).ToList();
+                return array.ToObject<List<object?>>(JsonSerializer.Create(RawJsonCosmosSerializer.DefaultSettings))
+                    .Select(GetChildObject).ToList();
             }
 
             return value;

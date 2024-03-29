@@ -36,10 +36,17 @@ public static class DataItemExtensions
         {
             object? value = source.GetValue(field);
             var fieldName = field;
-            if (string.Equals(field, "id", StringComparison.CurrentCultureIgnoreCase) && requireStringId && !containsLowercaseIdField)
+            if (string.Equals(field, "id", StringComparison.CurrentCultureIgnoreCase) && requireStringId)
             {
-                value = value?.ToString();
-                fieldName = "id";
+                if (!containsLowercaseIdField)
+                {
+                    value = value?.ToString();
+                    fieldName = "id";
+                }
+                else
+                {
+                    value = value?.ToString();
+                }
             }
             else if (value is IDataItem child)
             {

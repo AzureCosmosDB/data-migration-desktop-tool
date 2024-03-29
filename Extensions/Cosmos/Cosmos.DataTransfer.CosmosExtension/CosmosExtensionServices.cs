@@ -21,6 +21,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 ApplicationName = userAgentString,
                 AllowBulkExecution = true,
                 EnableContentResponseOnWrite = false,
+                Serializer = new RawJsonCosmosSerializer(),
             };
 
             CosmosClient? cosmosClient;
