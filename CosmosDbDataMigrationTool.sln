@@ -39,7 +39,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mongo", "Mongo", "{F18E789A
 		Extensions\Mongo\README.md = Extensions\Mongo\README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.MongoExtension", "Extensions\Mongo\Cosmos.DataTransfer.MongoExtension\Cosmos.DataTransfer.MongoExtension.csproj", "{F6EAC33B-9F7D-433B-9328-622FB8938C24}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.MongoVectorExtension", "Extensions\Mongo\Cosmos.DataTransfer.MongoVectorExtension\Cosmos.DataTransfer.MongoVectorExtension.csproj", "{F6EAC33B-9F7D-433B-9328-622FB8938C24}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.JsonExtension.UnitTests", "Extensions\Json\Cosmos.DataTransfer.JsonExtension.UnitTests\Cosmos.DataTransfer.JsonExtension.UnitTests.csproj", "{ED1E375E-A5A3-47EA-A7D5-07344C7E152F}"
 EndProject

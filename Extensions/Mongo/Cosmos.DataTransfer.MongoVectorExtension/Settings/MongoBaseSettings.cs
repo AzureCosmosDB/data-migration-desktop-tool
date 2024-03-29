@@ -2,7 +2,7 @@
 using Cosmos.DataTransfer.Interfaces;
 using Cosmos.DataTransfer.Interfaces.Manifest;
 
-namespace Cosmos.DataTransfer.MongoExtension.Settings;
+namespace Cosmos.DataTransfer.MongoVectorExtension.Settings;
 public class MongoBaseSettings : IDataExtensionSettings
 {
     [Required]

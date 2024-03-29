@@ -2,7 +2,7 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Events;
 
-namespace Cosmos.DataTransfer.MongoExtension;
+namespace Cosmos.DataTransfer.MongoVectorExtension;
 public class Context
 {
     private readonly IMongoDatabase database = null!;

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Cosmos.DataTransfer.MongoExtension.Settings;
-public class MongoSinkSettings : MongoBaseSettings
+namespace Cosmos.DataTransfer.MongoVectorExtension.Settings;
+public class MongoVectorSinkSettings : MongoBaseSettings
 {
     [Required]
     public string? Collection { get; set; }

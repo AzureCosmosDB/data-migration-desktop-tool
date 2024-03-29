@@ -1,21 +1,21 @@
 ﻿using System.ComponentModel.Composition;
-using Azure.AI.OpenAI;
 using Azure;
+using Azure.AI.OpenAI;
 using Cosmos.DataTransfer.Interfaces;
-using Cosmos.DataTransfer.MongoExtension.Settings;
+using Cosmos.DataTransfer.MongoVectorExtension.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
-namespace Cosmos.DataTransfer.MongoExtension;
+namespace Cosmos.DataTransfer.MongoVectorExtension;
 [Export(typeof(IDataSinkExtension))]
-public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
+public class MongoVectorDataSinkExtension : IDataSinkExtensionWithSettings
 {
-    public string DisplayName => "MongoDB";
+    public string DisplayName => $"MongoDB-Vector{ExtensionExtensions.BetaExtensionTag}";
 
     public async Task WriteAsync(IAsyncEnumerable<IDataItem> dataItems, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
     {
-        var settings = config.Get<MongoSinkSettings>();        
+        var settings = config.Get<MongoVectorSinkSettings>();        
         settings.Validate();
 
         if (!string.IsNullOrEmpty(settings.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName) && !string.IsNullOrEmpty(settings.Collection))
@@ -83,6 +83,6 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
 
     public IEnumerable<IDataExtensionSettings> GetSettings()
     {
-        yield return new MongoSinkSettings();
+        yield return new MongoVectorSinkSettings();
     }
 }
