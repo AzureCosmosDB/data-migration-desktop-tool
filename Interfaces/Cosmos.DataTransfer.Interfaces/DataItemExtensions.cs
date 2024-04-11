@@ -9,6 +9,7 @@ public static class DataItemExtensions
     /// </summary>
     /// <param name="source"></param>
     /// <param name="requireStringId">If true, adds a new GUID "id" field to any top level items where one is not already present.</param>
+    /// <param name="ignoreNullValues">If true, excludes fields containing null values from output.</param>
     /// <param name="preserveMixedCaseIds">If true, disregards differently cased "id" fields for purposes of required "id" and passes them through.</param>
     /// <returns>A dynamic object containing the entire data structure.</returns>
     /// <remarks>The returned ExpandoObject can be used directly as an IDictionary.</remarks>
@@ -70,11 +71,11 @@ public static class DataItemExtensions
             }
             else if (value is IDataItem child)
             {
-                value = BuildDynamicObjectTree(child);
+                value = BuildDynamicObjectTree(child, ignoreNullValues: ignoreNullValues);
             }
             else if (value is IEnumerable<object?> array)
             {
-                value = BuildArray(array);
+                value = BuildArray(array, ignoreNulls: ignoreNullValues);
             }
 
             item.TryAdd(fieldName, value);
@@ -82,16 +83,16 @@ public static class DataItemExtensions
 
         return item;
 
-        static object BuildArray(IEnumerable<object?> array)
+        static object BuildArray(IEnumerable<object?> array, bool ignoreNulls)
         {
             return array.Select(dataItem =>
             {
                 switch (dataItem)
                 {
                     case IDataItem childObject:
-                        return BuildDynamicObjectTree(childObject);
+                        return BuildDynamicObjectTree(childObject, ignoreNullValues: ignoreNulls);
                     case IEnumerable<object?> array:
-                        return BuildArray(array);
+                        return BuildArray(array, ignoreNulls);
                     default:
                         return dataItem;
                 }
