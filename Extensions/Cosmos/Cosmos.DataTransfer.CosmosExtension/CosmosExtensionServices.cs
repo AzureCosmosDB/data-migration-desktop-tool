@@ -15,23 +15,23 @@ namespace Cosmos.DataTransfer.CosmosExtension
         {
             string userAgentString = CreateUserAgentString(displayName, sourceDisplayName);
 
+            var cosmosSerializer = new RawJsonCosmosSerializer();
+            if (settings is CosmosSinkSettings sinkSettings)
+            {
+                cosmosSerializer.SerializerSettings.NullValueHandling = sinkSettings.IgnoreNullValues
+                    ? Newtonsoft.Json.NullValueHandling.Ignore
+                    : Newtonsoft.Json.NullValueHandling.Include;
+            }
+
             var clientOptions = new CosmosClientOptions
             {
                 ConnectionMode = settings.ConnectionMode,
                 ApplicationName = userAgentString,
                 AllowBulkExecution = true,
                 EnableContentResponseOnWrite = false,
-                Serializer = new RawJsonCosmosSerializer(),
+                Serializer = cosmosSerializer,
             };
             
-            if (settings is CosmosSinkSettings sinkSettings) 
-            {
-                clientOptions.SerializerOptions = new CosmosSerializationOptions 
-                {
-                    IgnoreNullValues = sinkSettings.IgnoreNullValues
-                };
-            }
-
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)
             {

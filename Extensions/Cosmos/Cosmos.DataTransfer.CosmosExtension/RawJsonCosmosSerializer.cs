@@ -12,13 +12,18 @@ namespace Cosmos.DataTransfer.CosmosExtension;
 /// </remarks>
 public class RawJsonCosmosSerializer : CosmosSerializer
 {
-    public static readonly JsonSerializerSettings DefaultSettings = new()
-    {
-        DateParseHandling = DateParseHandling.None,
-        MetadataPropertyHandling = MetadataPropertyHandling.Ignore
-    };
+    private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
 
-    public JsonSerializerSettings SerializerSettings { get; set; } = DefaultSettings;
+    public static JsonSerializerSettings GetDefaultSettings() =>
+        new()
+        {
+            DateParseHandling = DateParseHandling.None,
+            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+            ContractResolver = null,
+            MaxDepth = 64,
+        };
+
+    public JsonSerializerSettings SerializerSettings { get; } = GetDefaultSettings();
 
     public override T FromStream<T>(Stream stream)
     {
@@ -39,7 +44,7 @@ public class RawJsonCosmosSerializer : CosmosSerializer
     public override Stream ToStream<T>(T input)
     {
         var memoryStream = new MemoryStream();
-        using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8, leaveOpen: true))
+        using (var streamWriter = new StreamWriter(memoryStream, DefaultEncoding, bufferSize: 1024, leaveOpen: true))
         {
             using (var jsonWriter = new JsonTextWriter(streamWriter))
             {

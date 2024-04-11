@@ -32,12 +32,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
         {
             if (value is JObject element)
             {
-                return new CosmosDictionaryDataItem(element.ToObject<IDictionary<string, object?>>(JsonSerializer.Create(RawJsonCosmosSerializer.DefaultSettings))
+                return new CosmosDictionaryDataItem(element.ToObject<IDictionary<string, object?>>(JsonSerializer.Create(RawJsonCosmosSerializer.GetDefaultSettings()))
                     .ToDictionary(k => k.Key, v => v.Value));
             }
             if (value is JArray array)
             {
-                return array.ToObject<List<object?>>(JsonSerializer.Create(RawJsonCosmosSerializer.DefaultSettings))
+                return array.ToObject<List<object?>>(JsonSerializer.Create(RawJsonCosmosSerializer.GetDefaultSettings()))
                     .Select(GetChildObject).ToList();
             }
 
