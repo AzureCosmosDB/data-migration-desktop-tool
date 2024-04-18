@@ -154,6 +154,56 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             }
         }
 
+        [TestMethod]
+        public async Task ReadAsync_WithTypeHintFields_IncludesAllInOutput()
+        {
+            var json = @"[
+{
+    ""id"": 1,
+    ""name"": ""One"",
+    ""$type"": ""Number"",
+    ""data"": {
+        ""$type"": ""Object"",
+        ""name"": ""A""
+    }
+},
+{
+    ""id"": 2,
+    ""name"": ""Two"",
+    ""$type"": ""Digit"",
+    ""data"": {
+        ""$type"": ""String"",
+        ""name"": ""B""
+    }
+}
+]";
+            var filePath = Path.Combine(Path.GetTempPath(), "TypeHintFields.json");
 
+            await File.WriteAllTextAsync(filePath, json);
+
+            var extension = new JsonFileSource();
+            var config = TestHelpers.CreateConfig(new Dictionary<string, string>
+            {
+                { "FilePath", filePath }
+            });
+
+            int counter = 0;
+            await foreach (var dataItem in extension.ReadAsync(config, NullLogger.Instance))
+            {
+                counter++;
+                var fields = dataItem.GetFieldNames().ToArray();
+                CollectionAssert.AreEquivalent(new[] { "id", "name", "$type", "data" }, fields);
+                Assert.IsNotNull(dataItem.GetValue("id"));
+                Assert.IsNotNull(dataItem.GetValue("name"));
+                Assert.IsNotNull(dataItem.GetValue("$type"));
+                var child = dataItem.GetValue("data") as JsonDictionaryDataItem;
+                Assert.IsNotNull(child);
+                CollectionAssert.AreEquivalent(new[] { "$type", "name" }, child.GetFieldNames().ToArray());
+                Assert.IsNotNull(child.GetValue("$type"));
+                Assert.IsNotNull(child.GetValue("name"));
+            }
+
+            Assert.AreEqual(2, counter);
+        }
     }
 }
