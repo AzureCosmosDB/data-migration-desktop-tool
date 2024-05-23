@@ -45,7 +45,7 @@ The sink settings require the following additional parameters:
 - `GenerateEmbedding`: If set to true, the sink will generate embeddings for the records before writing them to the database. The sink requires the `OpenAIUrl`, `OpenAIKey`, and `OpenAIDeploymentModel` parameters to be set. Following paramaters are required if this is true
 - `OpenAIUrl`: The URL of the OpenAI API
 - `OpenAIKey`: The API key for the OpenAI API
-- `OpenAIDeploymentModel`: The deployment model to use for the OpenAI API
+- `OpenAIDeploymentName`: The deployment model to use for the OpenAI API
 - `SourcePropEmbedding`: The property in the source data that should be used to generate the embeddings
 - `DestPropEmbedding`: New property name that will be added to the source data with the generated embeddings
 
