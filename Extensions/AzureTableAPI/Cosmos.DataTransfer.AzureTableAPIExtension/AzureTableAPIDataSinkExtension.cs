@@ -23,14 +23,11 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             await tableClient.CreateIfNotExistsAsync();
 
-            var createTasks = new List<Task>();
-            await foreach(var item in dataItems.WithCancellation(cancellationToken))
+            await Parallel.ForEachAsync(dataItems, cancellationToken, async (item, token) =>
             {
-               var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-               createTasks.Add(tableClient.AddEntityAsync(entity));
-            }
-
-            await Task.WhenAll(createTasks);
+                var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
+                await tableClient.AddEntityAsync(entity, token);
+            });
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()
