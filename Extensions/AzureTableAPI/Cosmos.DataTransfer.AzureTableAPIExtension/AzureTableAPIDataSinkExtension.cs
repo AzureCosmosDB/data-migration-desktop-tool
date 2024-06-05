@@ -23,18 +23,41 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             await tableClient.CreateIfNotExistsAsync(cancellationToken);
 
-            var entities = new List<TableEntity>();
-
-            await foreach (var item in dataItems.WithCancellation(cancellationToken))
+            await Parallel.ForEachAsync(GetBatches(dataItems, settings), new ParallelOptions() { MaxDegreeOfParallelism = 8 }, async (batch, token) =>
             {
-                var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-                entities.Add(entity);
+                await InnerWriteAsync(batch, tableClient, logger, token);
+            });
+        }
 
-                if (entities.Count == 100)
+        private static async IAsyncEnumerable<List<TableEntity>> GetBatches(IAsyncEnumerable<IDataItem> dataItems, AzureTableAPIDataSinkSettings settings)
+        {
+            var entities = new List<TableEntity>();
+            var first = true;
+            var partitionKey = string.Empty;
+
+            await foreach (var item in dataItems)
+            {
+                var tableEntity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
+
+                if (first)
                 {
-                    await InnerWriteAsync(entities, tableClient, logger, cancellationToken);
-                    entities.Clear();
+                    partitionKey = tableEntity.PartitionKey;
+                    first = false;
                 }
+
+                if (!tableEntity.PartitionKey.Equals(partitionKey) || entities.Count == 100)
+                {
+                    yield return entities;
+                    entities = new List<TableEntity>();
+                    partitionKey = tableEntity.PartitionKey;
+                }
+
+                entities.Add(tableEntity);
+            }
+
+            if (entities.Count > 0)
+            {
+                yield return entities;
             }
         }
 
