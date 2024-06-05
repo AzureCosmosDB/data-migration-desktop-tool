@@ -23,7 +23,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             await tableClient.CreateIfNotExistsAsync(cancellationToken);
 
-            await Parallel.ForEachAsync(GetBatches(dataItems, settings), cancellationToken, async (batch, token) =>
+            await Parallel.ForEachAsync(GetBatches(dataItems, settings), new ParallelOptions() { MaxDegreeOfParallelism = 50 }, async (batch, token) =>
             {
                 await InnerWriteAsync(batch, tableClient, logger, token);
             });
