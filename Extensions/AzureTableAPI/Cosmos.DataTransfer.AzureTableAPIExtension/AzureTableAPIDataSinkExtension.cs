@@ -23,10 +23,10 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             await tableClient.CreateIfNotExistsAsync(cancellationToken);
 
-            await foreach (var batch in GetBatches(dataItems, settings).WithCancellation(cancellationToken))
+            await Parallel.ForEachAsync(GetBatches(dataItems, settings), cancellationToken, async (batch, token) =>
             {
-                await InnerWriteAsync(batch, tableClient, logger, cancellationToken);
-            }
+                await InnerWriteAsync(batch, tableClient, logger, token);
+            });
         }
 
         private static async IAsyncEnumerable<List<TableEntity>> GetBatches(IAsyncEnumerable<IDataItem> dataItems, AzureTableAPIDataSinkSettings settings)
