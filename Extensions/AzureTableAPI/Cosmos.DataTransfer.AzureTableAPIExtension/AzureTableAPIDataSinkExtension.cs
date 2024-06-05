@@ -21,13 +21,49 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
             var serviceClient = new TableServiceClient(settings.ConnectionString);
             var tableClient = serviceClient.GetTableClient(settings.Table);
 
-            await tableClient.CreateIfNotExistsAsync();
+            await tableClient.CreateIfNotExistsAsync(cancellationToken);
 
-            await Parallel.ForEachAsync(dataItems, cancellationToken, async (item, token) =>
+            var entities = new List<TableEntity>();
+
+            await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
                 var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-                await tableClient.AddEntityAsync(entity, token);
-            });
+                entities.Add(entity);
+
+                if (entities.Count == 100)
+                {
+                    await InnerWriteAsync(entities, tableClient, logger, cancellationToken);
+                    entities.Clear();
+                }
+            }
+        }
+
+        private static async Task InnerWriteAsync(List<TableEntity> tableEntities, TableClient tableClient, ILogger logger, CancellationToken cancellationToken)
+        {
+            var transactionsActions = tableEntities.Select(e => new TableTransactionAction(TableTransactionActionType.Add, e));
+
+            try
+            {
+                await tableClient.SubmitTransactionAsync(transactionsActions, cancellationToken);
+                return;
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Batch transaction failed, processing entities one by one instead.");
+            }
+
+            foreach (var entity in tableEntities)
+            {
+                try
+                {
+                    // Do an upsert here because there could already be some successful entities added from the batch
+                    await tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, "Adding a single entity failed, continuing with other entities.");
+                }
+            }
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()
