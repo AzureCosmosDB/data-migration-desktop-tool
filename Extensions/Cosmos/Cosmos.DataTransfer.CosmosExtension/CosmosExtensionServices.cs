@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Reflection;
 using Azure.Core;
 using System.Text.RegularExpressions;
+using System.Net;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -31,6 +32,10 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 EnableContentResponseOnWrite = false,
                 Serializer = cosmosSerializer,
             };
+
+            if (!string.IsNullOrEmpty(settings.WebProxy)){
+                clientOptions.WebProxy = new WebProxy(settings.WebProxy);
+            }
             
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)
