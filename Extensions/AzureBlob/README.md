@@ -20,12 +20,14 @@ An optional `ReadBufferSizeInKB` parameter can be used to control stream bufferi
 }
 ```
 
+Possible values for `"Sink"` name property are `"JSON-AzureBlob(beta)"` and `"Parquet-AzureBlob(beta)"`.
+
 ### Sink
 
 An optional `MaxBlockSizeInKB` parameter can also be specified to control the transfer.
 
 ```json
-{
+"SinkProperties" : {
     "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=...",
     "ContainerName": "",
     "BlobName": "",
