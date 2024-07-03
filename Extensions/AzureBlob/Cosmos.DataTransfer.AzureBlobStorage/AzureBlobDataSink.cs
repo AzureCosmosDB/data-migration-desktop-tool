@@ -1,9 +1,10 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure.Identity;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Azure.Storage.Blobs.Specialized;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Azure.Storage.Blobs.Specialized;
-using Azure.Storage.Blobs.Models;
 
 namespace Cosmos.DataTransfer.AzureBlobStorage
 {
@@ -14,11 +15,27 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             var settings = config.Get<AzureBlobSinkSettings>();
             settings.Validate();
 
-            logger.LogInformation("Saving file '{File}' to Azure Blob Container '{ContainerName}'", settings.BlobName, settings.ContainerName);
+            BlobContainerClient account;
+            if (settings.UseRbacAuth)
+            {
+                logger.LogInformation("Connecting to Storage account {AccountName} using {UseRbacAuth}'", settings.AccountName, nameof(AzureBlobSourceSettings.UseRbacAuth));
 
-            var account = new BlobContainerClient(settings.ConnectionString, settings.ContainerName);
+                var credential = new DefaultAzureCredential();
+                var blobContainerUri = new Uri($"https://{settings.AccountName}.queue.core.windows.net");
+
+                account = new BlobContainerClient(blobContainerUri, credential);
+            }
+            else
+            {
+                logger.LogInformation("Connecting to Storage account using {ConnectionString}'", nameof(AzureBlobSourceSettings.ConnectionString));
+
+                account = new BlobContainerClient(settings.ConnectionString, settings.ContainerName);
+            }
+
             await account.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
             var blob = account.GetBlockBlobClient(settings.BlobName);
+
+            logger.LogInformation("Saving file '{File}' to Azure Blob Container '{ContainerName}'", settings.BlobName, settings.ContainerName);
 
             await using var blobStream = await blob.OpenWriteAsync(true, new BlockBlobOpenWriteOptions
             {
