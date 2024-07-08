@@ -19,10 +19,13 @@ public class AzureBlobDataSource : IComposableDataSource
         BlobContainerClient account;
         if (settings.UseRbacAuth)
         {
-            logger.LogInformation("Connecting to Storage account {AccountName} using {UseRbacAuth} with {EnableInteractiveCredentials}'", settings.AccountName, nameof(AzureBlobSourceSettings.UseRbacAuth), nameof(AzureBlobSourceSettings.EnableInteractiveCredentials));
+            logger.LogInformation("Connecting to Storage account {AccountEndpoint} using {UseRbacAuth} with {EnableInteractiveCredentials}'", settings.AccountEndpoint, nameof(AzureBlobSourceSettings.UseRbacAuth), nameof(AzureBlobSourceSettings.EnableInteractiveCredentials));
 
             var credential = new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
-            var blobContainerUri = new Uri($"https://{settings.AccountName}.queue.core.windows.net");
+#pragma warning disable CS8604 // Validate above ensures AccountEndpoint is not null
+            var baseUri = new Uri(settings.AccountEndpoint);
+            var blobContainerUri = new Uri(baseUri, settings.ContainerName);
+#pragma warning restore CS8604 // Restore warning
 
             account = new BlobContainerClient(blobContainerUri, credential);
         }

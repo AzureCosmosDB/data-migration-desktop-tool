@@ -18,7 +18,7 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             BlobContainerClient account;
             if (settings.UseRbacAuth)
             {
-                logger.LogInformation("Connecting to Storage account {AccountName} using {UseRbacAuth}'", settings.AccountEndpoint, nameof(AzureBlobSourceSettings.UseRbacAuth));
+                logger.LogInformation("Connecting to Storage account {AccountEndpoint} using {UseRbacAuth} with {EnableInteractiveCredentials}'", settings.AccountEndpoint, nameof(AzureBlobSourceSettings.UseRbacAuth), nameof(AzureBlobSourceSettings.EnableInteractiveCredentials));
 
                 var credential = new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
 #pragma warning disable CS8604 // Validate above ensures AccountEndpoint is not null
