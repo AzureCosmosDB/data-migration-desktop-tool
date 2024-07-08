@@ -18,10 +18,13 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             BlobContainerClient account;
             if (settings.UseRbacAuth)
             {
-                logger.LogInformation("Connecting to Storage account {AccountName} using {UseRbacAuth}'", settings.AccountName, nameof(AzureBlobSourceSettings.UseRbacAuth));
+                logger.LogInformation("Connecting to Storage account {AccountName} using {UseRbacAuth}'", settings.AccountEndpoint, nameof(AzureBlobSourceSettings.UseRbacAuth));
 
-                var credential = new DefaultAzureCredential();
-                var blobContainerUri = new Uri($"https://{settings.AccountName}.queue.core.windows.net");
+                var credential = new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
+#pragma warning disable CS8604 // Validate above ensures AccountEndpoint is not null
+                var baseUri = new Uri(settings.AccountEndpoint);
+                var blobContainerUri = new Uri(baseUri, settings.ContainerName);
+#pragma warning restore CS8604 // Restore warning
 
                 account = new BlobContainerClient(blobContainerUri, credential);
             }

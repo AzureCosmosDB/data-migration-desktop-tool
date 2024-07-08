@@ -21,6 +21,8 @@ public class AzureBlobSourceSettings : IDataExtensionSettings, IValidatableObjec
 
     public bool UseRbacAuth { get; set; }
 
+    public bool EnableInteractiveCredentials { get; set; } = true;
+
     public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))

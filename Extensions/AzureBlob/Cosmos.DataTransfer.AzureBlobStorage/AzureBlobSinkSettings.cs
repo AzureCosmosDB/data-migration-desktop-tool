@@ -9,7 +9,7 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
         [SensitiveValue]
         public string? ConnectionString { get; set; } = null!;
 
-        public string? AccountName { get; set; } = null!;
+        public string? AccountEndpoint { get; set; } = null!;
 
         [Required]
         public string ContainerName { get; set; } = null!;
@@ -21,6 +21,8 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
 
         public bool UseRbacAuth { get; set; }
 
+        public bool EnableInteractiveCredentials { get; set; } = true;
+
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))
@@ -28,9 +30,9 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
                 yield return new ValidationResult($"{nameof(ConnectionString)} must be specified unless {nameof(UseRbacAuth)} is true", new[] { nameof(ConnectionString) });
             }
 
-            if (UseRbacAuth && string.IsNullOrEmpty(AccountName))
+            if (UseRbacAuth && string.IsNullOrEmpty(AccountEndpoint))
             {
-                yield return new ValidationResult($"{nameof(AccountName)} must be specified unless {nameof(UseRbacAuth)} is false", new[] { nameof(AccountName) });
+                yield return new ValidationResult($"{nameof(AccountEndpoint)} must be specified unless {nameof(UseRbacAuth)} is false", new[] { nameof(AccountEndpoint) });
             }
         }
     }

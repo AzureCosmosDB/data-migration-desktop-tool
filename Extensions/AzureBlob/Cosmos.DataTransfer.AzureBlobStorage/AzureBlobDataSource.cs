@@ -19,9 +19,9 @@ public class AzureBlobDataSource : IComposableDataSource
         BlobContainerClient account;
         if (settings.UseRbacAuth)
         {
-            logger.LogInformation("Connecting to Storage account {AccountName} using {UseRbacAuth}'", settings.AccountName, nameof(AzureBlobSourceSettings.UseRbacAuth));
+            logger.LogInformation("Connecting to Storage account {AccountName} using {UseRbacAuth} with {EnableInteractiveCredentials}'", settings.AccountName, nameof(AzureBlobSourceSettings.UseRbacAuth), nameof(AzureBlobSourceSettings.EnableInteractiveCredentials));
 
-            var credential = new DefaultAzureCredential();
+            var credential = new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
             var blobContainerUri = new Uri($"https://{settings.AccountName}.queue.core.windows.net");
 
             account = new BlobContainerClient(blobContainerUri, credential);
