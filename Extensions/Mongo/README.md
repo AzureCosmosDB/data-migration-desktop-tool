@@ -49,7 +49,7 @@ If using CSFLE (Client Side Field Level Encryption), source sink supports autode
 ```json
 {
     "ConnectionString": "",
-    "DatabaseName: "",
+    "DatabaseName": "",
     "Collection": "",
     "KeyVaultNamespace": "",
     "KMSProviders": {
@@ -79,7 +79,7 @@ The sink settings require the following additional parameters:
 ```json
 {
     "ConnectionString": "",
-    "DatabaseName: "",
+    "DatabaseName": "",
     "Collection": "",
     "BatchSize: 100,
     "GenerateEmbedding": true | false
