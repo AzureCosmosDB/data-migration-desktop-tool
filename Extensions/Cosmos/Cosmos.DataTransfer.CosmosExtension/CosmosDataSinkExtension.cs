@@ -94,7 +94,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             var convertedObjects = dataItems
-                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, ignoreNullValues: settings.IgnoreNullValues, preserveMixedCaseIds: settings.PreserveMixedCaseIds))
+                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, ignoreNullValues: settings.IgnoreNullValues, preserveMixedCaseIds: settings.PreserveMixedCaseIds, transformations: settings.Transformations))
                 .Where(o => o != null)
                 .OfType<ExpandoObject>();
             var batches = convertedObjects.Buffer(settings.BatchSize);
