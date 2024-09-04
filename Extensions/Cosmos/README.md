@@ -40,7 +40,8 @@ Or with RBAC:
     "Container":"myContainer",
     "IncludeMetadataFields": false,
     "PartitionKeyValue":"123",
-    "Query":"SELECT * FROM c WHERE c.category='event'"
+    "Query":"SELECT * FROM c WHERE c.category='event'",
+    "InitClientEncryption": false
 }
 ```
 
@@ -65,6 +66,7 @@ Sink requires an additional `PartitionKeyPath` parameter which is used when crea
     "PreserveMixedCaseIds": false,
     "IgnoreNullValues": false,
     "IsServerlessAccount": false,
-    "UseSharedThroughput": false
+    "UseSharedThroughput": false,
+    "InitClientEncryption": false
 }
 ```
