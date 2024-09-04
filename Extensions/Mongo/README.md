@@ -13,7 +13,7 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
 ```json
 {
     "ConnectionString": "",
-    "DatabaseName: "",
+    "DatabaseName": "",
     "Collection": ""
 }
 ```
