@@ -40,7 +40,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         logger.LogInformation("Reading collection '{Collection}'", collectionName);
         var collection = context.GetRepository<BsonDocument>(collectionName);
         int itemCount = 0;
-        foreach (var record in collection.AsQueryable())
+        foreach (var record in await Task.Run(() => collection.AsQueryable()))
         {
             yield return new MongoDataItem(record);
             itemCount++;
