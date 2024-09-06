@@ -21,7 +21,7 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
 
         public bool UseRbacAuth { get; set; }
 
-        public bool EnableInteractiveCredentials { get; set; } = true;
+        public bool EnableInteractiveCredentials { get; set; }
 
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
