@@ -8,6 +8,7 @@ using Azure.Core;
 using System.Text.RegularExpressions;
 using Microsoft.Azure.Cosmos.Encryption;
 using Azure.Security.KeyVault.Keys.Cryptography;
+using System.Net;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -33,6 +34,10 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 EnableContentResponseOnWrite = false,
                 Serializer = cosmosSerializer,
             };
+
+            if (!string.IsNullOrEmpty(settings.WebProxy)){
+                clientOptions.WebProxy = new WebProxy(settings.WebProxy);
+            }
             
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)

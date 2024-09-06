@@ -14,7 +14,7 @@ Source and sink settings also both require parameters to specify the data locati
 - `Database`
 - `Container`
 
-Source supports an optional `IncludeMetadataFields` parameter (`false` by default) to enable inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`. An optional PartitionKeyValue setting allows for filtering to a single partition. The optional Query setting allows further filtering using a Cosmos SQL statement.
+Source supports an optional `IncludeMetadataFields` parameter (`false` by default) to enable inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`. An optional PartitionKeyValue setting allows for filtering to a single partition. The optional Query setting allows further filtering using a Cosmos SQL statement. An optional `WebProxy` parameter (`null` by default) enables connections through a proxy.
 
 ### Always Encrypted
 
@@ -33,7 +33,8 @@ The extension will also automatically handle the encryption keys and encryption 
     "Container":"myContainer",
     "IncludeMetadataFields": false,
     "PartitionKeyValue":"123",
-    "Query":"SELECT * FROM c WHERE c.category='event'"
+    "Query":"SELECT * FROM c WHERE c.category='event'",
+    "WebProxy":"http://yourproxy.server.com/"
 }
 ```
 
@@ -50,6 +51,7 @@ Or with RBAC:
     "PartitionKeyValue":"123",
     "Query":"SELECT * FROM c WHERE c.category='event'",
     "InitClientEncryption": false
+    "WebProxy":"http://yourproxy.server.com/"
 }
 ```
 
