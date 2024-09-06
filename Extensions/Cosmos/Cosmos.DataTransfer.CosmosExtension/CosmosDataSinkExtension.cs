@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Encryption;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -28,7 +29,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
             Container? container;
             if (settings.UseRbacAuth)
             {
-                container = client.GetContainer(settings.Database, settings.Container);
+                if (settings.InitClientEncryption)
+                {
+                    container = await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync();
+                }
+                else
+                {
+                    container = client.GetContainer(settings.Database, settings.Container);
+                }
             }
             else
             {
@@ -94,7 +102,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             var convertedObjects = dataItems
-                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, ignoreNullValues: settings.IgnoreNullValues, preserveMixedCaseIds: settings.PreserveMixedCaseIds))
+                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, ignoreNullValues: settings.IgnoreNullValues, preserveMixedCaseIds: settings.PreserveMixedCaseIds, transformations: settings.Transformations))
                 .Where(o => o != null)
                 .OfType<ExpandoObject>();
             var batches = convertedObjects.Buffer(settings.BatchSize);
