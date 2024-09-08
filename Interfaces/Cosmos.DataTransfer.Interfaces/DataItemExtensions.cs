@@ -11,9 +11,10 @@ public static class DataItemExtensions
     /// <param name="requireStringId">If true, adds a new GUID "id" field to any top level items where one is not already present.</param>
     /// <param name="ignoreNullValues">If true, excludes fields containing null values from output.</param>
     /// <param name="preserveMixedCaseIds">If true, disregards differently cased "id" fields for purposes of required "id" and passes them through.</param>
+    /// <param name="transformations">List of transformations to be performed</param>
     /// <returns>A dynamic object containing the entire data structure.</returns>
     /// <remarks>The returned ExpandoObject can be used directly as an IDictionary.</remarks>
-    public static ExpandoObject? BuildDynamicObjectTree(this IDataItem? source, bool requireStringId = false, bool ignoreNullValues = false, bool preserveMixedCaseIds = false)
+    public static ExpandoObject? BuildDynamicObjectTree(this IDataItem? source, bool requireStringId = false, bool ignoreNullValues = false, bool preserveMixedCaseIds = false, Dictionary<string, DataItemTransformation>? transformations = null)
     {
         if (source == null) 
         {
@@ -31,11 +32,12 @@ public static class DataItemExtensions
          */
         var containsLowercaseIdField = fields.Contains("id", StringComparer.CurrentCulture);
         var containsAnyIdField = fields.Contains("id", StringComparer.CurrentCultureIgnoreCase);
+        var containsIdIdFieldTransformation = transformations?.Values.Any(t => t.DestinationFieldName?.ToLowerInvariant() == "id") ?? false;
 
         if (requireStringId)
         {
             bool mismatchedIdCasing = preserveMixedCaseIds && !containsLowercaseIdField;
-            if (!containsAnyIdField || mismatchedIdCasing)
+            if ((!containsAnyIdField || mismatchedIdCasing) && !containsIdIdFieldTransformation)
             {
                 item.TryAdd("id", Guid.NewGuid().ToString());
             }
@@ -44,12 +46,16 @@ public static class DataItemExtensions
         foreach (string field in fields)
         {
             object? value = source.GetValue(field);
+
             if (ignoreNullValues && value == null) 
             {
                 continue;
             }
 
-            var fieldName = field;
+            DataItemTransformation? itemTransformation = null;
+            transformations?.TryGetValue(field, out itemTransformation);
+
+            var fieldName = itemTransformation?.DestinationFieldName ?? field;
             if (requireStringId && string.Equals(field, "id", StringComparison.CurrentCultureIgnoreCase))
             {
                 if (preserveMixedCaseIds)
@@ -78,7 +84,15 @@ public static class DataItemExtensions
                 value = BuildArray(array, ignoreNulls: ignoreNullValues);
             }
 
-            item.TryAdd(fieldName, value);
+            if(string.IsNullOrEmpty(itemTransformation?.DestinationFieldTypeCode))
+            {
+                item.TryAdd(fieldName, value);
+            }
+            else
+            {
+                Enum.TryParse<TypeCode>(itemTransformation.DestinationFieldTypeCode, true, out TypeCode typeCode);
+                item.TryAdd(fieldName, Convert.ChangeType(value, typeCode));
+            }
         }
 
         return item;

@@ -6,6 +6,8 @@ using System.Globalization;
 using System.Reflection;
 using Azure.Core;
 using System.Text.RegularExpressions;
+using Microsoft.Azure.Cosmos.Encryption;
+using Azure.Security.KeyVault.Keys.Cryptography;
 using System.Net;
 
 namespace Cosmos.DataTransfer.CosmosExtension
@@ -41,7 +43,17 @@ namespace Cosmos.DataTransfer.CosmosExtension
             if (settings.UseRbacAuth)
             {
                 TokenCredential tokenCredential = new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
-                cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
+
+                if(settings.InitClientEncryption)
+                {
+                    var keyResolver = new KeyResolver(tokenCredential);
+                    cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions)
+                        .WithEncryption(keyResolver, KeyEncryptionKeyResolverName.AzureKeyVault);
+                }
+                else
+                {
+                    cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
+                }
             }
             else
             {
