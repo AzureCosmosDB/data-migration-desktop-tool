@@ -14,7 +14,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? WebProxy { get; set; }
         public bool UseRbacAuth { get; set; }
         public string? AccountEndpoint { get; set; }
-        public bool EnableInteractiveCredentials { get; set; } = true;
+        public bool EnableInteractiveCredentials { get; set; }
         public bool InitClientEncryption { get; set; } = false;
 
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

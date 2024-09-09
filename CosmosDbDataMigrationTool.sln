@@ -64,6 +64,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.Common", "Interfaces\Cosmos.DataTransfer.Common\Cosmos.DataTransfer.Common.csproj", "{0FAD9D89-2E41-4D65-8440-5C01885D9292}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AzureBlob", "AzureBlob", "{9627A42A-BEB0-4A39-B49C-C3C6D54E705A}"
+	ProjectSection(SolutionItems) = preProject
+		Extensions\AzureBlob\README.md = Extensions\AzureBlob\README.md
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AwsS3", "AwsS3", "{502197E4-F554-4B5B-9235-FBFE7E49EBEF}"
 EndProject
