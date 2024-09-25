@@ -1,8 +1,7 @@
 {
   "profiles": {
     "Cosmos.DataTransfer.Core": {
-      "commandName": "Project",
-      "commandLineArgs": ""
+      "commandName": "Project"
     },
     "JSON->Cosmos": {
       "commandName": "Project",
@@ -10,7 +9,7 @@
     },
     "Cosmos->JSON": {
       "commandName": "Project",
-      "commandLineArgs": "--source cosmos-nosql --sink json --settings=c:\\temp\\Cosmos-JsonSettings.json"
+      "commandLineArgs": "--source cosmos-nosql --sink JSON-AzureBlob --settings=c:\\temp\\Cosmos-JsonSettings4.json"
     },
     "SqlServer->Cosmos": {
       "commandName": "Project",
