@@ -31,7 +31,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                     var dataColumns = new Dictionary<ColumnMapping, DataColumn>();
                     foreach (ColumnMapping columnMapping in settings.ColumnMappings)
                     {
-                        DataColumn dbColumn = new DataColumn(columnMapping.ColumnName);
+                        DataColumn dbColumn = new DataColumn(columnMapping.ColumnName, Type.GetType(columnMapping.DataType));
                         dataColumns.Add(columnMapping, dbColumn);
                         bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(dbColumn.ColumnName, dbColumn.ColumnName));
                     }
@@ -60,7 +60,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                                     {
                                         value = item.GetValue(sourceField);
                                     }
-                                    
+
                                     if (value != null || mapping.AllowNull)
                                     {
                                         if (value is IDataItem child)

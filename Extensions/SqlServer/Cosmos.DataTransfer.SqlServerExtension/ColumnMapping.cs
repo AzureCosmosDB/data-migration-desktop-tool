@@ -9,6 +9,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
         public string? SourceFieldName { get; set; }
         public bool AllowNull { get; set; } = true;
         public object? DefaultValue { get; set; }
+        public string? DataType { get; set; }
 
         public string? GetFieldName()
         {
