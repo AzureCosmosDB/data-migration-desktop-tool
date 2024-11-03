@@ -8,11 +8,11 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Azure.Search.Documents" Version="11.4.0" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
-		<PackageReference Include="System.ComponentModel.Composition" Version="7.0.0" />
-		<PackageReference Include="System.Interactive.Async" Version="6.0.1" />
-		<PackageReference Include="System.Linq.Async" Version="6.0.1" />
+		<PackageReference Include="Azure.Search.Documents" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+		<PackageReference Include="System.ComponentModel.Composition" />
+		<PackageReference Include="System.Interactive.Async" />
+		<PackageReference Include="System.Linq.Async" />
 	</ItemGroup>
 
 	<ItemGroup>
