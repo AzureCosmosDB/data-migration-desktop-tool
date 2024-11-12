@@ -1,13 +1,15 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Events;
+using MongoDB.Driver.Encryption;
 
 namespace Cosmos.DataTransfer.MongoExtension;
 public class Context
 {
     private readonly IMongoDatabase database = null!;
 
-    public Context(string connectionString, string databaseName)
+    public Context(string connectionString, string databaseName, 
+        string? keyVaultNamespace = null, Dictionary<string, IReadOnlyDictionary<string, object>>? kmsProviders = null)
     {
         var mongoConnectionUrl = new MongoUrl(connectionString);
         var mongoClientSettings = MongoClientSettings.FromUrl(mongoConnectionUrl);
@@ -16,6 +18,16 @@ public class Context
                 System.Diagnostics.Debug.WriteLine($"{e.CommandName} - {e.Command.ToJson()}");
             });
         };
+
+        if(!string.IsNullOrEmpty(keyVaultNamespace) && kmsProviders?.Count != 0)
+        {
+            var autoEncryptionOptions = new AutoEncryptionOptions(
+                        keyVaultNamespace: CollectionNamespace.FromFullName(keyVaultNamespace),
+                        kmsProviders: kmsProviders,
+                        bypassAutoEncryption: true);
+            mongoClientSettings.AutoEncryptionOptions = autoEncryptionOptions;
+        }
+
         var client = new MongoClient(mongoClientSettings);
         database = client.GetDatabase(databaseName);
     }

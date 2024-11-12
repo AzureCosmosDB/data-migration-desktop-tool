@@ -6,7 +6,10 @@ The Azure Blob Storage extension provides reading and writing of formatted files
 
 ## Settings
 
-Source and Sink settings require the parameters shown below. 
+Source and sink require settings used to locate and access the Azure Blob Storage account. This can be done in one of two ways:
+
+- Using a `ConnectionString` that includes an AccountEndpoint and AccountKey
+- Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available.
 
 ### Source
 
@@ -17,6 +20,18 @@ An optional `ReadBufferSizeInKB` parameter can be used to control stream bufferi
     "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=...",
     "ContainerName": "",
     "BlobName": "",
+}
+```
+
+Or with RBAC:
+
+```json
+{
+    "AccountEndpoint": "https://<storage-account>.blob.core.windows.net",
+    "ContainerName": "",
+    "BlobName": "",
+    "UseRbacAuth": true,
+    "EnableInteractiveCredentials": true
 }
 ```
 

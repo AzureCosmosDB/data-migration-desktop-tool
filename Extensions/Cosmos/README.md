@@ -7,14 +7,24 @@ The Cosmos data transfer extension provides source and sink capabilities for rea
 ## Settings
 
 Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of two ways:
-- Using a `ConnectionString` that includes an AccountEndpoint and AccountKey
-- Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available.
 
-Source and sink settings also both require parameters to specify the data location within a Cosmos DB account: 
+- Using a `ConnectionString` that includes an AccountEndpoint and AccountKey
+- Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available. See ([migrate-passwordless](https://learn.microsoft.com/azure/cosmos-db/nosql/migrate-passwordless?tabs=sign-in-azure-cli%2Cdotnet%2Cazure-portal-create%2Cazure-portal-associate%2Capp-service-identity) for how to configure Cosmos DB for passwordless access.
+
+Source and sink settings also both require parameters to specify the data location within a Cosmos DB account:
+
 - `Database`
 - `Container`
 
-Source supports an optional `IncludeMetadataFields` parameter (`false` by default) to enable inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`. An optional PartitionKeyValue setting allows for filtering to a single partition. The optional Query setting allows further filtering using a Cosmos SQL statement.
+Source supports an optional `IncludeMetadataFields` parameter (`false` by default) to enable inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`. An optional PartitionKeyValue setting allows for filtering to a single partition. The optional Query setting allows further filtering using a Cosmos SQL statement. An optional `WebProxy` parameter (`null` by default) enables connections through a proxy.
+
+### Always Encrypted
+
+Source and Sink support Always Encrypted as an optional parameter. When `InitClientEncryption` is set to `true`, the extension will initialize the Cosmos client with the Always Encrypted feature enabled. This allows for the use of encrypted fields in the Cosmos DB container. The extension will automatically decrypt the fields when reading from the source and encrypt the fields when writing to the sink. 
+</br>
+The extension will also automatically handle the encryption keys and encryption policy for the client, but it requires `UseRbacAuth` to be set to `true` and the user to have the necessary permissions to access the key vault.
+</br>
+> **Note**: To use Always Encrypted, Cosmos DB container must be pre-configured with the necessary encryption policy and the user must have the necessary permissions to access the key vault.
 
 ### Source
 
@@ -25,7 +35,8 @@ Source supports an optional `IncludeMetadataFields` parameter (`false` by defaul
     "Container":"myContainer",
     "IncludeMetadataFields": false,
     "PartitionKeyValue":"123",
-    "Query":"SELECT * FROM c WHERE c.category='event'"
+    "Query":"SELECT * FROM c WHERE c.category='event'",
+    "WebProxy":"http://yourproxy.server.com/"
 }
 ```
 
@@ -40,7 +51,9 @@ Or with RBAC:
     "Container":"myContainer",
     "IncludeMetadataFields": false,
     "PartitionKeyValue":"123",
-    "Query":"SELECT * FROM c WHERE c.category='event'"
+    "Query":"SELECT * FROM c WHERE c.category='event'",
+    "InitClientEncryption": false
+    "WebProxy":"http://yourproxy.server.com/"
 }
 ```
 
@@ -65,6 +78,7 @@ Sink requires an additional `PartitionKeyPath` parameter which is used when crea
     "PreserveMixedCaseIds": false,
     "IgnoreNullValues": false,
     "IsServerlessAccount": false,
-    "UseSharedThroughput": false
+    "UseSharedThroughput": false,
+    "InitClientEncryption": false
 }
 ```

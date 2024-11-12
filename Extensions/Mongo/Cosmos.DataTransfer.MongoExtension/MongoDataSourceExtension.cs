@@ -19,7 +19,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 
         if (!string.IsNullOrEmpty(settings.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName))
         {
-            var context = new Context(settings.ConnectionString, settings.DatabaseName);
+            var context = new Context(settings.ConnectionString, settings.DatabaseName, settings.KeyVaultNamespace, settings.KMSProviders);
 
             var collectionNames = !string.IsNullOrEmpty(settings.Collection)
                 ? new List<string> { settings.Collection }
@@ -40,7 +40,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         logger.LogInformation("Reading collection '{Collection}'", collectionName);
         var collection = context.GetRepository<BsonDocument>(collectionName);
         int itemCount = 0;
-        foreach (var record in collection.AsQueryable())
+        foreach (var record in await Task.Run(() => collection.AsQueryable()))
         {
             yield return new MongoDataItem(record);
             itemCount++;

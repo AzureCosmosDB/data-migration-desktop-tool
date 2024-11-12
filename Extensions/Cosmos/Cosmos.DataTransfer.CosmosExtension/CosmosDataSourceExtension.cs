@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Encryption;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -19,8 +20,17 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             var client = CosmosExtensionServices.CreateClient(settings, DisplayName);
 
-            var container = client.GetContainer(settings.Database, settings.Container);
+            Container container;
             
+            if(settings.InitClientEncryption)
+            {
+                container = await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync();
+            }
+            else
+            {
+                container = client.GetContainer(settings.Database, settings.Container);
+            }
+
             await CosmosExtensionServices.VerifyContainerAccess(container, settings.Container, logger, cancellationToken);
 
             var requestOptions = new QueryRequestOptions();
