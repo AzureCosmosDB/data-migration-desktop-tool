@@ -63,7 +63,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
         private static async Task InnerWriteAsync(List<TableEntity> tableEntities, TableClient tableClient, ILogger logger, CancellationToken cancellationToken)
         {
-            var transactionsActions = tableEntities.Select(e => new TableTransactionAction(TableTransactionActionType.Add, e));
+            var transactionsActions = tableEntities.Select(e => new TableTransactionAction(TableTransactionActionType.UpsertReplace, e));
 
             try
             {
