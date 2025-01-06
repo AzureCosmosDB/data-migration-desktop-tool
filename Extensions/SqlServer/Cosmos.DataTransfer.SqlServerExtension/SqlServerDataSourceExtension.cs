@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.Composition;
+using System.IO;
 using System.Runtime.CompilerServices;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Data.SqlClient;
@@ -17,9 +18,14 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             var settings = config.Get<SqlServerSourceSettings>();
             settings.Validate();
 
+            string queryText = settings!.QueryText!;
+            if (settings.FilePath != null) {
+                queryText = File.ReadAllText(queryText);
+            }
+            
             await using var connection = new SqlConnection(settings.ConnectionString);
             await connection.OpenAsync(cancellationToken);
-            await using SqlCommand command = new SqlCommand(settings.QueryText, connection);
+            await using SqlCommand command = new SqlCommand(queryText, connection);
             await using SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
