@@ -8,14 +8,18 @@ The SQL Server data transfer extension provides source and sink capabilities for
 
 Source and sink settings both require a `ConnectionString` parameter.
 
-Source settings also require a `QueryText` parameter to define the data to select from SQL. This can combine data from multiple tables, views, etc. but should produce a single result set.
+Source settings also require either a `QueryText` or `FilePath` parameter with the SQL statement that defines the data to select.
+`QueryText` can be the SQL statement, while `FilePath` can point to a file with the SQL statement. 
+In both cases, the SQL statement can combine data from multiple tables, views, etc., 
+but should produce a single result set.
 
 ### Source
 
 ```json
 {
     "ConnectionString": "",
-    "QueryText": ""
+    "QueryText": "", // required if FilePath not set.
+    "FilePath": ""   // required if QueryText not set.
 }
 ```
 
