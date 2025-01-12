@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
     <PackageReference Include="Parquet.Net" Version="4.8.1" />
     <PackageReference Include="System.ComponentModel.Composition" Version="7.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Extensions\AwsS3\Cosmos.DataTransfer.AwsS3Storage\Cosmos.DataTransfer.AwsS3Storage.csproj" />
