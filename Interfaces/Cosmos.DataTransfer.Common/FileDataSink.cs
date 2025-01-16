@@ -1,4 +1,5 @@
-﻿using Cosmos.DataTransfer.Interfaces;
+﻿using System.IO.Compression;
+using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -12,8 +13,18 @@ public class FileDataSink : IComposableDataSink
         settings.Validate();
         if (settings.FilePath != null)
         {
+            if (settings.Gzip && !settings.FilePath.EndsWith(".gz")) {
+                settings.FilePath += ".gz";
+            }
+
             await using var writer = File.Create(settings.FilePath);
-            await writeToStream(writer);
+            
+            if (settings.Gzip) {
+                using var compressor = new GZipStream(writer, CompressionLevel.SmallestSize, leaveOpen: false);
+                await writeToStream(compressor);
+            } else {
+                await writeToStream(writer);
+            }
         }
     }
 

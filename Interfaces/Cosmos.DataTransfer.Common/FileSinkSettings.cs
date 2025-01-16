@@ -7,4 +7,5 @@ public class FileSinkSettings : IDataExtensionSettings
 {
     [Required]
     public string? FilePath { get; set; }
+    public bool Gzip { get; set;} = false;
 }
