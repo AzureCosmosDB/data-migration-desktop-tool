@@ -22,4 +22,9 @@
     <ProjectReference Include="..\..\Extensions\Json\Cosmos.DataTransfer.JsonExtension.UnitTests\Cosmos.DataTransfer.JsonExtension.UnitTests.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Data\foobar.gz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
