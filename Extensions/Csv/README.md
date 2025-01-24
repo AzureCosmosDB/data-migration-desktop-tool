@@ -36,12 +36,14 @@ Source supports an optional `Delimiter` parameter (`,` by default) and an option
 
 Sink supports an optional `Delimiter` parameter (`,` by default) and an optional `IncludeHeader` parameter (`true` by default) to add a leading row of column names.
 
-Formatting options, or locale, can be set with an optional `Culture` setting (`"Invariant"` by default). 
+Formatting options, or locale, can be set with an optional `Culture` setting (`"InvariantCulture"` by default). 
 This specifies how e.g., numbers and dates are formatted according to a specific culture. 
-Set to `"Current"` to use the system's or process' current locale setting 
+Set to `"InvariantCulture"` to use the system's or process' current locale setting 
 (see [CultureInfo.CurrentCulture](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.currentculture)),
 or e.g., `"en"`, `"en-GB"`, or `"en-US"` for English standards (period, `.`, as decimal separator and other regional standards), 
 "da-DK" for Danish (comma, `,`, as decimal separator), etc.
+Note, if using a culture with comma as decimal separator, specify a different delimiter (e.g., semi-colon, `;`), else all numbers
+will be written enclosed with quotes.
 
 ```json
 {
