@@ -1,7 +1,6 @@
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Extensions.Logging.Abstractions;
-using Cosmos.DataTransfer.JsonExtension.UnitTests;
 
 namespace Cosmos.DataTransfer.Common.UnitTests;
 
