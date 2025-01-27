@@ -15,18 +15,31 @@ namespace Cosmos.DataTransfer.SqlServerExtension
 
         public async IAsyncEnumerable<IDataItem> ReadAsync(IConfiguration config, ILogger logger, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            await foreach (var item in this.ReadAsync(config, logger, (string connectionString) => new ValueTask<System.Data.Common.DbConnection>(new SqlConnection(connectionString)), cancellationToken)) {
+                yield return item;
+            }
+        }
+
+        public async IAsyncEnumerable<IDataItem> ReadAsync(
+            IConfiguration config, 
+            ILogger logger, 
+            Func<string,ValueTask<System.Data.Common.DbConnection>> connectionFactory,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
             var settings = config.Get<SqlServerSourceSettings>();
             settings.Validate();
 
             string queryText = settings!.QueryText!;
             if (settings.FilePath != null) {
-                queryText = File.ReadAllText(queryText);
+                queryText = File.ReadAllText(settings.FilePath);
             }
             
-            await using var connection = new SqlConnection(settings.ConnectionString);
+            await using var connection = connectionFactory(settings.ConnectionString!).Result;
             await connection.OpenAsync(cancellationToken);
-            await using SqlCommand command = new SqlCommand(queryText, connection);
-            await using SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
+            var command = connection.CreateCommand();
+            command.CommandText = queryText;
+            //await using SqlCommand command = new SqlCommand(queryText, connection);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
                 var columns = await reader.GetColumnSchemaAsync(cancellationToken);
