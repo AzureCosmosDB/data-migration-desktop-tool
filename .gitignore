@@ -68,6 +68,9 @@ bld/
 # Visual Studio 2017 auto generated files
 Generated\ Files/
 
+# MSTest .runsettings
+*.runsettings
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
@@ -434,3 +437,4 @@ FodyWeavers.xsd
 # macOS .DS_Store
 **/.DS_Store
 /Core/Cosmos.DataTransfer.Core/migrationsettings.json
+

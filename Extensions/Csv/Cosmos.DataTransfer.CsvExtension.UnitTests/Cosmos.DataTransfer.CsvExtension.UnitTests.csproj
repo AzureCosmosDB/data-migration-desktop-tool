@@ -16,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Json\Cosmos.DataTransfer.JsonExtension.UnitTests\Cosmos.DataTransfer.JsonExtension.UnitTests.csproj" />
     <ProjectReference Include="..\Cosmos.DataTransfer.CsvExtension\Cosmos.DataTransfer.CsvExtension.csproj" />
+    <ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Common.UnitTests\Cosmos.DataTransfer.Common.UnitTests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
