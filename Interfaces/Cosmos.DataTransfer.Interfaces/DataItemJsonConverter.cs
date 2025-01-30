@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Dynamic;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -7,6 +8,51 @@ namespace Cosmos.DataTransfer.Interfaces;
 
 public static class DataItemJsonConverter
 {
+    /// <summary>
+    /// Returns either and array of Arrays or IDataItem objects or a single IDataItem object from the JSON string.
+    /// </summary>
+    /// <param name="value">JSON string</param>
+    /// <returns></returns>
+    public static object? Deserialize(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return null;
+        }
+
+        using JsonDocument jsonDocument = JsonDocument.Parse(value);
+        var rootElement = jsonDocument.RootElement;
+
+        return rootElement.ValueKind switch
+        {
+            JsonValueKind.Array => rootElement.EnumerateArray().Select(ConvertJsonElement).ToList(),
+            _ => ConvertJsonElement(rootElement)
+        };
+    }
+
+    private static IDataItem ConvertJsonToIDataItem(JsonElement element)
+    {
+        var retval = new ExpandoObject() as IDictionary<string, object?>;
+
+        foreach (var property in element.EnumerateObject())
+        {
+            retval[property.Name] = ConvertJsonElement(property.Value);
+        }
+        return new DictionaryDataItem(retval);
+    }
+
+    private static object? ConvertJsonElement(JsonElement element) => element.ValueKind switch
+    {
+        JsonValueKind.Object => ConvertJsonToIDataItem(element),
+        JsonValueKind.Array => element.EnumerateArray().Select(ConvertJsonElement).ToList(),
+        JsonValueKind.String => element.GetString(),
+        JsonValueKind.Number => element.TryGetInt64(out long longValue) ? longValue : (double)element.GetDouble(),
+        JsonValueKind.True => true,
+        JsonValueKind.False => false,
+        JsonValueKind.Null => null,
+        _ => throw new ArgumentOutOfRangeException(nameof(element), $"Unsupported JSON value kind: {element.ValueKind}")
+    };
+
     public static string AsJsonString(this IDataItem dataItem, bool indented, bool includeNullFields)
     {
         using var stream = new MemoryStream();

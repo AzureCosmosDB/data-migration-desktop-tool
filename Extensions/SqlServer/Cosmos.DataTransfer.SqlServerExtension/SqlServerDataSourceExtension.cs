@@ -32,6 +32,11 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                     {
                         value = null;
                     }
+
+                    if (settings.JsonFields != null && settings.JsonFields.Contains(column.ColumnName))
+                    {
+                        value = DataItemJsonConverter.Deserialize(value!.ToString());
+                    }
                     fields[column.ColumnName] = value;
                 }
                 yield return new DictionaryDataItem(fields);
