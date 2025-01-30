@@ -12,6 +12,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
 
         [Required]
         public string? QueryText { get; set; }
+        public string[] JsonFields { get; set; }
 
     }
 }
