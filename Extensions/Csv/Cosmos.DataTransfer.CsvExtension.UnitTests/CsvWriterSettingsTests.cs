@@ -14,7 +14,7 @@ public class CsvWriterSettingsTests
 
 
     [TestMethod]
-    public void TestDefault(string culture) {
+    public void TestDefault() {
         var settings = new CsvWriterSettings() { };
 
         Assert.AreEqual(settings.GetCultureInfo(), CultureInfo.InvariantCulture);        
