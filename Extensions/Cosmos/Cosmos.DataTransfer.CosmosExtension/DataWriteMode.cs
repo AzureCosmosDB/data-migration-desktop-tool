@@ -6,5 +6,7 @@
         Insert,
         UpsertStream,
         Upsert,
+        DeleteStream,
+        Delete
     }
 }
