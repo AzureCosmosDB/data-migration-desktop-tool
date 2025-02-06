@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Encryption;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -28,7 +29,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
             Container? container;
             if (settings.UseRbacAuth)
             {
-                container = client.GetContainer(settings.Database, settings.Container);
+                if (settings.InitClientEncryption)
+                {
+                    container = await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync();
+                }
+                else
+                {
+                    container = client.GetContainer(settings.Database, settings.Container);
+                }
             }
             else
             {
@@ -59,7 +67,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     containerProperties.PartitionKeyPath = settings.PartitionKeyPath;
                 }
 
-                ThroughputProperties? throughputProperties = settings.IsServerlessAccount
+                ThroughputProperties? throughputProperties = settings.IsServerlessAccount || settings.UseSharedThroughput
                     ? null
                     : settings.UseAutoscaleForCreatedContainer
                     ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
@@ -89,11 +97,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 addedCount += i;
                 if (addedCount % 500 == 0)
                 {
-                    logger.LogInformation("{AddedCount} records added after {TotalSeconds}s", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
+                    logger.LogInformation("{AddedCount} records added after {TotalSeconds}s ({AddRate} records/s)", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}", $"{(int)(addedCount / (timer.ElapsedMilliseconds / 1000.0))}");
                 }
             }
 
-            var convertedObjects = dataItems.Select(di => di.BuildDynamicObjectTree(true)).Where(o => o != null).OfType<ExpandoObject>();
+            var convertedObjects = dataItems
+                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, ignoreNullValues: settings.IgnoreNullValues, preserveMixedCaseIds: settings.PreserveMixedCaseIds, transformations: settings.Transformations))
+                .Where(o => o != null)
+                .OfType<ExpandoObject>();
             var batches = convertedObjects.Buffer(settings.BatchSize);
             var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
             await foreach (var batch in batches.WithCancellation(cancellationToken))
@@ -111,7 +122,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 throw new Exception($"Only {addedCount} of {inputCount} records were added to Cosmos");
             }
 
-            logger.LogInformation("Added {AddedCount} total records in {TotalSeconds}s", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}");
+            logger.LogInformation("Added {AddedCount} total records in {TotalSeconds}s ({AddRate} records/s)", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}", $"{(int)(addedCount / (timer.ElapsedMilliseconds / 1000.0))}");
         }
 
         private static AsyncRetryPolicy GetRetryPolicy(int maxRetryCount, int initialRetryDuration)

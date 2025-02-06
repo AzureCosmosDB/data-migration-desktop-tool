@@ -151,8 +151,23 @@ runs:
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=false \
         -p:Version=${{ inputs.build-version }}
+    - name: Build PostgreSQL Extension
+      shell: bash
+      run: |
+        dotnet publish \
+        Extensions/PostgreSQL/Cosmos.DataTransfer.PostgresqlExtension.csproj \
+        --configuration Release \
+        --output ${{ inputs.platform-short }}/Extensions \
+        --self-contained false \
+        --runtime ${{ inputs.runtime }} \
+        -p:PublishSingleFile=false \
+        -p:DebugType=embedded \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishReadyToRun=false \
+        -p:PublishTrimmed=false \
+        -p:Version=${{ inputs.build-version }}
     - name: Upload package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.platform }}-package
         path: ${{ inputs.platform-short }}/

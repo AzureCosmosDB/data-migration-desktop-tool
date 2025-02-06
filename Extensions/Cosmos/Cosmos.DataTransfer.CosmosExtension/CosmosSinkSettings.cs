@@ -13,8 +13,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public int? CreatedContainerMaxThroughput { get; set; }
         public bool UseAutoscaleForCreatedContainer { get; set; } = true;
         public bool IsServerlessAccount { get; set; } = false;
+        public bool UseSharedThroughput { get; set; } = false;
+        public bool PreserveMixedCaseIds { get; set; } = false;
         public DataWriteMode WriteMode { get; set; } = DataWriteMode.Insert;
+        public bool IgnoreNullValues { get; set; } = false;
         public List<string>? PartitionKeyPaths { get; set; }
+        public Dictionary<string, DataItemTransformation>? Transformations { get; set; }
 
         public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
@@ -55,6 +59,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
             {
                 yield return new ValidationResult("PartitionKeyPath must be specified when WriteMode is set to InsertStream or UpsertStream", new[] { nameof(PartitionKeyPath), nameof(PartitionKeyPaths), nameof(WriteMode) });
             }
+
+            if (HasInvalidTransformations())
+            {
+                yield return new ValidationResult("Transformations must always specify SourceFieldName and either DestinationFieldName or DestinationFieldType", new[] { nameof(Transformations) });
+            }
         }
 
         private bool MissingPartitionKeys()
@@ -66,6 +75,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 return false;
 
             return true;
+        }
+
+        private bool HasInvalidTransformations()
+        {
+            return Transformations != null && 
+                Transformations.Any(t => string.IsNullOrEmpty(t.Value.DestinationFieldName) && string.IsNullOrEmpty(t.Value.DestinationFieldTypeCode));
         }
     }
 }

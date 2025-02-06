@@ -1,13 +1,17 @@
 name: Release desktop binaries
 on: 
-  release:
-    types:
-      - published
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: 'Version number to build and release'
+        required: true
 jobs:
   github-release:
     name: Create GitHub release
     runs-on: ubuntu-latest
-    needs: build-package-win
+    needs: build-package
+    permissions:
+      contents: write
     steps:
       - name: Download Windows GUI x64 package
         uses: actions/download-artifact@v3
@@ -31,18 +35,19 @@ jobs:
           path: linux-package
       - name: Package output files
         run: |
-          zip -r dmt-gui-${{ github.event.release.tag_name }}-win-x64.zip windows-gui-package/*
-          zip -r dmt-${{ github.event.release.tag_name }}-win-x64.zip windows-package/*
-          zip -r dmt-${{ github.event.release.tag_name }}-mac-x64.zip mac-package/*
-          zip -r dmt-${{ github.event.release.tag_name }}-linux-x64.zip linux-package/*
+          zip -r dmt-gui-${{ inputs.release-tag }}-win-x64.zip windows-gui-package/*
+          zip -r dmt-${{ inputs.release-tag }}-win-x64.zip windows-package/*
+          zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip mac-package/*
+          zip -r dmt-${{ inputs.release-tag }}-linux-x64.zip linux-package/*
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ inputs.release-tag }}
           files: |
-            dmt-gui-${{ github.event.release.tag_name }}-win-x64.zip
-            dmt-${{ github.event.release.tag_name }}-win-x64.zip
-            dmt-${{ github.event.release.tag_name }}-mac-x64.zip
-            dmt-${{ github.event.release.tag_name }}-linux-x64.zip
+            dmt-gui-${{ inputs.release-tag }}-win-x64.zip
+            dmt-${{ inputs.release-tag }}-win-x64.zip
+            dmt-${{ inputs.release-tag }}-mac-x64.zip
+            dmt-${{ inputs.release-tag }}-linux-x64.zip
   build-package:
     name: Build self-contained executables
     runs-on: ubuntu-latest
@@ -52,6 +57,14 @@ jobs:
         run: dotnet --version
       - name: Checkout source code
         uses: actions/checkout@v3
+      - name: Execute Action build-with-plugins for Windows
+        uses: ./.github/actions/build-with-plugins
+        id: build-with-plugins-win
+        with:
+          platform: windows
+          platform-short: win
+          runtime: win-x64
+          build-version: ${{ inputs.release-tag }}
       - name: Execute Action build-with-plugins for MacOS
         uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-mac
@@ -59,7 +72,7 @@ jobs:
           platform: mac
           platform-short: mac
           runtime: osx-x64
-          build-version: ${{ github.event.release.tag_name }}
+          build-version: ${{ inputs.release-tag }}
       - name: Execute Action build-with-plugins for Linux
         uses: ./.github/actions/build-with-plugins
         id: build-with-plugins-linux
@@ -67,7 +80,7 @@ jobs:
           platform: linux
           platform-short: linux
           runtime: linux-x64
-          build-version: ${{ github.event.release.tag_name }}
+          build-version: ${{ inputs.release-tag }}
   build-package-win:
     name: Build self-contained Windows executables
     runs-on: windows-2022
@@ -88,7 +101,7 @@ jobs:
           platform: windows
           platform-short: win
           runtime: win-x64
-          build-version: ${{ github.event.release.tag_name }}
+          build-version: ${{ inputs.release-tag }}
       - name: Build Windows desktop package
         shell: bash
         run: |
@@ -102,9 +115,11 @@ jobs:
           -p:DebugType=embedded \
           -p:IncludeNativeLibrariesForSelfExtract=true \
           -p:EnableCompressionInSingleFile=true \
-          -p:Version=${{ github.event.release.tag_name }}
+          -p:Version=${{ inputs.release-tag }}
       - name: Upload gui package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-gui-package
           path: win/
+          build-version: ${{ inputs.release-tag }}
+
