@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 using Cosmos.DataTransfer.Interfaces;
+using System.Data.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,18 @@ namespace Cosmos.DataTransfer.SqlServerExtension
 
         public async IAsyncEnumerable<IDataItem> ReadAsync(IConfiguration config, ILogger logger, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            await foreach (var item in this.ReadAsync(config, logger, (string connectionString) => new ValueTask<System.Data.Common.DbConnection>(new SqlConnection(connectionString)), cancellationToken)) {
+            var settings = config.Get<SqlServerSourceSettings>();
+            settings.Validate();
+
+            var providerFactory = SqlClientFactory.Instance;
+            var connection = providerFactory.CreateConnection()!;
+            connection.ConnectionString = settings.ConnectionString;
+
+            var iterable = this.ReadAsync(config, logger, settings.GetQueryText(), 
+                settings.GetDbParameters(providerFactory), connection, 
+                providerFactory, cancellationToken);
+            
+            await foreach (var item in iterable) {
                 yield return item;
             }
         }
@@ -23,22 +35,17 @@ namespace Cosmos.DataTransfer.SqlServerExtension
         public async IAsyncEnumerable<IDataItem> ReadAsync(
             IConfiguration config, 
             ILogger logger, 
-            Func<string,ValueTask<System.Data.Common.DbConnection>> connectionFactory,
+            string queryText,
+            DbParameter[] parameters,
+            DbConnection connection,
+            DbProviderFactory dbProviderFactory,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var settings = config.Get<SqlServerSourceSettings>();
-            settings.Validate();
-
-            string queryText = settings.QueryText!;
-            if (settings.FilePath != null) {
-                queryText = File.ReadAllText(settings.FilePath);
-            }
-            
-            await using var connection = connectionFactory(settings.ConnectionString!).Result;
             await connection.OpenAsync(cancellationToken);
             var command = connection.CreateCommand();
             command.CommandText = queryText;
-            //await using SqlCommand command = new SqlCommand(queryText, connection);
+            command.Parameters.AddRange(parameters);
+
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
