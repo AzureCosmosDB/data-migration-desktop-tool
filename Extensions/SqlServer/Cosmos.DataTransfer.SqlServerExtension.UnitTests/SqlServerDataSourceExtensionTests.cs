@@ -1,8 +1,11 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Data.Common;
 using Cosmos.DataTransfer.Interfaces;
 using Cosmos.DataTransfer.Common;
 using Cosmos.DataTransfer.Common.UnitTests;
+using Moq;
+using Microsoft.Extensions.Configuration;
 
 namespace Cosmos.DataTransfer.SqlServerExtension.UnitTests;
 
@@ -10,8 +13,9 @@ namespace Cosmos.DataTransfer.SqlServerExtension.UnitTests;
 public class SqlServerDataSourceExtensionTests
 {
 
-    private static async Task<Func<string,ValueTask<System.Data.Common.DbConnection>>> connectionFactory(CancellationToken cancellationToken = default(CancellationToken)) {
-        var connection  = new SqliteConnection("");
+    private static async Task<Tuple<SqliteFactory,DbConnection>> connectionFactory(CancellationToken cancellationToken = default(CancellationToken)) {
+        var provider = SqliteFactory.Instance;
+        var connection = provider.CreateConnection();
         await connection.OpenAsync(cancellationToken);
 
         var cmd = connection.CreateCommand();
@@ -27,25 +31,20 @@ public class SqlServerDataSourceExtensionTests
         VALUES (2, NULL);";
         await cmd.ExecuteNonQueryAsync(cancellationToken);
 
-        var func = (string connectionString) => {
-            return new ValueTask<System.Data.Common.DbConnection>(connection);
-        };
-            
-        return func;
+        return Tuple.Create(provider, connection);
     }
 
     [TestMethod]
-    public async Task TestReadAsync_QueryText() {
+    public async Task TestReadAsync() {
+        var config = new Mock<IConfiguration>();
+        var cancellationToken = new CancellationTokenSource(500);
+        var (providerFactory, connection) = await connectionFactory(cancellationToken.Token);
+
         var extension = new SqlServerDataSourceExtension();
-        var config = TestHelpers.CreateConfig(new Dictionary<string, string> {
-            { "ConnectionString", "Sqlite" },
-            { "QueryText", "SELECT * FROM foobar" }
-        });
         Assert.AreEqual("SqlServer", extension.DisplayName);
-        
-        var cancellationToken = new CancellationTokenSource(500);
 
-        var result = await extension.ReadAsync(config, NullLogger.Instance, await connectionFactory(cancellationToken.Token), cancellationToken.Token).ToListAsync();
+        var result = await extension.ReadAsync(config.Object, NullLogger.Instance,
+          "SELECT * FROM foobar", Array.Empty<DbParameter>(), connection, providerFactory, cancellationToken.Token).ToListAsync();
         var expected = new List<DictionaryDataItem> {
             new DictionaryDataItem(new Dictionary<string, object?> { { "id", (long)1 }, { "name", "zoo" } }),
             new DictionaryDataItem(new Dictionary<string, object?> { { "id", (long)2 }, { "name", null }  })
@@ -54,24 +53,25 @@ public class SqlServerDataSourceExtensionTests
     }
 
     [TestMethod]
-    public async Task TestReadAsync_FromFile() {
-        var outputFile = Path.GetTempFileName();
-        await File.WriteAllTextAsync(outputFile, "SELECT * FROM foobar;");
+    public async Task TestReadAsyncWithParameters() {
+        var config = new Mock<IConfiguration>();
+        var cancellationToken = new CancellationTokenSource();
+        var (providerFactory, connection) = await connectionFactory(cancellationToken.Token);
+
         var extension = new SqlServerDataSourceExtension();
-        var config = TestHelpers.CreateConfig(new Dictionary<string, string> {
-            { "ConnectionString", "Sqlite" },
-            { "FilePath", outputFile }
-        });
+        Assert.AreEqual("SqlServer", extension.DisplayName);
 
-        
-        var cancellationToken = new CancellationTokenSource(500);
+        var parameter = providerFactory.CreateParameter();
+        parameter.ParameterName = "@x";
+        parameter.DbType = System.Data.DbType.Int32;
+        parameter.Value = 2;
 
-        var result = await extension.ReadAsync(config, NullLogger.Instance, await connectionFactory(cancellationToken.Token), cancellationToken.Token).ToListAsync();
-        var expected = new List<DictionaryDataItem> {
-            new DictionaryDataItem(new Dictionary<string, object?> { { "id", (long)1 }, { "name", "zoo" } }),
-            new DictionaryDataItem(new Dictionary<string, object?> { { "id", (long)2 }, { "name", null }  })
-        };
-        CollectionAssert.That.AreEqual(expected, result, new DataItemComparer());
+        var result = await extension.ReadAsync(config.Object, NullLogger.Instance,
+          "SELECT * FROM foobar WHERE id = @x", 
+          new DbParameter[] { parameter }, connection, providerFactory, cancellationToken.Token).FirstAsync();
+        Assert.That.AreEqual(result,
+            new DictionaryDataItem(new Dictionary<string, object?> { { "id", (long)2 }, { "name", null } }),
+            new DataItemComparer());
     }
 
     // Allows for testing against an actual SQL Server by specifying a 
@@ -80,10 +80,11 @@ public class SqlServerDataSourceExtensionTests
     // <?xml version="1.0" encoding="utf-8"?>
     // <RunSettings>
     //   <TestRunParameters>
-    //     <Parameter name="TestReadAsync_LiveSqlServer_ConnectionString" value="<Your connection string>" />
+    //     <Parameter name="TestReadAsync_LiveSqlServer_ConnectionString" value="Your connection string" />
     //   </TestRunParameters>
     // </RunSettings>
-    // run test with dotnet test --settings sql.runsettings 
+    // run test with
+    // dotnet test --settings sql.runsettings 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public TestContext TestContext { get; set; }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
