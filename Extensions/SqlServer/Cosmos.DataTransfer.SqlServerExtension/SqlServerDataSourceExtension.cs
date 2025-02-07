@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.Composition;
+using System.IO;
 using System.Runtime.CompilerServices;
 using Cosmos.DataTransfer.Interfaces;
+using System.Data.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -17,10 +19,34 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             var settings = config.Get<SqlServerSourceSettings>();
             settings.Validate();
 
-            await using var connection = new SqlConnection(settings.ConnectionString);
+            var providerFactory = SqlClientFactory.Instance;
+            var connection = providerFactory.CreateConnection()!;
+            connection.ConnectionString = settings.ConnectionString;
+
+            var iterable = this.ReadAsync(config, logger, settings.GetQueryText(), 
+                settings.GetDbParameters(providerFactory), connection, 
+                providerFactory, cancellationToken);
+            
+            await foreach (var item in iterable) {
+                yield return item;
+            }
+        }
+
+        public async IAsyncEnumerable<IDataItem> ReadAsync(
+            IConfiguration config, 
+            ILogger logger, 
+            string queryText,
+            DbParameter[] parameters,
+            DbConnection connection,
+            DbProviderFactory dbProviderFactory,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
             await connection.OpenAsync(cancellationToken);
-            await using SqlCommand command = new SqlCommand(settings.QueryText, connection);
-            await using SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
+            var command = connection.CreateCommand();
+            command.CommandText = queryText;
+            command.Parameters.AddRange(parameters);
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
                 var columns = await reader.GetColumnSchemaAsync(cancellationToken);

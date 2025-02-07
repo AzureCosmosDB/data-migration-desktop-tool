@@ -108,6 +108,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PostgreSQL", "PostgreSQL", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.MongoExtension", "Extensions\Mongo\Cosmos.DataTransfer.MongoExtension\Cosmos.DataTransfer.MongoExtension.csproj", "{31BC84E1-55E5-45AA-BFAC-90732F20588B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interfaces", "Interfaces", "{96E9E6A9-AD5B-4944-B2BD-EB83119ECE05}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.Common.UnitTests", "Interfaces\Cosmos.DataTransfer.Common.UnitTests\Cosmos.DataTransfer.Common.UnitTests.csproj", "{83E63C09-774F-4DDF-8A2D-C054637D006C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -202,6 +206,10 @@ Global
 		{31BC84E1-55E5-45AA-BFAC-90732F20588B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{31BC84E1-55E5-45AA-BFAC-90732F20588B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{31BC84E1-55E5-45AA-BFAC-90732F20588B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83E63C09-774F-4DDF-8A2D-C054637D006C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83E63C09-774F-4DDF-8A2D-C054637D006C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83E63C09-774F-4DDF-8A2D-C054637D006C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83E63C09-774F-4DDF-8A2D-C054637D006C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -236,6 +244,7 @@ Global
 		{85820167-DB94-458B-B09B-9E823996C692} = {1B927C5F-50FC-42A6-BAF6-B00E6D760543}
 		{1B927C5F-50FC-42A6-BAF6-B00E6D760543} = {A8A1CEAB-2D82-460C-9B86-74ABD17CD201}
 		{31BC84E1-55E5-45AA-BFAC-90732F20588B} = {F18E789A-D32D-48D3-B75F-1196D7215F74}
+		{83E63C09-774F-4DDF-8A2D-C054637D006C} = {96E9E6A9-AD5B-4944-B2BD-EB83119ECE05}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {662B3F27-70D8-45E6-A1C0-1438A9C8A542}
