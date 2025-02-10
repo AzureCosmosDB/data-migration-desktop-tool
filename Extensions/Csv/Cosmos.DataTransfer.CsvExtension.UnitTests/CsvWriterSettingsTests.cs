@@ -17,8 +17,8 @@ public class CsvWriterSettingsTests
     public void TestDefault() {
         var settings = new CsvWriterSettings() { };
 
-        Assert.AreEqual(settings.GetCultureInfo(), CultureInfo.InvariantCulture);        
-        Assert.AreEqual(settings.Validate(new ValidationContext(this)).Count(), 0);
+        Assert.AreEqual(CultureInfo.InvariantCulture, settings.GetCultureInfo());        
+        Assert.AreEqual(0, settings.Validate(new ValidationContext(this)).Count());
     }
     
     [TestMethod]
@@ -30,8 +30,8 @@ public class CsvWriterSettingsTests
         var settings = new CsvWriterSettings() {
             Culture = culture
         };
-        Assert.AreEqual(settings.GetCultureInfo(), CultureInfo.InvariantCulture);        
-        Assert.AreEqual(settings.Validate(new ValidationContext(this)).Count(), 0);
+        Assert.AreEqual(CultureInfo.InvariantCulture, settings.GetCultureInfo());        
+        Assert.AreEqual(0, settings.Validate(new ValidationContext(this)).Count());
     }
 
     [TestMethod]
@@ -43,8 +43,8 @@ public class CsvWriterSettingsTests
         var settings = new CsvWriterSettings() {
             Culture = culture
         };
-        Assert.AreEqual(settings.GetCultureInfo(), CultureInfo.CurrentCulture);
-        Assert.AreEqual(settings.Validate(new ValidationContext(this)).Count(), 0);
+        Assert.AreEqual(CultureInfo.CurrentCulture, settings.GetCultureInfo());
+        Assert.AreEqual(0, settings.Validate(new ValidationContext(this)).Count());
     }
 
     [TestMethod]
@@ -52,8 +52,8 @@ public class CsvWriterSettingsTests
         var settings = new CsvWriterSettings() {
             Culture = CultureInfo.CurrentCulture.Name
         };
-        Assert.AreEqual(settings.GetCultureInfo(), CultureInfo.CurrentCulture);
-        Assert.AreEqual(settings.Validate(new ValidationContext(this)).Count(), 0);
+        Assert.AreEqual(CultureInfo.CurrentCulture, settings.GetCultureInfo());
+        Assert.AreEqual(0, settings.Validate(new ValidationContext(this)).Count());
     }
 
     [TestMethod]
@@ -61,21 +61,31 @@ public class CsvWriterSettingsTests
         var settings = new CsvWriterSettings() {
             Culture = "not a culture"
         };
-        var results = settings.Validate(new ValidationContext(this));
-        Assert.AreEqual(results.Count(), 1);
-        Assert.AreEqual(results.First().ErrorMessage, "Could not find CultureInfo `not a culture` on this system.");
+        var results = settings.Validate(new ValidationContext(this)).ToArray();
+        Assert.AreEqual(1, results.Count());
+        Assert.AreEqual("Could not find CultureInfo `not a culture` on this system.", results.First().ErrorMessage);
     }
 
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    public void TestCultureMissing(string culture) {
+    public void TestCultureMissing() {
         var settings = new CsvWriterSettings() {
-            Culture = culture
+            Culture = ""
         };
-        var results = settings.Validate(new ValidationContext(this));
-        Assert.AreEqual(results.Count(), 1);
-        Assert.AreEqual(results.First().ErrorMessage, "Culture missing.");
+        var results = settings.Validate(new ValidationContext(this)).ToArray();
+        Assert.AreEqual(1, results.Count());
+        Assert.AreEqual("Culture missing.", results.First().ErrorMessage);
+    }
+
+    [TestMethod]
+    public void TestCultureNull()
+    {
+        var settings = new CsvWriterSettings()
+        {
+            Culture = null
+        };
+        var results = settings.Validate(new ValidationContext(this)).ToArray();
+        Assert.AreEqual(1, results.Count());
+        Assert.AreEqual("Culture missing.", results.First().ErrorMessage);
     }
 
     [TestMethod]
@@ -101,6 +111,6 @@ public class CsvWriterSettingsTests
 
         await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonFileSource(), NullLogger.Instance);
         var result = await File.ReadAllTextAsync(outputFile);
-        Assert.AreEqual(result, "1,2");
+        Assert.AreEqual("1,2", result);
     }
 }

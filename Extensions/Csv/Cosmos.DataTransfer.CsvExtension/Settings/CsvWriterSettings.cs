@@ -7,8 +7,8 @@ namespace Cosmos.DataTransfer.CsvExtension.Settings;
 public class CsvWriterSettings : IDataExtensionSettings, IValidatableObject
 {
     public bool IncludeHeader { get; set; } = true;
-    public string Delimiter { get; set; } = ",";
-    public string Culture { get; set; } = "InvariantCulture";
+    public string? Delimiter { get; set; } = ",";
+    public string? Culture { get; set; } = "InvariantCulture";
     public CultureInfo GetCultureInfo() {
         switch (this.Culture?.ToLower())
         {
@@ -18,6 +18,9 @@ public class CsvWriterSettings : IDataExtensionSettings, IValidatableObject
             case "current": 
             case "currentculture":
                 return CultureInfo.CurrentCulture;
+            case "":
+            case null:
+                throw new ArgumentNullException();
             default: return CultureInfo.GetCultureInfo(this.Culture!);
         }
     }

@@ -24,7 +24,7 @@ public class CsvFormatWriter : IFormattedDataWriter
         await using var textWriter = new StreamWriter(target, leaveOpen: true);
         await using var writer = new CsvWriter(textWriter, new CsvConfiguration(settings.GetCultureInfo())
         {
-            Delimiter = settings.Delimiter,
+            Delimiter = settings.Delimiter ?? ",",
             HasHeaderRecord = settings.IncludeHeader,
         });
 
