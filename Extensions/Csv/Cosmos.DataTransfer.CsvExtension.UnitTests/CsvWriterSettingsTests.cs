@@ -49,6 +49,11 @@ public class CsvWriterSettingsTests
 
     [TestMethod]
     public void TestCurrentCultureByName() {
+        if (string.IsNullOrEmpty(CultureInfo.CurrentCulture.Name))
+        {
+            Assert.Inconclusive("Current culture name in executing environment is empty.");
+        }
+
         var settings = new CsvWriterSettings() {
             Culture = CultureInfo.CurrentCulture.Name
         };
