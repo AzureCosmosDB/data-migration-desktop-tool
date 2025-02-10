@@ -15,6 +15,7 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+		<PackageReference Include="Newtonsoft.Json" />
 		<PackageReference Include="Polly" />
 		<PackageReference Include="System.ComponentModel.Composition" />
 		<PackageReference Include="System.Interactive.Async" />
