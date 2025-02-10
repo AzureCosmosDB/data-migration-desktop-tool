@@ -22,9 +22,9 @@ public class CsvFormatWriter : IFormattedDataWriter
         settings.Validate();
 
         await using var textWriter = new StreamWriter(target, leaveOpen: true);
-        await using var writer = new CsvWriter(textWriter, new CsvConfiguration(CultureInfo.InvariantCulture)
+        await using var writer = new CsvWriter(textWriter, new CsvConfiguration(settings.GetCultureInfo())
         {
-            Delimiter = settings.Delimiter,
+            Delimiter = settings.Delimiter ?? ",",
             HasHeaderRecord = settings.IncludeHeader,
         });
 
@@ -49,7 +49,7 @@ public class CsvFormatWriter : IFormattedDataWriter
 
             foreach (string field in item.GetFieldNames())
             {
-                writer.WriteField(item.GetValue(field)?.ToString());
+                writer.WriteField(item.GetValue(field));
             }
 
             firstRecord = false;
