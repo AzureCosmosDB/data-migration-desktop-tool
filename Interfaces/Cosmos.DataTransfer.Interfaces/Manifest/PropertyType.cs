@@ -8,5 +8,6 @@ public enum PropertyType
     Float,
     DateTime,
     Enum,
+    Array,
     Undeclared,
 }

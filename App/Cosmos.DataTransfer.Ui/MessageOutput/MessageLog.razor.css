@@ -1,0 +1,14 @@
+﻿.scroll-footer {
+    overflow:scroll;
+    height: 30vh;
+    margin-bottom: 0;
+}
+
+.console-log {
+    background-color: black;
+}
+
+.message {
+    margin-bottom: 2px;
+    color: white;
+}

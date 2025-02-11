@@ -1,0 +1,37 @@
+﻿@using Cosmos.DataTransfer.App.Features.Job
+@inherits BlazorStateComponent
+
+<span></span>
+<div class="dropdown visually-hidden">
+    <button type="button" class="btn btn-toolbar dropdown-toggle" data-toggle="dropdown">
+        <i class="fas fa-bars fa-lg"></i>
+    </button>
+    <div class="dropdown-menu">
+        <button class="dropdown-item" @onclick=NewJob>New</button>
+        <button class="dropdown-item" @onclick=Save>Save</button>
+        <button class="dropdown-item" @onclick=SaveAs>Save As</button>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item" @onclick=RenameJob>Rename</button>
+    </div>
+</div>
+
+@code {
+    public JobState JobState => GetState<JobState>();
+
+    private async Task NewJob()
+    {
+    }
+
+    private async Task RenameJob()
+    {
+    }
+
+    private async Task Save()
+    {
+    }
+
+    private async Task SaveAs()
+    {
+    }
+
+}

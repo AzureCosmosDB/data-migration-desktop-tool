@@ -1,0 +1,35 @@
+﻿@using Cosmos.DataTransfer.Ui.MessageOutput
+@using Cosmos.DataTransfer.App.Features.Execution
+@using BlazorState.Services
+
+@inherits BlazorStateComponent
+
+<div class="page">
+    @*    <div class="sidebar">
+        <NavMenu />
+    </div>
+*@
+    <main>
+        <div class="top-row px-4 bg-dark">
+            <JobToolbar/>
+            <ExecutionToolbar/>
+            <a href="https://github.com/AzureCosmosDB/data-migration-desktop-tool" target="_blank">About</a>
+        </div>
+
+        <article class="content px-4 main-content">
+            @Body
+        </article>
+        
+        <div class="fixed-bottom">
+            <MessageLog Messages="@ExecutionState.Logs" />
+        </div>
+    </main>
+</div>
+
+@code{
+    [Inject] public BlazorHostingLocation BlazorHostingLocation { get; set; } = null!;
+
+    [Parameter] public RenderFragment Body { get; set; } = null!;
+
+    public ExecutionState ExecutionState => GetState<ExecutionState>();
+}

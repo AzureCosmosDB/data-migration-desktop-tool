@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Humanizer.Core" Version="2.14.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
+    <ProjectReference Include="..\Cosmos.DataTransfer.Ui.Common\Cosmos.DataTransfer.Ui.Common.csproj" />
+  </ItemGroup>
+
+</Project>

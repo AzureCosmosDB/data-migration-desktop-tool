@@ -1,0 +1,20 @@
+﻿@page "/"
+
+@inherits BlazorStateComponent
+
+<div class="settings-container">
+    <div class="row">
+        <div class="col-md-6">
+            <ExtensionSelector Direction="ExtensionDirection.Source"
+                               AvailableExtensions="@SettingsState.AvailableExtensions?.Sources"
+                               OnExtensionSelected="SourceSelectionChanged" />
+            <SettingsList Settings="@SettingsState.SourceSettings?.Settings" />
+        </div>
+        <div class="col-md-6">
+            <ExtensionSelector Direction="ExtensionDirection.Sink"
+                               AvailableExtensions="@SettingsState.AvailableExtensions?.Sinks"
+                               OnExtensionSelected="SinkSelectionChanged" />
+            <SettingsList Settings="@SettingsState.SinkSettings?.Settings" />
+        </div>
+    </div>
+</div>

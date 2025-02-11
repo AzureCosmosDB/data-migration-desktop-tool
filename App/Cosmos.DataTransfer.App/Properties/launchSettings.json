@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Standalone": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

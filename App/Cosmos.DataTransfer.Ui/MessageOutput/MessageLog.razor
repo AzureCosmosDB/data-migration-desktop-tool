@@ -1,0 +1,30 @@
+﻿<pre class="scroll-footer console-log" @ref=_scrollAreaRef>
+    @if (Messages != null)
+    {
+        @foreach (var logMessage in Messages)
+        {
+            var messageStyle = "message";
+            switch (logMessage.Type)
+            {
+                case MessageType.Error:
+                    messageStyle += " text-danger";
+                    break;
+                case MessageType.AppLogError:
+                    messageStyle += " text-danger text-opacity-75";
+                    break;
+                case MessageType.Warning:
+                    messageStyle += " text-warning";
+                    break;
+                case MessageType.AppLogWarning:
+                    messageStyle += " text-warning text-opacity-75";
+                    break;
+                case MessageType.AppLogInfo:
+                case MessageType.AppLog:
+                    messageStyle += " text-white-50";
+                    break;
+            }
+
+            <div class="@messageStyle">@logMessage.Text</div>
+        }
+    }
+</pre>

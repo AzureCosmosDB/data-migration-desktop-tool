@@ -1,0 +1,16 @@
+﻿@using Cosmos.DataTransfer.Ui.Common
+
+<div class="list-container">
+    @if (Settings != null)
+    {
+        foreach (var setting in Settings)
+        {
+            <SettingEditor Setting="@setting" />
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IEnumerable<ExtensionSetting>? Settings { get; set; }
+}

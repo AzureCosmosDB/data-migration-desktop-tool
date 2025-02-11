@@ -1,0 +1,59 @@
+﻿@using Cosmos.DataTransfer.App.Features.Execution
+@using Cosmos.DataTransfer.App.Features.Settings
+@using Cosmos.DataTransfer.Ui.Common
+@using Cosmos.DataTransfer.Ui.MessageOutput
+@inherits BlazorStateComponent
+
+<div>
+    <button class="btn btn-lg btn-primary" disabled="@ExecutionState.IsExecuting" @onclick=Generate>Generate Command</button>
+    <button class="btn btn-lg btn-primary" disabled="@ExecutionState.IsExecuting" @onclick=Export>Export Settings</button>
+    <button class="btn btn-lg btn-success" disabled="@ExecutionState.IsExecuting" @onclick=Run>Run Job</button>
+    <button class="btn btn-lg btn-danger" disabled="@(!ExecutionState.IsExecuting)" @onclick=Cancel>Cancel</button>
+</div>
+
+@code {
+    public ExecutionState ExecutionState => GetState<ExecutionState>();
+    public SettingsState SettingsState => GetState<SettingsState>();
+
+    private async Task Generate()
+    {
+        if (!await SettingsSelected())
+            return;
+
+        await Mediator.Send(new ExecutionState.GenerateCommandAction(SettingsState));
+    }
+
+    private async Task<bool> SettingsSelected()
+    {
+        if (SettingsState.SelectedSource == null || SettingsState.SelectedSink == null)
+        {
+            await Mediator.Send(new ExecutionState.AddLogMessageAction(LogMessage.Warn("Choose Source and Sink to generate settings.")));
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task Export()
+    {
+        if (!await SettingsSelected())
+            return;
+
+        string filePath = "";
+        await Mediator.Send(new ExecutionState.ExportSettingsFileAction(SettingsState, filePath));
+    }
+
+    private async Task Run()
+    {
+        if (!await SettingsSelected())
+            return;
+
+        await Mediator.Send(new ExecutionState.RunMigrationJobAction(SettingsState));
+    }
+
+    private async Task Cancel()
+    {
+        await Mediator.Send(new ExecutionState.CancelExecutionAction(false));
+    }
+
+}

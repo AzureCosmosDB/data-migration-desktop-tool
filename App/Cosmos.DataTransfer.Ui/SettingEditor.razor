@@ -1,0 +1,62 @@
+﻿@using Cosmos.DataTransfer.Ui.Common
+<div class="row pb-1">
+    @if (Setting?.Definition.Type == PropertyType.Undeclared)
+    {
+        <div class="col-md">
+            <h5>This extension has not declared the settings it accepts. Settings can be listed manually below in JSON property format.</h5>
+            <textarea class="form-control" rows="5" @bind=@Setting.StringValue placeholder="@ExtensionSetting.ExampleUndeclared"></textarea>
+        </div>
+    }
+    else
+    {
+        <div class="col-md-4">
+            <label class="form-label text-wrap">
+                @Setting?.Definition.Name.Humanize(LetterCasing.Title)
+                @if (Setting?.Definition.IsRequired == true)
+                {
+                    <span class="text-danger">*</span>
+                }
+            </label>
+        </div>
+        <div class="col-md">
+            @if (Setting?.Definition.Type == PropertyType.String)
+            {
+                <input type="text" @bind=@Setting.StringValue class="form-control" />
+            }
+            else if (Setting?.Definition.Type == PropertyType.Boolean)
+            {
+                <input class="form-check" type="checkbox" @bind=@Setting.BooleanValue />
+            }
+            else if (Setting?.Definition.Type == PropertyType.Int)
+            {
+                <input type="number" @bind=@Setting.IntValue class="form-control" />
+            }
+            else if (Setting?.Definition.Type == PropertyType.Float)
+            {
+                <input type="number" @bind=@Setting.FloatValue class="form-control" />
+            }
+            else if (Setting?.Definition.Type == PropertyType.DateTime)
+            {
+                <input type="datetime" @bind=@Setting.DateValue class="form-control" />
+            }
+            else if (Setting?.Definition.Type == PropertyType.Enum)
+            {
+                <select @bind=@Setting.StringValue class="form-control">
+                    @foreach (var value in Setting.Definition.ValidValues)
+                    {
+                        <option value="@value">@value</option>
+                    }
+                </select>
+            }
+            else if (Setting?.Definition.Type == PropertyType.Array)
+            {
+                <textarea rows="8" @bind=@Setting.StringValue class="form-control"></textarea>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public ExtensionSetting? Setting { get; set; }
+}

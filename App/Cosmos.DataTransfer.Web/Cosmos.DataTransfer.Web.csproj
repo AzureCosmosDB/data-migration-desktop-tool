@@ -1,0 +1,58 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="SinkManifest.json" />
+    <Content Remove="SourceManifest.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\css\bootstrap\bootstrap.min.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\bootstrap\bootstrap.min.css.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\open-iconic\FONT-LICENSE" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\open-iconic\font\css\open-iconic-bootstrap.min.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\open-iconic\font\fonts\open-iconic.eot" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\open-iconic\font\fonts\open-iconic.otf" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\open-iconic\font\fonts\open-iconic.svg" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\open-iconic\font\fonts\open-iconic.ttf" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\open-iconic\font\fonts\open-iconic.woff" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\open-iconic\ICON-LICENSE" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\open-iconic\README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="SinkManifest.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SourceManifest.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.4" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
+    <ProjectReference Include="..\Cosmos.DataTransfer.Ui\Cosmos.DataTransfer.Ui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\css\app.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\index.html">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

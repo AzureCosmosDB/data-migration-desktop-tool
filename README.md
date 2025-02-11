@@ -22,11 +22,19 @@ To access the archived version of the tool, navigate to the [**Archive branch**]
 
 ## Overview
 
-The Azure Cosmos DB Desktop Data Migration Tool is an open-source project containing a command-line application that provides import and export functionality for Azure Cosmos DB.
+The Azure Cosmos DB Desktop Data Migration Tool is an open-source project containing a command-line application that provides import and export functionality for Azure Cosmos DB. For Windows, a GUI application is also provided as a wrapper around the command-line functionality.
 
 ## Quick Installation
 
-To use the tool, download the latest zip file for your platform (win-x64, mac-x64, or linux-x64) from [Releases](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases) and extract all files to your desired install location. To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below or [review examples](ExampleConfigs.md)), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms.
+To use the tool, download the latest zip file for your platform (win-x64, mac-x64, or linux-x64) from [Releases](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases) and extract all files to your desired install location. For Windows you can choose either the command line only (`dmt-2.x-win`) or a complete package that also includes the GUI (`dmt-gui-2.x-win`).
+
+### Command Line
+To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below or [review examples](ExampleConfigs.md)), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms.
+
+### GUI (Windows only)
+To begin a data transfer operation, launch the `dmt-gui-win.exe` application. Choose both a Source and Sink from the available options and then fill in required and optional settings. To run an operation with the current settings click the **Run Job** button at the top of the screen. Application output and error messages can be seen at the bottom of the screen.
+
+![The WPF GUI Application for Windows.](media/gui.png "GUI Application")
 
 ## Extension documentation
 
@@ -60,6 +68,8 @@ The Azure Cosmos DB Desktop Data Migration Tool is a lightweight executable that
 
 ![An extensions folder holds multiple extensions implementations.The application loads extensions from the extensions folder and executes functionality based on an interface implementation.](media/application_architecture.png "Application architecture")
 
+The GUI application executes command-line application commands to discover available extensions and details about the settings that they use. This allows it to provide identical operational functionality to running the command line app directly and takes advantage of the same set of extensions.
+
 ## Project Structure
 
 The Cosmos DB Data Migration Tool core project is a C# command-line executable. The core application serves as the composition container for the required Source and Sink extensions. Therefore, the application user needs to put only the desired Extension class library assembly into the Extensions folder before running the application. In addition, the core project has a unit test project to exercise the application's behavior, whereas extension projects contain concrete integration tests that rely on external systems.
@@ -83,6 +93,8 @@ git clone https://github.com/AzureCosmosDB/data-migration-desktop-tool.git
 1. Using Visual Studio 2022, open `CosmosDbDataMigrationTool.sln`.
 
 2. Build the project using the keyboard shortcut <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> on a Mac). This will build all current extension projects as well as the command-line **Core** application. The extension projects build assemblies get written to the **Extensions** folder of the **Core** application build. This way all extension options are available when the application is run.
+
+3. The GUI application can be found in a separate `App/CosmosDbApp.sln` solution. This contains both the WPF application for Windows (`Cosmos.DataTransfer.App.Windows`) and a experimental MAUI Blazor implementation of the same UI (`Cosmos.DataTransfer.App`).
 
 ## Tutorial: JSON to Cosmos DB migration
 
@@ -243,7 +255,8 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
             public override string DisplayName => "JSON-AzureBlob";
         }
         ```
-    7. Settings needed by the extension can be retrieved from any standard .NET configuration source in the main application by using the `IConfiguration` instance passed into the `ReadAsync` and `WriteAsync` methods. Settings under `SourceSettings`/`SinkSettings` will be included as well as any settings included in JSON files specified by the `SourceSettingsPath`/`SinkSettingsPath`.
+    - Settings needed by the extension can be retrieved from any standard .NET configuration source in the main application by using the `IConfiguration` instance passed into the `ReadAsync` and `WriteAsync` methods. Settings under `SourceSettings`/`SinkSettings` will be included as well as any settings included in JSON files specified by the `SourceSettingsPath`/`SinkSettingsPath`.
+    - To fully support a friendly settings list in the GUI application, your extension can implement the `IDataSinkExtensionWithSettings` or `IDataSourceExtensionWithSettings` interfaces which add an additional `GetSettings` method which should return any settings objects that your extension expects or requires. Properties of these objects will then be listed in the GUI.
 
 8. Implement your extension to read and/or write using the generic `IDataItem` interface which exposes object properties as a list key-value pairs. Depending on the specific structure of the data storage type being implemented, you can choose to support nested objects and arrays or only flat top-level properties.
     > Binary File Storage extensions are only concerned with generic storage so only work with `Stream` instances representing whole files rather than individual `IDataItem`. 

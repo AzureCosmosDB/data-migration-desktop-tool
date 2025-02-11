@@ -1,0 +1,24 @@
+﻿<h2 class="text-center">@Direction</h2>
+
+<hr />
+
+<div class="row">
+    <div class="col-md-4">
+        <label class="form-label form-control-lg">Extension</label>
+    </div>
+    <div class="col">
+        <select @bind="SelectedExtension" class="form-control-lg">
+            <option value="" selected>Select an extension</option>
+            @if (AvailableExtensions != null)
+            {
+                @foreach (var extension in AvailableExtensions)
+                {
+                    <option value="@extension.DisplayName">@extension.DisplayName</option>
+                }
+            }
+            )
+        </select>
+    </div>
+</div>
+
+

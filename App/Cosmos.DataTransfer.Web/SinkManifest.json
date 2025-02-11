@@ -1,0 +1,586 @@
+{
+  "AppVersion": "1.0.0",
+  "Extensions": [
+    {
+      "Name": "AzureTableAPI",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.AzureTableAPIExtension",
+      "Settings": [
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "Table",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "RowKeyFieldName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "PartitionKeyFieldName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "CognitiveSearch",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.CognitiveSearchExtension",
+      "Settings": [
+        {
+          "Name": "BatchSize",
+          "Type": "Int",
+          "DefaultValue": 100,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "IndexAction",
+          "Type": "Enum",
+          "DefaultValue": "Upload",
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": [
+            "Upload",
+            "Merge",
+            "MergeOrUpload",
+            "Delete"
+          ]
+        },
+        {
+          "Name": "Endpoint",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "ApiKey",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "Index",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "Cosmos-nosql",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.CosmosExtension",
+      "Settings": [
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "Database",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "Container",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "PartitionKeyPath",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "RecreateContainer",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "BatchSize",
+          "Type": "Int",
+          "DefaultValue": 100,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "ConnectionMode",
+          "Type": "Enum",
+          "DefaultValue": "Gateway",
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": [
+            "Gateway",
+            "Direct"
+          ]
+        },
+        {
+          "Name": "MaxRetryCount",
+          "Type": "Int",
+          "DefaultValue": 5,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "InitialRetryDurationMs",
+          "Type": "Int",
+          "DefaultValue": 200,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "CreatedContainerMaxThroughput",
+          "Type": "Int",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "UseAutoscaleForCreatedContainer",
+          "Type": "Boolean",
+          "DefaultValue": true,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "IsServerlessAccount",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "WriteMode",
+          "Type": "Enum",
+          "DefaultValue": "InsertStream",
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": [
+            "InsertStream",
+            "Insert",
+            "UpsertStream",
+            "Upsert"
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "JSON-AWSS3(beta)",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.JsonExtension",
+      "Settings": [
+        {
+          "Name": "IncludeNullFields",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "Indented",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "FileName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "S3Region",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "S3BucketName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "S3AccessKey",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "S3SecretKey",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "JSON-AzureBlob(beta)",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.JsonExtension",
+      "Settings": [
+        {
+          "Name": "IncludeNullFields",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "Indented",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "ContainerName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "BlobName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "MaxBlockSizeinKB",
+          "Type": "Int",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "JSON",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.JsonExtension",
+      "Settings": [
+        {
+          "Name": "FilePath",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "IncludeNullFields",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "Indented",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "JSON-File(beta)",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.JsonExtension",
+      "Settings": [
+        {
+          "Name": "IncludeNullFields",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "Indented",
+          "Type": "Boolean",
+          "DefaultValue": false,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "FilePath",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "MongoDB",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.MongoExtension",
+      "Settings": [
+        {
+          "Name": "Collection",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "BatchSize",
+          "Type": "Int",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "DatabaseName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "Parquet-AWSS3(beta)",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.ParquetExtension",
+      "Settings": [
+        {
+          "Name": "FileName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "S3Region",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "S3BucketName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "S3AccessKey",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "S3SecretKey",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "Parquet-AzureBlob(beta)",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.ParquetExtension",
+      "Settings": [
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "ContainerName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "BlobName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "MaxBlockSizeinKB",
+          "Type": "Int",
+          "DefaultValue": null,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "Parquet(beta)",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.ParquetExtension",
+      "Settings": [
+        {
+          "Name": "FilePath",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    },
+    {
+      "Name": "SqlServer",
+      "Direction": "Sink",
+      "Version": "1.0.0",
+      "AssemblyName": "Cosmos.DataTransfer.SqlServerExtension",
+      "Settings": [
+        {
+          "Name": "ConnectionString",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": true,
+          "ValidValues": []
+        },
+        {
+          "Name": "TableName",
+          "Type": "String",
+          "DefaultValue": null,
+          "IsRequired": true,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "BatchSize",
+          "Type": "Int",
+          "DefaultValue": 1000,
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        },
+        {
+          "Name": "ColumnMappings",
+          "Type": "Array",
+          "DefaultValue": [],
+          "IsRequired": false,
+          "IsSensitive": false,
+          "ValidValues": []
+        }
+      ]
+    }
+  ]
+}
