@@ -11,6 +11,7 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
 		<PackageReference Include="System.ComponentModel.Composition" />
 		<PackageReference Include="System.Linq.Async" />
+		<PackageReference Include="System.Text.Json" />
 	</ItemGroup>
 
 	<ItemGroup>

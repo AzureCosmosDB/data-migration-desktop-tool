@@ -29,6 +29,7 @@
     <PackageReference Include="System.CommandLine.Hosting" />
     <PackageReference Include="System.ComponentModel.Composition" />
     <PackageReference Include="System.Configuration.ConfigurationManager" />
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>

@@ -12,6 +12,7 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
 		<PackageReference Include="MongoDB.Driver" />
 		<PackageReference Include="System.ComponentModel.Composition" />
+		<PackageReference Include="System.Text.Json" />
 	</ItemGroup>
 
 	<ItemGroup>
