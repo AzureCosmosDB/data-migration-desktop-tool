@@ -1,4 +1,4 @@
-﻿using Cosmos.DataTransfer.Interfaces;
+﻿using Cosmos.DataTransfer.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 
