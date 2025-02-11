@@ -1,4 +1,5 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common;
 using Cosmos.DataTransfer.JsonExtension.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;

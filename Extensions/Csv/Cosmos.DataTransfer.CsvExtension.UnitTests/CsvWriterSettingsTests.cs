@@ -3,7 +3,7 @@ using Cosmos.DataTransfer.JsonExtension.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.ComponentModel.DataAnnotations;
 using Cosmos.DataTransfer.CsvExtension.Settings;
-using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common;
 using Cosmos.DataTransfer.JsonExtension;
 
 namespace Cosmos.DataTransfer.CsvExtension.UnitTests;
