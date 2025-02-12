@@ -1,0 +1,8 @@
+[
+{
+    "id": "1",
+    "partitionKey": "1",
+    "string": "Hello world!",
+    "long": 638676324052177500
+}
+]
