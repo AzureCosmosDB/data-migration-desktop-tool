@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
 
     <IsPackable>false</IsPackable>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <CoverletOutput>../Cosmos.DataTransfer.CosmosExtension/coverage.cobertura.xml</CoverletOutput>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,16 +25,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Cosmos.DataTransfer.CosmosExtension\Cosmos.DataTransfer.CosmosExtension.csproj" />
+    <ProjectReference Include="..\..\Json\Cosmos.DataTransfer.JsonExtension.UnitTests\Cosmos.DataTransfer.JsonExtension.UnitTests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Data\Nested.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Data\IdName.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Data\MixedTypes.json">
+    <None Update="Data\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
