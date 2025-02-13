@@ -17,4 +17,4 @@ jobs:
       - name: Build project
         run: dotnet build
       - name: Run unit tests
-        run: dotnet test --logger "console;verbosity=detailed"
+        run: dotnet test --logger "console;verbosity=detailed" -graphBuild:True

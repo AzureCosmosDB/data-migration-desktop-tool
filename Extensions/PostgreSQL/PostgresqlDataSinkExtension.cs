@@ -86,7 +86,7 @@ namespace Cosmos.DataTransfer.PostgresqlExtension
                     {
                         if (current.PostgreType == NpgsqlTypes.NpgsqlDbType.Unknown && coltype?.Name != "Missing")
                         {
-                            var newcol = new PostgreDataCol(col, coltype);
+                            var newcol = new PostgreDataCol(col, coltype!);
                             postgreDataCols[row] = newcol;
                         }
                     }
@@ -106,12 +106,7 @@ namespace Cosmos.DataTransfer.PostgresqlExtension
                 {
                     if (item.ColumnName.ToLower() == col.ColumnName.ToLower())
                     {
-                        temp.Add(new PostgreDataCol()
-                        {
-                            ColumnName = col.ColumnName,
-                            ColumnType = item.ColumnType,
-                            PostgreType = item.PostgreType
-                        });
+                        temp.Add(new PostgreDataCol(col.ColumnName, item.ColumnType, item.PostgreType));
                         found = true;
                         break;
                     }
@@ -169,7 +164,7 @@ namespace Cosmos.DataTransfer.PostgresqlExtension
             {
                 if (row != null)
                 {
-                    var newcol = new PostgreDataCol(row["column_name"]?.ToString(), row["udt_name"]?.ToString());
+                    var newcol = new PostgreDataCol(row["column_name"]?.ToString()!, row["udt_name"]?.ToString()!);
                     temp.Add(newcol);
                 }
             }
