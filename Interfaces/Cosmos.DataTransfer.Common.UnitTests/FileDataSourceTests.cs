@@ -1,10 +1,9 @@
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Cosmos.DataTransfer.JsonExtension.UnitTests;
 
-namespace Cosmos.DataTransfer.Common.UnitTest;
+namespace Cosmos.DataTransfer.Common.UnitTests;
 
 [TestClass]
 public class FileSinkDataSourceTests {
@@ -50,7 +49,7 @@ public class FileSinkDataSourceTests {
         Assert.AreEqual(expected, result.TrimEnd('\0'), $"file: {filePath}, compression: {compression}.");
     }
 
-    private string GetTemporaryDirectory() {
+    internal static string GetTemporaryDirectory() {
         string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         if (File.Exists(tempDirectory)) 
         {

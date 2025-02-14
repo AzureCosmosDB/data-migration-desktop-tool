@@ -26,9 +26,14 @@ Gzip, bzip2, and zlib compressed files are automatically detected by file extens
 Use parameter `Compression` to enable compression of output file. 
 The relevant extension is automatically added to the file name, if missing.
 
+It is possible to build further upon a file by setting the `Append` parameter
+to `true`. Note however that it is not compatible with any compression methods,
+as the result a concatenation of multiple compressed files.
+
 ```json
 {
     "FilePath": "",
-    "Compression": "None" | "Gzip" | "Brotli" | "Deflate"
+    "Compression": "None" | "Gzip" | "Brotli" | "Deflate",
+    "Append": false
 }
 ```

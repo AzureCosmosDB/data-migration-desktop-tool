@@ -15,6 +15,7 @@ public class FileDataSink : IComposableDataSink
         {
             using var writer = GetCompressor(settings.Compression, settings.FilePath, settings.Append);
             await writeToStream(writer);
+            writer.Close();
         }
     }
 
