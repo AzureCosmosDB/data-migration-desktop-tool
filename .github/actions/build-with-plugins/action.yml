@@ -167,7 +167,7 @@ runs:
         -p:PublishTrimmed=false \
         -p:Version=${{ inputs.build-version }}
     - name: Upload package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.platform }}-package
         path: ${{ inputs.platform-short }}/

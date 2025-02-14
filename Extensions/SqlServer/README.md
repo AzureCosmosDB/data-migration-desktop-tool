@@ -23,7 +23,9 @@ Sink settings require a `TableName` to define where to insert data and an array 
 - `SourceFieldName`: This should be set in cases where the source data uses a different name than the SQL column. Column name to source field mapping defaults to using the `ColumnName` for both sides and is case-insensitive so it is not necessary to specify this parameter for mappings like `"id"` -> `"Id"`.
 - `AllowNull`: Depending on the table schema you may need to force values to be set for columns when no value is present in the source. If this is set to `false` this column will use the `DefaultValue` for any records missing a source value. Defaults to `true`.
 - `DefaultValue`: Value to be used in place of missing or null source fields. This parameter is ignored unless `AllowNull` is set to `false` for this column.
+- `DataType`: This setting specify the DataType of the column, default will be String: please refer documentation. https://learn.microsoft.com/sql/relational-databases/clr-integration-database-objects-types-net-framework/mapping-clr-parameter-data?view=sql-server-ver16&redirectedfrom=MSDN&tabs=csharp
 
+- 
 Sink settings also include an optional `BatchSize` parameter to specify the count of records to accumulate before bulk inserting, default value is 1000.
 
 ### Sink
@@ -50,6 +52,7 @@ Sink settings also include an optional `BatchSize` parameter to specify the coun
             "ColumnName": "IsSet",
             "AllowNull": false,
             "DefaultValue": false
+            "DataType": "System.Boolean"
         }
     ],
     "BatchSize": 1000
