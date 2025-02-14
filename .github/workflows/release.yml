@@ -14,17 +14,17 @@ jobs:
       contents: write
     steps:
       - name: Download Windows x64 package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: windows-package
           path: windows-package
       - name: Download macOS x64 package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mac-package
           path: mac-package
       - name: Download Linux x64 package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: linux-package
           path: linux-package
