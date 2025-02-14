@@ -95,6 +95,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BCBBAF22-0CB5-416B-8C80-03AB2FC4D0A0}"
 	ProjectSection(SolutionItems) = preProject
 		Contributing.md = Contributing.md
+		Directory.Packages.props = Directory.Packages.props
 		ExampleConfigs.md = ExampleConfigs.md
 		README.md = README.md
 	EndProjectSection
