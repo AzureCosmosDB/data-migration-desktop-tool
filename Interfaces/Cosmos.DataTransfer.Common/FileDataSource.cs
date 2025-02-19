@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -7,6 +8,26 @@ namespace Cosmos.DataTransfer.Common;
 
 public class FileDataSource : IComposableDataSource
 {
+    internal Stream? ReadFile(string filePath, CompressionEnum compression, ILogger logger) {
+        logger.LogInformation("Reading file '{FilePath}'", filePath);
+        var fileStream = File.OpenRead(filePath);
+        Stream decompressor;
+        if (compression == CompressionEnum.Gzip || 
+            compression == CompressionEnum.None && filePath.EndsWith(".gz") ||
+            compression == CompressionEnum.None && filePath.EndsWith(".gzip")) {
+            decompressor = new GZipStream(fileStream, CompressionMode.Decompress);
+        } else if (compression == CompressionEnum.Brotli || 
+            compression == CompressionEnum.None && filePath.EndsWith(".br")) {
+            decompressor = new BrotliStream(fileStream, CompressionMode.Decompress);
+        } else if (compression == CompressionEnum.Deflate || 
+            compression == CompressionEnum.None && filePath.EndsWith(".zz")) {
+            decompressor = new DeflateStream(fileStream, CompressionMode.Decompress);
+        } else {
+            decompressor = fileStream;
+        }
+        return decompressor;
+    }
+
     public async IAsyncEnumerable<Stream?> ReadSourceAsync(IConfiguration config, ILogger logger, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var settings = config.Get<FileSourceSettings>();
@@ -16,24 +37,24 @@ public class FileDataSource : IComposableDataSource
 
             if (File.Exists(settings.FilePath))
             {
-                logger.LogInformation("Reading file '{FilePath}'", settings.FilePath);
-                yield return File.OpenRead(settings.FilePath);
+                yield return ReadFile(settings.FilePath, settings.Compression, logger);
             }
             else if (Directory.Exists(settings.FilePath))
             {
-                string[] files = Directory.GetFiles(settings.FilePath, "*.json", SearchOption.AllDirectories);
-                logger.LogInformation("Reading {FileCount} files from '{Folder}'", files.Length, settings.FilePath);
+                string[] patterns = new string[] { "*.json", "*.json.gz", "*.json.gzip", "*.json.br", "*.json.zz" };
+                var files = patterns.SelectMany(pattern =>  
+                    Directory.GetFiles(settings.FilePath, pattern, SearchOption.AllDirectories));
+                logger.LogInformation("Reading {FileCount} files from '{Folder}'", files.Count(), settings.FilePath);
                 foreach (string filePath in files.OrderBy(f => f))
                 {
-                    logger.LogInformation("Reading file '{FilePath}'", filePath);
-                    yield return File.OpenRead(filePath);
+                    yield return ReadFile(filePath, settings.Compression, logger);
                 }
             }
-            else if (Uri.IsWellFormedUriString(settings.FilePath, UriKind.RelativeOrAbsolute))
+            else if (Uri.IsWellFormedUriString(settings.FilePath, UriKind.Absolute))
             {
                 logger.LogInformation("Reading from URI '{FilePath}'", settings.FilePath);
-
-                HttpClient client = new HttpClient();
+                HttpClientHandler handler = new HttpClientHandler() { AutomaticDecompression = System.Net.DecompressionMethods.All };
+                HttpClient client = new HttpClient(handler);
                 var response = await client.GetAsync(settings.FilePath, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {

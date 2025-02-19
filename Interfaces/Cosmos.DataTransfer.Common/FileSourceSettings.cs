@@ -7,4 +7,5 @@ public class FileSourceSettings : IDataExtensionSettings
 {
     [Required]
     public string? FilePath { get; set; }
+    public CompressionEnum Compression { get; set; } = CompressionEnum.None;
 }

@@ -14,4 +14,15 @@
     <ProjectReference Include="..\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Allow tests to see internal scoped types, properties/fields and methods. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+        <_Parameter1>Cosmos.DataTransfer.Common.UnitTests</_Parameter1>
+    </AssemblyAttribute>
+    <!-- Allow Moq to see internal scoped types, properties/fields and methods. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+        <_Parameter1>DynamicProxyGenAssembly2</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>
