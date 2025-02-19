@@ -1,14 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <Target Name="PublishToExtensionsFolder" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">
-    <Exec Command="dotnet publish --configuration $(Configuration) --no-build -p:PublishProfile=FolderProfile" />
-  </Target>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
     <PackageReference Include="Parquet.Net" />
@@ -21,5 +17,15 @@
     <ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Common\Cosmos.DataTransfer.Common.csproj" />
     <ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
   </ItemGroup>
-
+    <Target Name="PublishToExtensionsFolder"
+            AfterTargets="Build"
+            Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
+        <MSBuild
+                Projects="$(MSBuildProjectFile)"
+                Targets="Publish"
+                Properties="Configuration=$(Configuration);
+                   PublishProfile=PublishToExtensionsFolder;
+                   BuildProjectReferences=false;
+                   PublishingToExtensionsFolder=true" />
+    </Target>
 </Project>
