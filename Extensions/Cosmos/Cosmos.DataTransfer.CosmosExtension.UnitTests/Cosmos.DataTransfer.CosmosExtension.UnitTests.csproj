@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
 
     <IsPackable>false</IsPackable>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <CoverletOutput>../Cosmos.DataTransfer.CosmosExtension/coverage.cobertura.xml</CoverletOutput>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,27 +16,20 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="MSTest.TestAdapter" />
     <PackageReference Include="MSTest.TestFramework" />
+    <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="System.Linq.Async" />
-    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Cosmos.DataTransfer.CosmosExtension\Cosmos.DataTransfer.CosmosExtension.csproj" />
+    <ProjectReference Include="..\..\Json\Cosmos.DataTransfer.JsonExtension.UnitTests\Cosmos.DataTransfer.JsonExtension.UnitTests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Data\Nested.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Data\IdName.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Data\MixedTypes.json">
+    <None Update="Data\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
