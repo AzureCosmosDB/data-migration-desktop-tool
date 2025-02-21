@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json.Linq;
+using Cosmos.DataTransfer.Common.UnitTests;
 
 namespace Cosmos.DataTransfer.JsonExtension.UnitTests
 {

@@ -1,4 +1,4 @@
-using Cosmos.DataTransfer.JsonExtension.UnitTests;
+using Cosmos.DataTransfer.Common.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Cosmos.DataTransfer.CsvExtension.UnitTests;
@@ -24,7 +24,7 @@ public class CsvFileSourceTests
             object? value = dataItem.GetValue("id");
             Assert.IsNotNull(value);
             Assert.IsNotNull(dataItem.GetValue("name"));
-            var current = Int32.Parse(value.ToString());
+            var current = Int32.Parse(value.ToString()!);
             Assert.IsTrue(current > lastId);
             lastId = current;
         }

@@ -1,10 +1,7 @@
-using System.IO.Compression;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Configuration;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Cosmos.DataTransfer.JsonExtension;
-using Cosmos.DataTransfer.JsonExtension.UnitTests;
 using Cosmos.DataTransfer.Interfaces;
 using Moq;
 
