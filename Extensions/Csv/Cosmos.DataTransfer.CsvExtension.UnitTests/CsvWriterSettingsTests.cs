@@ -1,10 +1,10 @@
 using System.Globalization;
-using Cosmos.DataTransfer.JsonExtension.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.ComponentModel.DataAnnotations;
 using Cosmos.DataTransfer.CsvExtension.Settings;
 using Cosmos.DataTransfer.Interfaces;
-using Cosmos.DataTransfer.JsonExtension;
+using Cosmos.DataTransfer.Common.UnitTests;
+using Moq;
 
 namespace Cosmos.DataTransfer.CsvExtension.UnitTests;
 
@@ -113,8 +113,9 @@ public class CsvWriterSettingsTests
         };
 
         var sink = new CsvFileSink();
+        var mockDataSource = new Mock<IDataSourceExtension>();
 
-        await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonFileSource(), NullLogger.Instance);
+        await sink.WriteAsync(data.ToAsyncEnumerable(), config, mockDataSource.Object, NullLogger.Instance);
         var result = await File.ReadAllTextAsync(outputFile);
         Assert.AreEqual("1,2", result);
     }
