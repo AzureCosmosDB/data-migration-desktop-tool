@@ -15,15 +15,15 @@
   </ItemGroup>
 
   <ItemGroup>
-      <ProjectReference Include="..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
+    <ProjectReference Include="..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
   </ItemGroup>
   <Target Name="PublishToExtensionsFolder"
           AfterTargets="Build"
           Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
-      <MSBuild
-              Projects="$(MSBuildProjectFile)"
-              Targets="Publish"
-              Properties="Configuration=$(Configuration);
+    <MSBuild
+            Projects="$(MSBuildProjectFile)"
+            Targets="Publish"
+            Properties="Configuration=$(Configuration);
                  PublishProfile=PublishToExtensionsFolder;
                  BuildProjectReferences=false;
                  PublishingToExtensionsFolder=true" />

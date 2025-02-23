@@ -20,15 +20,15 @@
     <ProjectReference Include="..\..\AzureBlob\Cosmos.DataTransfer.AzureBlobStorage\Cosmos.DataTransfer.AzureBlobStorage.csproj" />
   </ItemGroup>
 
-	<Target Name="PublishToExtensionsFolder"
+  <Target Name="PublishToExtensionsFolder"
 			AfterTargets="Build"
 			Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
-		<MSBuild
+    <MSBuild
 				Projects="$(MSBuildProjectFile)"
 				Targets="Publish"
 				Properties="Configuration=$(Configuration);
 				   PublishProfile=PublishToExtensionsFolder;
 				   BuildProjectReferences=false;
 				   PublishingToExtensionsFolder=true" />
-	</Target>
+  </Target>
 </Project>

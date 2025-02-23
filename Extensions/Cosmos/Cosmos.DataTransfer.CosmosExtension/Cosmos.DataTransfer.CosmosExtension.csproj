@@ -1,41 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<OutputType>Exe</OutputType>
-	</PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Azure.Identity" />
-		<PackageReference Include="Azure.Security.KeyVault.Keys" />
-		<PackageReference Include="Microsoft.Azure.Cosmos" />
-		<PackageReference Include="Microsoft.Azure.Cosmos.Encryption" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
-		<PackageReference Include="Newtonsoft.Json" />
-		<PackageReference Include="Polly" />
-		<PackageReference Include="System.ComponentModel.Composition" />
-		<PackageReference Include="System.Interactive.Async" />
-		<PackageReference Include="System.Linq.Async" />
-		<PackageReference Include="System.Text.Json" />
-	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Azure.Security.KeyVault.Keys" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Polly" />
+    <PackageReference Include="System.ComponentModel.Composition" />
+    <PackageReference Include="System.Interactive.Async" />
+    <PackageReference Include="System.Linq.Async" />
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
+  </ItemGroup>
 
-	<Target Name="PublishToExtensionsFolder" 
-			AfterTargets="Build" 
+  <Target Name="PublishToExtensionsFolder"
+			AfterTargets="Build"
 			Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
-	<MSBuild 
-			Projects="$(MSBuildProjectFile)"
-			Targets="Publish"
-			Properties="Configuration=$(Configuration);
+    <MSBuild
+        Projects="$(MSBuildProjectFile)"
+        Targets="Publish"
+        Properties="Configuration=$(Configuration);
 					   PublishProfile=PublishToExtensionsFolder;
 					   BuildProjectReferences=false;
 					   PublishingToExtensionsFolder=true" />
-	</Target>
+  </Target>
 </Project>

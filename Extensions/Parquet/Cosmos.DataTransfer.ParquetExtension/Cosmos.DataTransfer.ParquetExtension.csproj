@@ -1,4 +1,5 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -17,15 +18,16 @@
     <ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Common\Cosmos.DataTransfer.Common.csproj" />
     <ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
   </ItemGroup>
-    <Target Name="PublishToExtensionsFolder"
-            AfterTargets="Build"
-            Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
-        <MSBuild
-                Projects="$(MSBuildProjectFile)"
-                Targets="Publish"
-                Properties="Configuration=$(Configuration);
+  
+  <Target Name="PublishToExtensionsFolder"
+          AfterTargets="Build"
+          Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
+    <MSBuild
+            Projects="$(MSBuildProjectFile)"
+            Targets="Publish"
+            Properties="Configuration=$(Configuration);
                    PublishProfile=PublishToExtensionsFolder;
                    BuildProjectReferences=false;
                    PublishingToExtensionsFolder=true" />
-    </Target>
+  </Target>
 </Project>
