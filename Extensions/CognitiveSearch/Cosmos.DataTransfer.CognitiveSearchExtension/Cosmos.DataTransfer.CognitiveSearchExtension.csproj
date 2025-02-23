@@ -1,35 +1,35 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Azure.Search.Documents" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
-    <PackageReference Include="System.ComponentModel.Composition" />
-    <PackageReference Include="System.Interactive.Async" />
-    <PackageReference Include="System.Linq.Async" />
-    <PackageReference Include="System.Text.Json" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Azure.Search.Documents" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+		<PackageReference Include="System.ComponentModel.Composition" />
+		<PackageReference Include="System.Interactive.Async" />
+		<PackageReference Include="System.Linq.Async" />
+		<PackageReference Include="System.Text.Json" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
+	</ItemGroup>
 
-  <Target Name="PublishToExtensionsFolder"
+	<Target Name="PublishToExtensionsFolder"
 			AfterTargets="Build"
 			Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
-    <MSBuild
+		<MSBuild
         Projects="$(MSBuildProjectFile)"
         Targets="Publish"
         Properties="Configuration=$(Configuration);
 					   PublishProfile=PublishToExtensionsFolder;
 					   BuildProjectReferences=false;
 					   PublishingToExtensionsFolder=true" />
-  </Target>
+	</Target>
 
 </Project>
