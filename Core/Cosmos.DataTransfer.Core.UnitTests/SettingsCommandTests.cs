@@ -17,6 +17,8 @@ namespace Cosmos.DataTransfer.Core.UnitTests
     [TestClass]
     public class SettingsCommandTests
     {
+        // TODO: What is the purpose of this test?
+        // It seems to be a very elaborate method to assert parsing null.
         [TestMethod]
         public void Invoke_ForTestExtension_ProducesValidSettingsJson()
         {
@@ -65,8 +67,10 @@ namespace Cosmos.DataTransfer.Core.UnitTests
                 WriteIndented = true
             };
             var fullJson = stringBuilder.ToString().Trim();
+            Assert.AreEqual("null", fullJson);
             var parsed = JsonSerializer.Deserialize<List<ExtensionSettingProperty>>(fullJson, options);
-            var parsedJson = JsonSerializer.Serialize<List<ExtensionSettingProperty>>(parsed, options);
+            Assert.IsNull(parsed);
+            var parsedJson = JsonSerializer.Serialize<List<ExtensionSettingProperty>>(parsed!, options);
 
             Assert.AreEqual(fullJson, parsedJson);
         }
