@@ -10,12 +10,17 @@ Source and sink settings both require a `ConnectionString` parameter.
 
 Source settings also require a `QueryText` parameter to define the data to select from SQL. This can combine data from multiple tables, views, etc. but should produce a single result set.
 
+If surfacing data as JSON, the `JsonFields` parameter can be used to specify which fields should be treated as JSON strings. This is useful for building nested sets of data that should be handled as a nested object downstream.
+
 ### Source
 
 ```json
 {
     "ConnectionString": "",
-    "QueryText": ""
+    "QueryText": "",
+    "JsonFields": [
+      ""
+    ]
 }
 ```
 
