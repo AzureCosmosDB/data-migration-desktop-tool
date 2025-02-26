@@ -1,8 +1,6 @@
 using System.Globalization;
-using Cosmos.DataTransfer.JsonExtension;
-using Cosmos.DataTransfer.JsonExtension.UnitTests;
+using Cosmos.DataTransfer.Common.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
-using Newtonsoft.Json.Linq;
 
 namespace Cosmos.DataTransfer.CsvExtension.UnitTests;
 

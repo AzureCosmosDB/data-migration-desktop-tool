@@ -8,16 +8,38 @@ The SQL Server data transfer extension provides source and sink capabilities for
 
 Source and sink settings both require a `ConnectionString` parameter.
 
-Source settings also require a `QueryText` parameter to define the data to select from SQL. This can combine data from multiple tables, views, etc. but should produce a single result set.
-
 ### Source
+
+Source settings also require either a `QueryText` or `FilePath` parameter with the SQL statement that defines the data to select.
+`QueryText` can be the SQL statement, while `FilePath` can point to a file with the SQL statement. 
+In both cases, the SQL statement can combine data from multiple tables, views, etc., 
+but should produce a single result set.
 
 ```json
 {
     "ConnectionString": "",
-    "QueryText": ""
+    "QueryText": "", // required if FilePath not set.
+    "FilePath": ""   // required if QueryText not set.
 }
 ```
+
+The extension supports parameterized queries, using named placeholders.
+Use `@param-name` for the named parameters. 
+Positional parameters are *not* supported.
+
+Example (works better when query is in a separate file though):
+
+```
+{
+    "ConnectionString": "",
+    "QueryText": "SELECT * FROM Logs WHERE UserId = @id",
+    "Parameters": {
+        "@id": "johndoe"
+    }
+}
+```
+
+### Sink
 
 Sink settings require a `TableName` to define where to insert data and an array of `ColumnMappings`. Only fields listed in `ColumnMappings` will be imported. Each element in `ColumnMappings` requires a `ColumnName` specifying the target SQL column along with situation specific fields:
 - `SourceFieldName`: This should be set in cases where the source data uses a different name than the SQL column. Column name to source field mapping defaults to using the `ColumnName` for both sides and is case-insensitive so it is not necessary to specify this parameter for mappings like `"id"` -> `"Id"`.
@@ -28,7 +50,6 @@ Sink settings require a `TableName` to define where to insert data and an array 
 - 
 Sink settings also include an optional `BatchSize` parameter to specify the count of records to accumulate before bulk inserting, default value is 1000.
 
-### Sink
 
 ```json
 {

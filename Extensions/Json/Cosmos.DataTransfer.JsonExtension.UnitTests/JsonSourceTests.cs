@@ -1,4 +1,5 @@
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Cosmos.DataTransfer.JsonExtension.UnitTests

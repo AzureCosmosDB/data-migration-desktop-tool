@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace Cosmos.DataTransfer.JsonExtension.UnitTests
+namespace Cosmos.DataTransfer.Common.UnitTests
 {
     public static class TestHelpers
     {

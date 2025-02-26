@@ -17,7 +17,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             var settings = config.Get<SqlServerSinkSettings>();
             settings.Validate();
 
-            string tableName = settings.TableName!;
+            string tableName = settings!.TableName!;
 
             await using var connection = new SqlConnection(settings.ConnectionString);
             await connection.OpenAsync(cancellationToken);
