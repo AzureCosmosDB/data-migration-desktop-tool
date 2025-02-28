@@ -91,7 +91,7 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
 ### Tutorial Software prerequisites
 
 1. [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
-2. [.NET 6.0 SDK](https://dotnet.microsoft.com/en-us/download)
+2. [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 4. [Azure Cosmos DB Emulator](https://learn.microsoft.com/azure/cosmos-db/local-emulator) or Azure Cosmos DB resource.
 
 ### Task 1: Provision a sample database and container using the Azure Cosmos DB Emulator as the destination(sink)
