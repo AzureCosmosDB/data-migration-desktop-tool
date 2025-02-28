@@ -35,12 +35,14 @@ Or with RBAC:
 }
 ```
 
+Possible values for `"Sink"` name property are `"JSON-AzureBlob(beta)"` and `"Parquet-AzureBlob(beta)"`.
+
 ### Sink
 
 An optional `MaxBlockSizeInKB` parameter can also be specified to control the transfer.
 
 ```json
-{
+"SinkProperties" : {
     "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=...",
     "ContainerName": "",
     "BlobName": "",
