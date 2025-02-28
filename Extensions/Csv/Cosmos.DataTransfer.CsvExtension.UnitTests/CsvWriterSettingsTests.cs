@@ -5,6 +5,7 @@ using Cosmos.DataTransfer.CsvExtension.Settings;
 using Cosmos.DataTransfer.Interfaces;
 using Cosmos.DataTransfer.Common.UnitTests;
 using Moq;
+using Cosmos.DataTransfer.Common;
 
 namespace Cosmos.DataTransfer.CsvExtension.UnitTests;
 

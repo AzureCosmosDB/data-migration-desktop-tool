@@ -206,5 +206,31 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
 
             Assert.AreEqual(2, counter);
         }
+
+        [TestMethod]
+        public async Task ReadAsync_LongValues() {
+            var extension = new JsonFileSource();
+            var config = TestHelpers.CreateConfig(new Dictionary<string, string>
+            {
+                { "FilePath", "Data/LongValues.json" }
+            });
+
+            int counter = 0;
+            await foreach (var dataItem in extension.ReadAsync(config, NullLogger.Instance))
+            {
+                counter++;
+                Assert.IsInstanceOfType(dataItem.GetValue("i"), typeof(int));
+                Assert.AreEqual(counter, dataItem.GetValue("i"));
+                switch (counter) {
+                    case 1:
+                        Assert.IsInstanceOfType(dataItem.GetValue("ticks"), typeof(double));  // 6.386763240521775E+17
+                        break;
+                    case 2:
+                    Assert.IsInstanceOfType(dataItem.GetValue("ticks"), typeof(long));        // 638676324052177500
+                        break;
+                }
+            }
+            Assert.AreEqual(2, counter);
+        }
     }
 }

@@ -20,6 +20,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
+		<ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Common\Cosmos.DataTransfer.Common.csproj" />
 	</ItemGroup>
 
 	<Target Name="PublishToExtensionsFolder"

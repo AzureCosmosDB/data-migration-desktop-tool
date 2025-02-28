@@ -2,8 +2,9 @@
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using Cosmos.DataTransfer.Interfaces;
 
-namespace Cosmos.DataTransfer.Interfaces;
+namespace Cosmos.DataTransfer.Common;
 
 public static class DataItemJsonConverter
 {
@@ -39,7 +40,7 @@ public static class DataItemJsonConverter
         writer.WriteEndObject();
     }
 
-    private static void WriteFieldValue(Utf8JsonWriter writer, string fieldName, object? fieldValue, bool includeNullFields)
+    internal static void WriteFieldValue(Utf8JsonWriter writer, string fieldName, object? fieldValue, bool includeNullFields)
     {
         var propertyName = GetAsUnescaped(fieldName);
         if (fieldValue == null)
@@ -64,6 +65,18 @@ public static class DataItemJsonConverter
                     {
                         WriteDataItem(writer, arrayChild, includeNullFields);
                     }
+                    else if (TryGetLong(arrayItem, out var longValue)) {
+                        writer.WriteNumberValue(longValue);
+                    }
+                    else if (TryGetULong(arrayItem, out var ulongValue)) {
+                        writer.WriteNumberValue(ulongValue);
+                    }
+                    else if (TryGetInteger(arrayItem, out var intValue)) {
+                        writer.WriteNumberValue(intValue);
+                    }
+                    else if (TryGetUInteger(arrayItem, out var uintValue)) {
+                        writer.WriteNumberValue(uintValue);
+                    }
                     else if (TryGetNumber(arrayItem, out var number))
                     {
                         writer.WriteNumberValue(number);
@@ -86,6 +99,18 @@ public static class DataItemJsonConverter
                     }
                 }
                 writer.WriteEndArray();
+            }
+            else if (TryGetLong(fieldValue, out var longValue)) {
+                writer.WriteNumber(propertyName, longValue);
+            }
+            else if (TryGetULong(fieldValue, out var ulongValue)) {
+                writer.WriteNumber(propertyName, ulongValue);
+            }
+            else if (TryGetInteger(fieldValue, out var intValue)) {
+                writer.WriteNumber(propertyName, intValue);
+            }
+            else if (TryGetUInteger(fieldValue, out var uintValue)) {
+                writer.WriteNumber(propertyName, uintValue);
             }
             else if (TryGetNumber(fieldValue, out var number))
             {
@@ -111,6 +136,60 @@ public static class DataItemJsonConverter
         return JsonEncodedText.Encode(text, JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
     }
 
+    internal static bool TryGetLong(object? x, out long number) 
+    {
+        if (x is long l) {
+            number = l;
+            return true;
+        }
+        number = default;
+        return false;
+    }
+
+    internal static bool TryGetULong(object? x, out ulong number) 
+    {
+        if (x is ulong l) {
+            number = l;
+            return true;
+        }
+        number = default;
+        return false;
+    }
+
+    internal static bool TryGetInteger(object? x, out int number) {
+        if (x is sbyte b) {
+            number = b;
+            return true;
+        }
+        if (x is short s) {
+            number = s;
+            return true;
+        }
+        if (x is int l) {
+            number = l;
+            return true;
+        }
+        number = default;
+        return false;
+    }
+
+    internal static bool TryGetUInteger(object? x, out uint number) {
+        if (x is byte b) {
+            number = b;
+            return true;
+        }
+        if (x is ushort s) {
+            number = s;
+            return true;
+        }
+        if (x is uint l) {
+            number = l;
+            return true;
+        }
+        number = default;
+        return false;
+    }
+
     private static bool TryGetNumber(object? x, out double number)
     {
         if (x is float f)
@@ -128,22 +207,6 @@ public static class DataItemJsonConverter
             number = (double)m;
             return true;
         }
-        if (x is int i)
-        {
-            number = i;
-            return true;
-        }
-        if (x is short s)
-        {
-            number = s;
-            return true;
-        }
-        if (x is long l)
-        {
-            number = l;
-            return true;
-        }
-
         number = default;
         return false;
     }

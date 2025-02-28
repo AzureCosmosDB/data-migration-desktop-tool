@@ -5,6 +5,7 @@ using System.Data.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Cosmos.DataTransfer.Common;
 
 namespace Cosmos.DataTransfer.SqlServerExtension
 {
