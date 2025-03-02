@@ -35,8 +35,11 @@ namespace Cosmos.DataTransfer.PostgresqlExtension
             ColumnType = Convert(PostgreType);
         }
 
-        public PostgreDataCol()
+        public PostgreDataCol(string colname, Type coltype, NpgsqlTypes.NpgsqlDbType postgredatatye)
         {
+            ColumnName = colname;
+            PostgreType = postgredatatye;
+            ColumnType = coltype;
         }
 
         public Dictionary<long, object> SparseColumnData { get; } = new Dictionary<long, object>();

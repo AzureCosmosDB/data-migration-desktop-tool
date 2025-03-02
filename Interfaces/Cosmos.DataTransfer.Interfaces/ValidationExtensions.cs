@@ -4,7 +4,7 @@ namespace Cosmos.DataTransfer.Interfaces;
 
 public static class ValidationExtensions
 {
-    public static IEnumerable<string?> GetValidationErrors<T>(this T? settings)
+    public static IEnumerable<string> GetValidationErrors<T>(this T? settings)
         where T : class, IDataExtensionSettings, new()
     {
         if (settings == null)
@@ -18,7 +18,10 @@ public static class ValidationExtensions
         Validator.TryValidateObject(settings, context, results, true);
         foreach (var validationResult in results)
         {
-            yield return validationResult.ErrorMessage;
+            if (validationResult.ErrorMessage is not null)
+            {
+                yield return validationResult.ErrorMessage;
+            }
         }
     }
 

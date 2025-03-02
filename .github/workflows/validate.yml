@@ -17,7 +17,7 @@ jobs:
       - name: Build project
         run: dotnet build
       - name: Run unit tests
-        run: dotnet test --logger "console;verbosity=detailed"
+        run: dotnet test --logger "console;verbosity=detailed" -graphBuild:True
       - name: Code Coverage Report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
