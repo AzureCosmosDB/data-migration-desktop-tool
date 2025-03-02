@@ -6,21 +6,34 @@ The File Storage extension provides reading and writing of formatted files on lo
 
 ## Settings
 
-Source and sink settings both require a `FilePath` parameter, which should specify a path to a formatted file or folder containing multiple files of the same type. The path can be either absolute or relative to the application. 
+Source and sink settings both require a `FilePath` parameter, which should specify a path to a formatted file or folder containing multiple json-files. The path can be either absolute or relative to the application. 
 
 ### Source
 
+Gzip, bzip2, and zlib compressed files are automatically detected by file extension
+(`.gz`, `.bz2`, and `.zz`, respectively) and decompressed, when `"None"` is specified as `"Compression"`.
+
 ```json
 {
-    "FilePath": ""
+    "FilePath": "",
+    "Compression": "None" | "Gzip" | "Brotli" | "Deflate"
 }
 
 ```
 
 ### Sink
 
+Use parameter `Compression` to enable compression of output file. 
+The relevant extension is automatically added to the file name, if missing.
+
+It is possible to build further upon a file by setting the `Append` parameter
+to `true`. Note however that it is not compatible with any compression methods,
+as the result a concatenation of multiple compressed files.
+
 ```json
 {
-    "FilePath": ""
+    "FilePath": "",
+    "Compression": "None" | "Gzip" | "Brotli" | "Deflate",
+    "Append": false
 }
 ```

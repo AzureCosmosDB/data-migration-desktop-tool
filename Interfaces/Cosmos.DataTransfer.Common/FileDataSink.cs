@@ -1,4 +1,5 @@
-﻿using Cosmos.DataTransfer.Interfaces;
+﻿using System.IO.Compression;
+using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -12,13 +13,52 @@ public class FileDataSink : IComposableDataSink
         settings.Validate();
         if (settings.FilePath != null)
         {
-            await using var writer = File.Create(settings.FilePath);
+            using var writer = GetCompressor(settings.Compression, settings.FilePath, settings.Append);
             await writeToStream(writer);
+            writer.Close();
         }
     }
 
     public IEnumerable<IDataExtensionSettings> GetSettings()
     {
         yield return new FileSinkSettings();
+    }
+
+    private static Stream GetCompressor(CompressionEnum compression, string filepath, bool append = false) {
+        FileMode fileMode = append ? FileMode.Append : FileMode.Create;
+        Func<FileStream, Stream> compressor;
+        switch (compression) {
+            case CompressionEnum.Deflate:
+                filepath = EnsureExtension(filepath, ".zz");
+                compressor = (x) => new DeflateStream(x, CompressionMode.Compress, leaveOpen: false);
+                break;
+            case CompressionEnum.Gzip:
+                filepath = EnsureExtension(filepath, ".gz", ".gzip");
+                compressor = (x) => new GZipStream(x, CompressionMode.Compress, leaveOpen: false);
+                break;
+            case CompressionEnum.Brotli:
+                filepath = EnsureExtension(filepath, ".br");
+                compressor = (x) => new BrotliStream(x, CompressionMode.Compress, leaveOpen: false);
+                break;            
+            case CompressionEnum.None:
+            default:
+                compressor = (x) => x;
+                break;
+        }
+
+        var writer = File.Open(filepath, fileMode, FileAccess.Write);
+        return compressor(writer);
+    }
+
+    private static string EnsureExtension(string fn, params string[] extensions) {
+        bool found = false;
+        foreach (var ext in extensions) {
+            found = fn.EndsWith(ext);
+            if (found) break;
+        }
+        if (!found) {
+            fn += extensions[0];
+        }
+        return fn;
     }
 }

@@ -1,4 +1,5 @@
-﻿using Cosmos.DataTransfer.Interfaces;
+﻿using Cosmos.DataTransfer.Common;
+using Cosmos.DataTransfer.Common.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 
@@ -189,6 +190,30 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             Assert.AreEqual("A", outputData?.Single().Array?.ElementAt(0));
             Assert.AreEqual(null, outputData?.Single().Array?.ElementAt(1));
             Assert.AreEqual("C", outputData?.Single().Array?.ElementAt(2));
+        }
+
+        [TestMethod]
+        public async Task WriteAsync_LongValues() {
+            var sink = new JsonFileSink();
+
+            var now = DateTime.UtcNow;
+            var randomTime = DateTime.UtcNow.AddMinutes(Random.Shared.NextDouble() * 10000);
+            var data = new List<DictionaryDataItem>
+            {
+                new(new Dictionary<string, object?>
+                {
+                    { "Id", (long)638676324052177500 }
+                })
+            };
+
+            string outputFile = Path.GetTempFileName();
+            
+            var config = TestHelpers.CreateConfig(new Dictionary<string, string>
+            {
+                { "FilePath", outputFile }
+            });
+
+            await sink.WriteAsync(data.ToAsyncEnumerable(), config, new JsonFileSource(), NullLogger.Instance);
         }
     }
 }

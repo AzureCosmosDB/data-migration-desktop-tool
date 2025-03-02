@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.Composition;
 using System.Data;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -17,7 +18,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             var settings = config.Get<SqlServerSinkSettings>();
             settings.Validate();
 
-            string tableName = settings.TableName!;
+            string tableName = settings!.TableName!;
 
             await using var connection = new SqlConnection(settings.ConnectionString);
             await connection.OpenAsync(cancellationToken);
@@ -31,11 +32,13 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                     var dataColumns = new Dictionary<ColumnMapping, DataColumn>();
                     foreach (ColumnMapping columnMapping in settings.ColumnMappings)
                     {
-                        DataColumn dbColumn = new DataColumn(columnMapping.ColumnName);
+                        Type type = Type.GetType(columnMapping.DataType ?? "System.String")!;
+                        DataColumn dbColumn = new DataColumn(columnMapping.ColumnName, type);
                         dataColumns.Add(columnMapping, dbColumn);
                         bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(dbColumn.ColumnName, dbColumn.ColumnName));
                     }
 
+                    
                     var dataTable = new DataTable();
                     dataTable.Columns.AddRange(dataColumns.Values.ToArray());
 
@@ -60,7 +63,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                                     {
                                         value = item.GetValue(sourceField);
                                     }
-                                    
+
                                     if (value != null || mapping.AllowNull)
                                     {
                                         if (value is IDataItem child)
