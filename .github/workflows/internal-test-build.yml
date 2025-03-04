@@ -10,32 +10,41 @@ jobs:
     name: Build self-contained executables
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/dotnet/sdk:8.0
+    strategy:
+      matrix:
+        platform: [windows, mac, linux]
+        runtime: [win-x64, win-arm64, osx-x64, osx-arm64, linux-x64, linux-arm64]
+        include:
+          - platform: windows
+            platform-short: win
+            runtime: win-x64
+          - platform: windows
+            platform-short: win
+            runtime: win-arm64
+          - platform: mac
+            platform-short: mac
+            runtime: osx-x64
+          - platform: mac
+            platform-short: mac
+            runtime: osx-arm64
+          - platform: linux
+            platform-short: linux
+            runtime: linux-x64
+          - platform: linux
+            platform-short: linux
+            runtime: linux-arm64
     steps:
       - name: Check .NET version
         run: dotnet --version
       - name: Checkout source code
         uses: actions/checkout@v3
-      - name: Execute Action build-with-plugins for Windows
+      - name: Execute Action build-with-plugins
         uses: ./.github/actions/build-with-plugins
-        id: build-with-plugins-win
         with:
-          platform: windows
-          platform-short: win
-          runtime: win-x64
+          platform: ${{ matrix.platform }}
+          platform-short: ${{ matrix.platform-short }}
+          runtime: ${{ matrix.runtime }}
           build-version: 0.0.${{ github.run_number }}
-      - name: Execute Action build-with-plugins for MacOS
-        uses: ./.github/actions/build-with-plugins
-        id: build-with-plugins-mac
-        with:
-          platform: mac
-          platform-short: mac
-          runtime: osx-x64
-          build-version: 0.0.${{ github.run_number }}
-      - name: Execute Action build-with-plugins for Linux
-        uses: ./.github/actions/build-with-plugins
-        id: build-with-plugins-linux
-        with:
-          platform: linux
-          platform-short: linux
-          runtime: linux-x64
-          build-version: 0.0.${{ github.run_number }}
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          RUNTIME: ${{ matrix.runtime }}
