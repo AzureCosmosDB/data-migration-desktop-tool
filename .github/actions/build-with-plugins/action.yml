@@ -172,7 +172,7 @@ runs:
       run: |
         tar -czvf ${{ inputs.runtime }}-package.tar.gz -C ${{ inputs.runtime }}
     - name: Upload package
-      if: "!startsWith(inputs.platform, 'linux')
+      if: !(startsWith(inputs.platform, 'linux'))
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.runtime }}-package
