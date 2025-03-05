@@ -170,6 +170,7 @@ runs:
       if: startsWith(inputs.platform, 'linux')
       shell: bash
       run: |
+        ls -la ${{ inputs.runtime }}
         tar -czvf ${{ inputs.runtime }}-package.tar.gz -C ${{ inputs.runtime }}
     - name: Upload package
       if: startsWith(inputs.platform, 'linux') != true
