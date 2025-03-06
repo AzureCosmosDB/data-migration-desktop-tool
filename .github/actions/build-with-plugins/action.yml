@@ -171,7 +171,7 @@ runs:
       shell: bash
       run: |
         ls -la ${{ inputs.runtime }}
-        tar -czvf ${{ inputs.runtime }}/${{ inputs.runtime }}-package.tar.gz -C ${{ inputs.runtime }} . -v
+        tar -czvf ${{ inputs.runtime }}-package/${{ inputs.runtime }}-package.tar.gz -C ${{ inputs.runtime }}/ . -v
     - name: Upload package
       if: startsWith(inputs.platform, 'linux') != true
       uses: actions/upload-artifact@v4
@@ -183,4 +183,4 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.runtime }}-package-tar
-        path: ${{ inputs.runtime }}/${{ inputs.runtime }}-package.tar.gz
+        path: ${{ inputs.runtime }}-package/${{ inputs.runtime }}-package.tar.gz
