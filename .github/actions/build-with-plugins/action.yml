@@ -170,7 +170,11 @@ runs:
       if: startsWith(inputs.platform, 'linux')
       shell: bash
       run: |
+        # check if the directory exists
         ls -la ${{ inputs.runtime }}
+        # create a directory for the tar file
+        mkdir -p ${{ inputs.runtime }}-package
+        # create the tar file
         tar -czvf ${{ inputs.runtime }}-package/${{ inputs.runtime }}-package.tar.gz -C ${{ inputs.runtime }}/ . -v
     - name: Upload package
       if: startsWith(inputs.platform, 'linux') != true
