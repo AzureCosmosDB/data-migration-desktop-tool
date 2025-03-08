@@ -26,7 +26,10 @@ The Azure Cosmos DB Desktop Data Migration Tool is an open-source project contai
 
 ## Quick Installation
 
-To use the tool, download the latest zip file for your platform (win-x64, mac-x64, or linux-x64) from [Releases](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases) and extract all files to your desired install location. To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below or [review examples](ExampleConfigs.md)), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms.
+To use the tool, download the latest archive file for your platform (win-x64, win-arm64, mac-x64, mac-arm64, linux-x64, linux-arm64) from [Releases](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases) and extract all files to your desired install location. To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below or [review examples](ExampleConfigs.md)), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms. 
+
+If using RBAC (Role Based Access Control) (migrate-passwordless)[https://learn.microsoft.com/azure/cosmos-db/nosql/migrate-passwordless?tabs=sign-in-azure-cli%2Cdotnet%2Cazure-portal-create%2Cazure-portal-associate%2Capp-service-identity] ensure you are authenticated with Azure see (Troubleshoot Azure Identity authentication issues
+)[https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/identity/Azure.Identity/TROUBLESHOOTING.md] One common way to authenticate is using the Azure CLI (How to install the Azure CLI)[https://learn.microsoft.com/cli/azure/install-azure-cli] and `az login`
 
 ## Extension documentation
 
@@ -203,6 +206,14 @@ This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Too
     ```
 
     > **Note**: Before you run the tool on macOS, you'll need to follow Apple's instructions on how to [Open a Mac app from an unidentified developer](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac).
+
+    **Using Linux**
+
+    ```bash
+    ./dmt
+    ```
+
+    > **Note**: Use the `--settings` option with a file path to specify a different settings file (overriding the default **migrationsettings.json** file). This facilitates automating running of different migration jobs in a programmatic loop.
 
 ## Creating Extensions
 
