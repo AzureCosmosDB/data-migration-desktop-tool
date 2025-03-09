@@ -75,7 +75,7 @@ jobs:
       - name: Download package
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.runtime }}
+          name: ${{ matrix.runtime }}-package
           path: ${{ matrix.runtime }}
       - name: Extract Linux package
         if: matrix.platform == 'linux'
@@ -104,7 +104,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release-tag }}
           files: |
-            dmt-${{ inputs.release-tag }}-mac-arm64.zip
+            dmt-${{ inputs.release-tag }}-mac-x64.zip
       - name: Create GitHub release
         if: matrix.platform == 'linux'
         uses: softprops/action-gh-release@v1
