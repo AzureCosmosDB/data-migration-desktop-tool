@@ -77,38 +77,47 @@ jobs:
         with:
           name: ${{ matrix.runtime }}-package
           path: ${{ matrix.runtime }}
-      - name: Extract Linux package
+      - name: Package output files ${{ matrix.runtime }}
         if: matrix.platform == 'linux'
         run: |
-          tar -xzf dmt-${{ matrix.runtime }}.tar.gz -C ${{ matrix.runtime }} .
-      - name: Package output files
+          tar -czvf dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.tar.gz -C ${{ matrix.runtime }}/ .
+      - name: Package output files ${{ matrix.runtime }}
+        if: matrix.platform == 'windows'
         run: |
-          zip -r dmt-${{ matrix.runtime }} ${{ matrix.runtime }}/*
-      - name: Create GitHub release
+          zip -r dmt-${{ inputs.release-tag }}-${{ matrix.runtime }} ${{ matrix.runtime }}/*
+      - name: Package output files ${{ matrix.runtime }}
+        if: matrix.platform == 'mac' && matrix.runtime == 'osx-x64'
+        run: |
+          zip -r dmt-${{ inputs.release-tag }}-mac-x64 ${{ matrix.runtime }}/*
+      - name: Package output files ${{ matrix.runtime }}
+        if: matrix.platform == 'mac' && matrix.runtime == 'osx-arm64'
+        run: |
+          zip -r dmt-${{ inputs.release-tag }}-mac-arm64 ${{ matrix.runtime }}/*
+      - name: Create GitHub release ${{ matrix.runtime }}
         if: matrix.platform == 'windows'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.release-tag }}
           files: |
             dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.zip
-      - name: Create GitHub release
+      - name: Create GitHub release ${{ matrix.runtime }}
         if: matrix.platform == 'mac' && matrix.runtime == 'osx-x64'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.release-tag }}
           files: |
             dmt-${{ inputs.release-tag }}-mac-x64.zip
-      - name: Create GitHub release
+      - name: Create GitHub release ${{ matrix.runtime }}
         if: matrix.platform == 'mac' && matrix.runtime == 'osx-arm64'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.release-tag }}
           files: |
             dmt-${{ inputs.release-tag }}-mac-x64.zip
-      - name: Create GitHub release
+      - name: Create GitHub release ${{ matrix.runtime }}
         if: matrix.platform == 'linux'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.release-tag }}
           files: |
-            dmt-${{ inputs.release-tag }}.tar.gz
+            dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.tar.gz
