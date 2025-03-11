@@ -41,7 +41,10 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             DbProviderFactory dbProviderFactory,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            try {
+            try {                
+                var settings = config.Get<SqlServerSourceSettings>();
+                settings.Validate();
+
                 await connection.OpenAsync(cancellationToken);
                 var command = connection.CreateCommand();
                 command.CommandText = queryText;
@@ -59,6 +62,12 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                         {
                             value = null;
                         }
+                        
+                        if (settings.JsonFields != null && settings.JsonFields.Contains(column.ColumnName))
+                        {
+                            value = DataItemJsonConverter.Deserialize(value!.ToString());
+                        }
+                        
                         fields[column.ColumnName] = value;
                     }
                     yield return new DictionaryDataItem(fields);
