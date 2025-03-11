@@ -50,74 +50,40 @@ jobs:
     needs: build-package
     permissions:
       contents: write
-    strategy:
-      matrix:
-        include:
-          - platform: windows
-            platform-short: win
-            runtime: win-x64
-          - platform: windows
-            platform-short: win
-            runtime: win-arm64
-          - platform: mac
-            platform-short: mac
-            runtime: osx-x64
-          - platform: mac
-            platform-short: mac
-            runtime: osx-arm64
-          - platform: linux
-            platform-short: linux
-            runtime: linux-x64
-          - platform: linux
-            platform-short: linux
-            runtime: linux-arm64
     steps:
       - name: Download package
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.runtime }}-package
           path: ${{ matrix.runtime }}
-      - name: Package output files ${{ matrix.runtime }}
-        if: matrix.platform == 'linux'
+      - name: Package output files
         run: |
-          tar -czvf dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.tar.gz -C ${{ matrix.runtime }}/ .
-      - name: Package output files ${{ matrix.runtime }}
-        if: matrix.platform == 'windows'
-        run: |
-          zip -r dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.zip ${{ matrix.runtime }}/*
-      - name: Package output files ${{ matrix.runtime }}
-        if: matrix.platform == 'mac' && matrix.runtime == 'osx-x64'
-        run: |
-          zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip ${{ matrix.runtime }}/*
-      - name: Package output files ${{ matrix.runtime }}
-        if: matrix.platform == 'mac' && matrix.runtime == 'osx-arm64'
-        run: |
-          zip -r dmt-${{ inputs.release-tag }}-mac-arm64.zip ${{ matrix.runtime }}/*
-      - name: Create GitHub release ${{ matrix.runtime }}
-        if: matrix.platform == 'windows'
-        uses: softprops/action-gh-release@v1
+          if [[ "${{ matrix.platform }}" == "linux" ]]; then
+            tar -czvf dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.tar.gz -C ${{ matrix.runtime }}/ .
+          elif [[ "${{ matrix.platform }}" == "mac" && "${{ matrix.runtime }}" == "osx-x64" ]]; then
+            zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip ${{ matrix.runtime }}/*
+          elif [[ "${{ matrix.platform }}" == "mac" && "${{ matrix.runtime }}" == "osx-arm64" ]]; then
+            zip -r dmt-${{ inputs.release-tag }}-mac-arm64.zip ${{ matrix.runtime }}/*
+          else
+            zip -r dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.zip ${{ matrix.runtime }}/*
+      - name: Upload package
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{ inputs.release-tag }}
-          files: |
-            dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.zip
-      - name: Create GitHub release ${{ matrix.runtime }}
-        if: matrix.platform == 'mac' && matrix.runtime == 'osx-x64'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ inputs.release-tag }}
-          files: |
-            dmt-${{ inputs.release-tag }}-mac-x64.zip
-      - name: Create GitHub release ${{ matrix.runtime }}
-        if: matrix.platform == 'mac' && matrix.runtime == 'osx-arm64'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ inputs.release-tag }}
-          files: |
-            dmt-${{ inputs.release-tag }}-mac-arm64.zip
-      - name: Create GitHub release ${{ matrix.runtime }}
-        if: matrix.platform == 'linux'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ inputs.release-tag }}
-          files: |
+          name: ${{ matrix.runtime }}-package
+          path: |
             dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.tar.gz
+            dmt-${{ inputs.release-tag }}-mac-x64.zip
+            dmt-${{ inputs.release-tag }}-mac-arm64.zip
+            dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.zip
+      - name: Create GitHub release
+        if: always()
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.release-tag }}
+          files: |
+            dmt-${{ inputs.release-tag }}-win-x64.zip
+            dmt-${{ inputs.release-tag }}-win-arm64.zip
+            dmt-${{ inputs.release-tag }}-mac-x64.zip
+            dmt-${{ inputs.release-tag }}-mac-arm64.zip
+            dmt-${{ inputs.release-tag }}-linux-x64.tar.gz
+            dmt-${{ inputs.release-tag }}-linux-arm64.tar.gz
