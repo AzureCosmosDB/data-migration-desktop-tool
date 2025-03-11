@@ -84,15 +84,15 @@ jobs:
       - name: Package output files ${{ matrix.runtime }}
         if: matrix.platform == 'windows'
         run: |
-          zip -r dmt-${{ inputs.release-tag }}-${{ matrix.runtime }} ${{ matrix.runtime }}/*
+          zip -r dmt-${{ inputs.release-tag }}-${{ matrix.runtime }}.zip ${{ matrix.runtime }}/*
       - name: Package output files ${{ matrix.runtime }}
         if: matrix.platform == 'mac' && matrix.runtime == 'osx-x64'
         run: |
-          zip -r dmt-${{ inputs.release-tag }}-mac-x64 ${{ matrix.runtime }}/*
+          zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip ${{ matrix.runtime }}/*
       - name: Package output files ${{ matrix.runtime }}
         if: matrix.platform == 'mac' && matrix.runtime == 'osx-arm64'
         run: |
-          zip -r dmt-${{ inputs.release-tag }}-mac-arm64 ${{ matrix.runtime }}/*
+          zip -r dmt-${{ inputs.release-tag }}-mac-arm64.zip ${{ matrix.runtime }}/*
       - name: Create GitHub release ${{ matrix.runtime }}
         if: matrix.platform == 'windows'
         uses: softprops/action-gh-release@v1
@@ -113,7 +113,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release-tag }}
           files: |
-            dmt-${{ inputs.release-tag }}-mac-x64.zip
+            dmt-${{ inputs.release-tag }}-mac-arm64.zip
       - name: Create GitHub release ${{ matrix.runtime }}
         if: matrix.platform == 'linux'
         uses: softprops/action-gh-release@v1

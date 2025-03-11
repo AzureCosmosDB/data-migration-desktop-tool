@@ -170,4 +170,4 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.runtime }}-package
-        path: ${{ inputs.runtime }}/
+        path: ${{ inputs.runtime }}
