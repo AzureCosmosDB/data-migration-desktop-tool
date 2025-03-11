@@ -9,7 +9,7 @@ jobs:
   build-package:
     name: Build self-contained executables
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/dotnet/sdk:6.0
+    container: mcr.microsoft.com/dotnet/sdk:8.0
     steps:
       - name: Check .NET version
         run: dotnet --version
