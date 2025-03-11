@@ -50,6 +50,27 @@ jobs:
     needs: build-package
     permissions:
       contents: write
+    strategy:
+      matrix:
+        include:
+          - platform: windows
+            platform-short: win
+            runtime: win-x64
+          - platform: windows
+            platform-short: win
+            runtime: win-arm64
+          - platform: mac
+            platform-short: mac
+            runtime: osx-x64
+          - platform: mac
+            platform-short: mac
+            runtime: osx-arm64
+          - platform: linux
+            platform-short: linux
+            runtime: linux-x64
+          - platform: linux
+            platform-short: linux
+            runtime: linux-arm64
     steps:
       - name: Download package
         uses: actions/download-artifact@v4
