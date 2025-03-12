@@ -23,25 +23,27 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             var connection = providerFactory.CreateConnection()!;
             connection.ConnectionString = settings!.ConnectionString;
 
-            var iterable = this.ReadAsync(config, logger, settings.GetQueryText(), 
-                settings.GetDbParameters(providerFactory), connection, 
+            var iterable = this.ReadAsync(config, logger, settings.GetQueryText(),
+                settings.GetDbParameters(providerFactory), connection,
                 providerFactory, cancellationToken);
-            
-            await foreach (var item in iterable) {
+
+            await foreach (var item in iterable)
+            {
                 yield return item;
             }
         }
 
         public async IAsyncEnumerable<IDataItem> ReadAsync(
-            IConfiguration config, 
-            ILogger logger, 
+            IConfiguration config,
+            ILogger logger,
             string queryText,
             DbParameter[] parameters,
             DbConnection connection,
             DbProviderFactory dbProviderFactory,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            try {                
+            try
+            {
                 var settings = config.Get<SqlServerSourceSettings>();
                 settings.Validate();
 
@@ -62,17 +64,19 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                         {
                             value = null;
                         }
-                        
-                        if (settings.JsonFields != null && settings.JsonFields.Contains(column.ColumnName))
+
+                        if (settings?.JsonFields != null && settings.JsonFields.Contains(column.ColumnName))
                         {
                             value = DataItemJsonConverter.Deserialize(value!.ToString());
                         }
-                        
+
                         fields[column.ColumnName] = value;
                     }
                     yield return new DictionaryDataItem(fields);
                 }
-            } finally {
+            }
+            finally
+            {
                 await connection.CloseAsync();
             }
         }
