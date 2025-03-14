@@ -6,6 +6,7 @@ using Cosmos.DataTransfer.Common;
 using Cosmos.DataTransfer.Common.UnitTests;
 using Moq;
 using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 
 namespace Cosmos.DataTransfer.SqlServerExtension.UnitTests;
 
@@ -13,7 +14,8 @@ namespace Cosmos.DataTransfer.SqlServerExtension.UnitTests;
 public class SqlServerDataSourceExtensionTests
 {
 
-    private static async Task<Tuple<SqliteFactory,DbConnection>> connectionFactory(CancellationToken cancellationToken = default(CancellationToken)) {
+    private static async Task<Tuple<SqliteFactory, DbConnection>> connectionFactory(CancellationToken cancellationToken = default(CancellationToken))
+    {
         var provider = SqliteFactory.Instance;
         var connection = provider.CreateConnection();
         await connection.OpenAsync(cancellationToken);
@@ -35,15 +37,23 @@ public class SqlServerDataSourceExtensionTests
     }
 
     [TestMethod]
-    public async Task TestReadAsync() {
-        var config = new Mock<IConfiguration>();
+    public async Task TestReadAsync()
+    {
+        var configSettings = new Dictionary<string, string>
+        {
+            { "ConnectionString", "Data Source=:memory:" },
+            { "QueryText", "SELECT 1;" }
+        };
+
+        var config = TestHelpers.CreateConfig(configSettings);
+
         var cancellationToken = new CancellationTokenSource(500);
         var (providerFactory, connection) = await connectionFactory(cancellationToken.Token);
 
         var extension = new SqlServerDataSourceExtension();
         Assert.AreEqual("SqlServer", extension.DisplayName);
 
-        var result = await extension.ReadAsync(config.Object, NullLogger.Instance,
+        var result = await extension.ReadAsync(config, NullLogger.Instance,
           "SELECT * FROM foobar", Array.Empty<DbParameter>(), connection, providerFactory, cancellationToken.Token).ToListAsync();
         var expected = new List<DictionaryDataItem> {
             new DictionaryDataItem(new Dictionary<string, object?> { { "id", (long)1 }, { "name", "zoo" } }),
@@ -53,8 +63,16 @@ public class SqlServerDataSourceExtensionTests
     }
 
     [TestMethod]
-    public async Task TestReadAsyncWithParameters() {
-        var config = new Mock<IConfiguration>();
+    public async Task TestReadAsyncWithParameters()
+    {
+        var configSettings = new Dictionary<string, string>
+        {
+            { "ConnectionString", "Data Source=:memory:" },
+            { "QueryText", "SELECT 1;" }
+        };
+
+        var config = TestHelpers.CreateConfig(configSettings);
+
         var cancellationToken = new CancellationTokenSource();
         var (providerFactory, connection) = await connectionFactory(cancellationToken.Token);
 
@@ -66,8 +84,8 @@ public class SqlServerDataSourceExtensionTests
         parameter.DbType = System.Data.DbType.Int32;
         parameter.Value = 2;
 
-        var result = await extension.ReadAsync(config.Object, NullLogger.Instance,
-          "SELECT * FROM foobar WHERE id = @x", 
+        var result = await extension.ReadAsync(config, NullLogger.Instance,
+          "SELECT * FROM foobar WHERE id = @x",
           new DbParameter[] { parameter }, connection, providerFactory, cancellationToken.Token).FirstAsync();
         Assert.That.AreEqual(result,
             new DictionaryDataItem(new Dictionary<string, object?> { { "id", (long)2 }, { "name", null } }),
@@ -90,10 +108,12 @@ public class SqlServerDataSourceExtensionTests
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     [TestMethod]
     [Timeout(1000)]
-    public async Task TestReadAsync_LiveSqlServer() {
+    public async Task TestReadAsync_LiveSqlServer()
+    {
         var connectionString = (string?)TestContext.Properties["TestReadAsync_LiveSqlServer_ConnectionString"];
         connectionString ??= Environment.GetEnvironmentVariable("TestReadAsync_LiveSqlServer_ConnectionString");
-        if (connectionString is null) {
+        if (connectionString is null)
+        {
             Assert.Inconclusive("Could not run, as no connection string to live SQL Server was provided.");
         }
 
@@ -105,7 +125,7 @@ public class SqlServerDataSourceExtensionTests
 
         var result = await extension.ReadAsync(config, NullLogger.Instance).FirstAsync();
 
-        Assert.IsTrue(new DataItemComparer().Equals(result, 
+        Assert.IsTrue(new DataItemComparer().Equals(result,
             new DictionaryDataItem(new Dictionary<string, object?> {
                 { "", 1 },
                 { "bar", "foo" },

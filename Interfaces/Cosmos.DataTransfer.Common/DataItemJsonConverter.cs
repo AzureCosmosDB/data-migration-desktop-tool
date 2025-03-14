@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Dynamic;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -8,6 +9,53 @@ namespace Cosmos.DataTransfer.Common;
 
 public static class DataItemJsonConverter
 {
+    /// <summary>
+    /// Returns either and array of Arrays or IDataItem objects or a single IDataItem object from the JSON string.
+    /// This method is used to deserialize JSON strings into IDataItem objects or arrays of IDataItems so that
+    /// they can be used in the Cosmos.DataTransfer.Interfaces.IDataItem interface.
+    /// </summary>
+    /// <param name="value">JSON string</param>
+    /// <returns></returns>
+    public static object? Deserialize(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return null;
+        }
+
+        using JsonDocument jsonDocument = JsonDocument.Parse(value);
+        var rootElement = jsonDocument.RootElement;
+
+        return rootElement.ValueKind switch
+        {
+            JsonValueKind.Array => rootElement.EnumerateArray().Select(ConvertJsonElement).ToList(),
+            _ => ConvertJsonElement(rootElement)
+        };
+    }
+
+    private static IDataItem ConvertJsonToIDataItem(JsonElement element)
+    {
+        var retval = new ExpandoObject() as IDictionary<string, object?>;
+
+        foreach (var property in element.EnumerateObject())
+        {
+            retval[property.Name] = ConvertJsonElement(property.Value);
+        }
+        return new DictionaryDataItem(retval);
+    }
+
+    private static object? ConvertJsonElement(JsonElement element) => element.ValueKind switch
+    {
+        JsonValueKind.Object => ConvertJsonToIDataItem(element),
+        JsonValueKind.Array => element.EnumerateArray().Select(ConvertJsonElement).ToList(),
+        JsonValueKind.String => element.GetString(),
+        JsonValueKind.Number => element.TryGetInt64(out long longValue) ? longValue : (double)element.GetDouble(),
+        JsonValueKind.True => true,
+        JsonValueKind.False => false,
+        JsonValueKind.Null => null,
+        _ => throw new ArgumentOutOfRangeException(nameof(element), $"Unsupported JSON value kind: {element.ValueKind}")
+    };
+
     public static string AsJsonString(this IDataItem dataItem, bool indented, bool includeNullFields)
     {
         using var stream = new MemoryStream();
@@ -65,16 +113,20 @@ public static class DataItemJsonConverter
                     {
                         WriteDataItem(writer, arrayChild, includeNullFields);
                     }
-                    else if (TryGetLong(arrayItem, out var longValue)) {
+                    else if (TryGetLong(arrayItem, out var longValue))
+                    {
                         writer.WriteNumberValue(longValue);
                     }
-                    else if (TryGetULong(arrayItem, out var ulongValue)) {
+                    else if (TryGetULong(arrayItem, out var ulongValue))
+                    {
                         writer.WriteNumberValue(ulongValue);
                     }
-                    else if (TryGetInteger(arrayItem, out var intValue)) {
+                    else if (TryGetInteger(arrayItem, out var intValue))
+                    {
                         writer.WriteNumberValue(intValue);
                     }
-                    else if (TryGetUInteger(arrayItem, out var uintValue)) {
+                    else if (TryGetUInteger(arrayItem, out var uintValue))
+                    {
                         writer.WriteNumberValue(uintValue);
                     }
                     else if (TryGetNumber(arrayItem, out var number))
@@ -100,16 +152,20 @@ public static class DataItemJsonConverter
                 }
                 writer.WriteEndArray();
             }
-            else if (TryGetLong(fieldValue, out var longValue)) {
+            else if (TryGetLong(fieldValue, out var longValue))
+            {
                 writer.WriteNumber(propertyName, longValue);
             }
-            else if (TryGetULong(fieldValue, out var ulongValue)) {
+            else if (TryGetULong(fieldValue, out var ulongValue))
+            {
                 writer.WriteNumber(propertyName, ulongValue);
             }
-            else if (TryGetInteger(fieldValue, out var intValue)) {
+            else if (TryGetInteger(fieldValue, out var intValue))
+            {
                 writer.WriteNumber(propertyName, intValue);
             }
-            else if (TryGetUInteger(fieldValue, out var uintValue)) {
+            else if (TryGetUInteger(fieldValue, out var uintValue))
+            {
                 writer.WriteNumber(propertyName, uintValue);
             }
             else if (TryGetNumber(fieldValue, out var number))
@@ -136,9 +192,10 @@ public static class DataItemJsonConverter
         return JsonEncodedText.Encode(text, JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
     }
 
-    internal static bool TryGetLong(object? x, out long number) 
+    internal static bool TryGetLong(object? x, out long number)
     {
-        if (x is long l) {
+        if (x is long l)
+        {
             number = l;
             return true;
         }
@@ -146,9 +203,10 @@ public static class DataItemJsonConverter
         return false;
     }
 
-    internal static bool TryGetULong(object? x, out ulong number) 
+    internal static bool TryGetULong(object? x, out ulong number)
     {
-        if (x is ulong l) {
+        if (x is ulong l)
+        {
             number = l;
             return true;
         }
@@ -156,16 +214,20 @@ public static class DataItemJsonConverter
         return false;
     }
 
-    internal static bool TryGetInteger(object? x, out int number) {
-        if (x is sbyte b) {
+    internal static bool TryGetInteger(object? x, out int number)
+    {
+        if (x is sbyte b)
+        {
             number = b;
             return true;
         }
-        if (x is short s) {
+        if (x is short s)
+        {
             number = s;
             return true;
         }
-        if (x is int l) {
+        if (x is int l)
+        {
             number = l;
             return true;
         }
@@ -173,16 +235,20 @@ public static class DataItemJsonConverter
         return false;
     }
 
-    internal static bool TryGetUInteger(object? x, out uint number) {
-        if (x is byte b) {
+    internal static bool TryGetUInteger(object? x, out uint number)
+    {
+        if (x is byte b)
+        {
             number = b;
             return true;
         }
-        if (x is ushort s) {
+        if (x is ushort s)
+        {
             number = s;
             return true;
         }
-        if (x is uint l) {
+        if (x is uint l)
+        {
             number = l;
             return true;
         }
