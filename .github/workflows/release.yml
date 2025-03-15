@@ -52,7 +52,9 @@ jobs:
           build-version: ${{ inputs.release-tag }}
       - name: Package output files
         run: |
-          if [[ "${{ matrix.platform }}" == "linux" ]]; then
+          # for linux, use tar to create a compressed archive
+          # for macOS and Windows, use zip to create a compressed archive
+          if [ "${{ matrix.platform }}" == "linux" ]; then
             tar -czvf ${{ matrix.artifact-name }} -C ${{ matrix.runtime }}/ .
           else
             zip -r ${{ matrix.artifact-name }} ${{ matrix.runtime }}/*
