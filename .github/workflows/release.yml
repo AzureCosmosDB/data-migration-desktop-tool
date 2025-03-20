@@ -63,11 +63,11 @@ jobs:
             
             # rename from osx to mac to retain previous naming convention
             mv osx-x64-package mac-x64-package
-            zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip osx-x64-package/*
+            zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip mac-x64-package/*
             
             # rename from osx to mac to retain previous naming convention
             mv osx-arm64-package mac-arm64-package
-            zip -r dmt-${{ inputs.release-tag }}-mac-arm64.zip osx-arm64-package/*
+            zip -r dmt-${{ inputs.release-tag }}-mac-arm64.zip mac-arm64-package/*
 
             # create linux packages using tar as supposed to zip. tar is more common for linux packages
             tar -czvf dmt-${{ inputs.release-tag }}-linux-x64.tar.gz linux-x64-package/*
