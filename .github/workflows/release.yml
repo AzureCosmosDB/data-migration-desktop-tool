@@ -17,27 +17,21 @@ jobs:
           - platform: windows
             platform-short: win
             runtime: win-x64
-            artifact-name: dmt-${{ inputs.release-tag }}-win-x64.zip
           - platform: windows
             platform-short: win
             runtime: win-arm64
-            artifact-name: dmt-${{ inputs.release-tag }}-win-arm64.zip
           - platform: mac
             platform-short: mac
             runtime: osx-x64
-            artifact-name: dmt-${{ inputs.release-tag }}-macOS-x64.zip
           - platform: mac
             platform-short: mac
             runtime: osx-arm64
-            artifact-name: dmt-${{ inputs.release-tag }}-macOS-arm64.zip
           - platform: linux
             platform-short: linux
             runtime: linux-x64
-            artifact-name: dmt-${{ inputs.release-tag }}-linux-x64.tar.gz
           - platform: linux
             platform-short: linux
             runtime: linux-arm64
-            artifact-name: dmt-${{ inputs.release-tag }}-linux-arm64.tar.gz
     steps:
       - name: Check .NET version
         run: dotnet --version
@@ -50,19 +44,6 @@ jobs:
           platform-short: ${{ matrix.platform-short }}
           runtime: ${{ matrix.runtime }}
           build-version: ${{ inputs.release-tag }}
-      - name: Package output files
-        run: |
-          if [ "${{ matrix.platform }}" = "linux" ]; then
-            tar -czvf ${{ matrix.artifact-name }} -C ${{ matrix.runtime }}/ .
-          else
-            zip -r ${{ matrix.artifact-name }} ${{ matrix.runtime }}/*
-          fi
-      - name: Upload package
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.runtime }}-package
-          path: |
-            ${{ matrix.artifact-name }}
 
   create-release:
     name: Create GitHub release
@@ -75,6 +56,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: .
+      - name: Package output files
+        run: |
+            zip -r dmt-${{ inputs.release-tag }}-win-x64.zip win-x64-package/*
+            zip -r dmt-${{ inputs.release-tag }}-win-arm64.zip win-arm64-package/*
+            zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip osx-x64-package/*
+            zip -r dmt-${{ inputs.release-tag }}-mac-arm64.zip osx-arm64-package/*
+            zip -r dmt-${{ inputs.release-tag }}-linux-x64.zip linux-x64-package/*
+            zip -r dmt-${{ inputs.release-tag }}-linux-arm64.zip linux-arm64-package/*
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
@@ -82,7 +71,7 @@ jobs:
           files: |
             dmt-${{ inputs.release-tag }}-win-x64.zip
             dmt-${{ inputs.release-tag }}-win-arm64.zip
-            dmt-${{ inputs.release-tag }}-macOS-x64.zip
-            dmt-${{ inputs.release-tag }}-macOS-arm64.zip
-            dmt-${{ inputs.release-tag }}-linux-x64.tar.gz
-            dmt-${{ inputs.release-tag }}-linux-arm64.tar.gz
+            dmt-${{ inputs.release-tag }}-mac-x64.zip
+            dmt-${{ inputs.release-tag }}-mac-arm64.zip
+            dmt-${{ inputs.release-tag }}-linux-x64.zip
+            dmt-${{ inputs.release-tag }}-linux-arm64.zip
