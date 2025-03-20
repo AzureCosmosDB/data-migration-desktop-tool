@@ -72,7 +72,7 @@ jobs:
             # create linux packages using tar as supposed to zip. tar is more common for linux packages
             tar -czvf dmt-${{ inputs.release-tag }}-linux-x64.tar.gz linux-x64-package/*
             tar -czvf dmt-${{ inputs.release-tag }}-linux-arm64.tar.gz linux-arm64-package/*
-      - name: Create GitHub release
+      - name: Create GitHub release ${{ inputs.release-tag }}
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.release-tag }}
