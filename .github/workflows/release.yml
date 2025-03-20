@@ -37,7 +37,7 @@ jobs:
         run: dotnet --version
       - name: Checkout source code
         uses: actions/checkout@v3
-      - name: Execute Action build-with-plugins
+      - name: Execute Action build-with-plugins ${{ matrix.runtime }}
         uses: ./.github/actions/build-with-plugins
         with:
           platform: ${{ matrix.platform }}
