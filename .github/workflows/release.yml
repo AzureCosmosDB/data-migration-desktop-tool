@@ -62,8 +62,8 @@ jobs:
             zip -r dmt-${{ inputs.release-tag }}-win-arm64.zip win-arm64-package/*
             zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip osx-x64-package/*
             zip -r dmt-${{ inputs.release-tag }}-mac-arm64.zip osx-arm64-package/*
-            zip -r dmt-${{ inputs.release-tag }}-linux-x64.zip linux-x64-package/*
-            zip -r dmt-${{ inputs.release-tag }}-linux-arm64.zip linux-arm64-package/*
+            tar -czvf dmt-${{ inputs.release-tag }}-linux-x64.tar.gz linux-x64-package/*
+            tar -czvf dmt-${{ inputs.release-tag }}-linux-arm64.tar.gz linux-arm64-package/*
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
@@ -73,5 +73,5 @@ jobs:
             dmt-${{ inputs.release-tag }}-win-arm64.zip
             dmt-${{ inputs.release-tag }}-mac-x64.zip
             dmt-${{ inputs.release-tag }}-mac-arm64.zip
-            dmt-${{ inputs.release-tag }}-linux-x64.zip
-            dmt-${{ inputs.release-tag }}-linux-arm64.zip
+            dmt-${{ inputs.release-tag }}-linux-x64.tar.gz
+            dmt-${{ inputs.release-tag }}-linux-arm64.tar.gz
