@@ -5,72 +5,81 @@ on:
       release-tag:
         description: 'Version number to build and release'
         required: true
+
 jobs:
-  github-release:
+  build-package:
+    name: Build self-contained executables
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:8.0
+    strategy:
+      matrix:
+        include:
+          - platform: windows
+            platform-short: win
+            runtime: win-x64
+          - platform: windows
+            platform-short: win
+            runtime: win-arm64
+          - platform: mac
+            platform-short: mac
+            runtime: osx-x64
+          - platform: mac
+            platform-short: mac
+            runtime: osx-arm64
+          - platform: linux
+            platform-short: linux
+            runtime: linux-x64
+          - platform: linux
+            platform-short: linux
+            runtime: linux-arm64
+    steps:
+      - name: Check .NET version
+        run: dotnet --version
+      - name: Checkout source code
+        uses: actions/checkout@v3
+      - name: Execute Action build-with-plugins ${{ matrix.runtime }}
+        uses: ./.github/actions/build-with-plugins
+        with:
+          platform: ${{ matrix.platform }}
+          platform-short: ${{ matrix.platform-short }}
+          runtime: ${{ matrix.runtime }}
+          build-version: ${{ inputs.release-tag }}
+
+  create-release:
     name: Create GitHub release
     runs-on: ubuntu-latest
     needs: build-package
     permissions:
       contents: write
     steps:
-      - name: Download Windows x64 package
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: windows-package
-          path: windows-package
-      - name: Download macOS x64 package
-        uses: actions/download-artifact@v4
-        with:
-          name: mac-package
-          path: mac-package
-      - name: Download Linux x64 package
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-package
-          path: linux-package
+          path: .
       - name: Package output files
         run: |
-          zip -r dmt-${{ inputs.release-tag }}-win-x64.zip windows-package/*
-          zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip mac-package/*
-          zip -r dmt-${{ inputs.release-tag }}-linux-x64.zip linux-package/*
-      - name: Create GitHub release
+            zip -r dmt-${{ inputs.release-tag }}-win-x64.zip win-x64-package/*
+            zip -r dmt-${{ inputs.release-tag }}-win-arm64.zip win-arm64-package/*
+            
+            # rename from osx to mac to retain previous naming convention
+            mv osx-x64-package mac-x64-package
+            zip -r dmt-${{ inputs.release-tag }}-mac-x64.zip mac-x64-package/*
+            
+            # rename from osx to mac to retain previous naming convention
+            mv osx-arm64-package mac-arm64-package
+            zip -r dmt-${{ inputs.release-tag }}-mac-arm64.zip mac-arm64-package/*
+
+            # create linux packages using tar as supposed to zip. tar is more common for linux packages
+            tar -czvf dmt-${{ inputs.release-tag }}-linux-x64.tar.gz linux-x64-package/*
+            tar -czvf dmt-${{ inputs.release-tag }}-linux-arm64.tar.gz linux-arm64-package/*
+      - name: Create GitHub release ${{ inputs.release-tag }}
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.release-tag }}
           files: |
             dmt-${{ inputs.release-tag }}-win-x64.zip
+            dmt-${{ inputs.release-tag }}-win-arm64.zip
             dmt-${{ inputs.release-tag }}-mac-x64.zip
-            dmt-${{ inputs.release-tag }}-linux-x64.zip
-  build-package:
-    name: Build self-contained executables
-    runs-on: ubuntu-latest
-    container: mcr.microsoft.com/dotnet/sdk:8.0
-    steps:
-      - name: Check .NET version
-        run: dotnet --version
-      - name: Checkout source code
-        uses: actions/checkout@v3
-      - name: Execute Action build-with-plugins for Windows
-        uses: ./.github/actions/build-with-plugins
-        id: build-with-plugins-win
-        with:
-          platform: windows
-          platform-short: win
-          runtime: win-x64
-          build-version: ${{ inputs.release-tag }}
-      - name: Execute Action build-with-plugins for MacOS
-        uses: ./.github/actions/build-with-plugins
-        id: build-with-plugins-mac
-        with:
-          platform: mac
-          platform-short: mac
-          runtime: osx-x64
-          build-version: ${{ inputs.release-tag }}
-      - name: Execute Action build-with-plugins for Linux
-        uses: ./.github/actions/build-with-plugins
-        id: build-with-plugins-linux
-        with:
-          platform: linux
-          platform-short: linux
-          runtime: linux-x64
-          build-version: ${{ inputs.release-tag }}
+            dmt-${{ inputs.release-tag }}-mac-arm64.zip
+            dmt-${{ inputs.release-tag }}-linux-x64.tar.gz
+            dmt-${{ inputs.release-tag }}-linux-arm64.tar.gz

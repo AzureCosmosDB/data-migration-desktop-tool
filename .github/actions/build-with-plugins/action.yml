@@ -22,7 +22,7 @@ runs:
         dotnet publish \
         Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }} \
+        --output ${{ inputs.runtime }} \
         --self-contained true \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=true \
@@ -37,7 +37,7 @@ runs:
         dotnet publish \
         Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension/Cosmos.DataTransfer.CosmosExtension.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }}/Extensions \
+        --output ${{ inputs.runtime }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=false \
@@ -52,7 +52,7 @@ runs:
         dotnet publish \
         Extensions/Json/Cosmos.DataTransfer.JsonExtension/Cosmos.DataTransfer.JsonExtension.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }}/Extensions \
+        --output ${{ inputs.runtime }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=false \
@@ -67,7 +67,7 @@ runs:
         dotnet publish \
         Extensions/AzureTableAPI/Cosmos.DataTransfer.AzureTableAPIExtension/Cosmos.DataTransfer.AzureTableAPIExtension.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }}/Extensions \
+        --output ${{ inputs.runtime }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=false \
@@ -82,7 +82,7 @@ runs:
         dotnet publish \
         Extensions/Mongo/Cosmos.DataTransfer.MongoExtension/Cosmos.DataTransfer.MongoExtension.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }}/Extensions \
+        --output ${{ inputs.runtime }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=false \
@@ -97,7 +97,7 @@ runs:
         dotnet publish \
         Extensions/SqlServer/Cosmos.DataTransfer.SqlServerExtension/Cosmos.DataTransfer.SqlServerExtension.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }}/Extensions \
+        --output ${{ inputs.runtime }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=false \
@@ -112,7 +112,7 @@ runs:
         dotnet publish \
         Extensions/Parquet/Cosmos.DataTransfer.ParquetExtension/Cosmos.DataTransfer.ParquetExtension.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }}/Extensions \
+        --output ${{ inputs.runtime }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=false \
@@ -127,7 +127,7 @@ runs:
         dotnet publish \
         Extensions/CognitiveSearch/Cosmos.DataTransfer.CognitiveSearchExtension/Cosmos.DataTransfer.CognitiveSearchExtension.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }}/Extensions \
+        --output ${{ inputs.runtime }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=false \
@@ -142,7 +142,7 @@ runs:
         dotnet publish \
         Extensions/Csv/Cosmos.DataTransfer.CsvExtension/Cosmos.DataTransfer.CsvExtension.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }}/Extensions \
+        --output ${{ inputs.runtime }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=false \
@@ -157,7 +157,7 @@ runs:
         dotnet publish \
         Extensions/PostgreSQL/Cosmos.DataTransfer.PostgresqlExtension.csproj \
         --configuration Release \
-        --output ${{ inputs.platform-short }}/Extensions \
+        --output ${{ inputs.runtime }}/Extensions \
         --self-contained false \
         --runtime ${{ inputs.runtime }} \
         -p:PublishSingleFile=false \
@@ -169,5 +169,5 @@ runs:
     - name: Upload package
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.platform }}-package
-        path: ${{ inputs.platform-short }}/
+        name: ${{ inputs.runtime }}-package
+        path: ${{ inputs.runtime }}
