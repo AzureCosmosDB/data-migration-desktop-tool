@@ -46,9 +46,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     // Check if the database exists
                     try
                     {
-                        database = await client.GetDatabase(settings.Database);
+                        database = client.GetDatabase(settings.Database);
                         var throughputResponse = await database.ReadThroughputAsync(cancellationToken);
-                        var currentThroughput = throughputResponse.Resource;
+                        var currentThroughput = throughputResponse.Value;
 
                         // Check if the current throughput matches the desired configuration
                         if (settings.UseAutoscaleForDatabase && currentThroughput != settings.CreatedContainerMaxThroughput)
@@ -56,26 +56,27 @@ namespace Cosmos.DataTransfer.CosmosExtension
                             // Update to autoscaling throughput
                             await database.ReplaceThroughputAsync(
                                 ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000),
-                                cancellationToken);
+                                cancellationToken: cancellationToken);
                         }
                         else if (!settings.UseAutoscaleForDatabase && currentThroughput != settings.CreatedContainerMaxThroughput)
                         {
                             // Update to manual throughput
                             await database.ReplaceThroughputAsync(
                                 ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400),
-                                cancellationToken);
+                                requestOptions: null,
+                                cancellationToken: cancellationToken);
                         }
                     }
                     catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
                     {
                         // Database does not exist, create it with the desired throughput
-                        var throughputProperties = settings.UseAutoscaleForDatabase
+                        var newThroughputProperties = settings.UseAutoscaleForDatabase
                             ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
                             : ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400);
 
                         database = await client.CreateDatabaseIfNotExistsAsync(
                             settings.Database,
-                            throughputProperties,
+                            newThroughputProperties,
                             cancellationToken: cancellationToken);
                     }
                 }

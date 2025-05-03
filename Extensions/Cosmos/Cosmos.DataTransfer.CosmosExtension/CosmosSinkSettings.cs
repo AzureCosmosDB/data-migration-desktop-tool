@@ -13,10 +13,13 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public int? CreatedContainerMaxThroughput { get; set; }
 
         /// <summary>
-        /// If true, the database will be created with autoscale enabled otherise it'll be manual.
+        /// If true, the database will be created with autoscale enabled otherwise it'll be manual.
         /// </summary>
         public bool UseAutoscaleForDatabase { get; set; } = false;
 
+        /// <summary>
+        /// If true, the container will be created with autoscale enabled otherwise it'll be manual.
+        /// </summary>
         public bool UseAutoscaleForCreatedContainer { get; set; } = true;
 
         /// <summary>
@@ -25,7 +28,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
         /// </summary>
         public bool IsServerlessAccount { get; set; } = false;
 
+        /// <summary>
+        /// If true, the container will be created with shared throughput enabled.
+        /// </summary>
         public bool UseSharedThroughput { get; set; } = false;
+
         public bool PreserveMixedCaseIds { get; set; } = false;
         public DataWriteMode WriteMode { get; set; } = DataWriteMode.Insert;
         public bool IgnoreNullValues { get; set; } = false;
@@ -50,6 +57,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 {
                     yield return new ValidationResult("PartitionKeyPath must be specified when RecreateContainer is true", new[] { nameof(PartitionKeyPath), nameof(PartitionKeyPaths) });
                 }
+            }
+
+            if (IsServerlessAccount && (CreatedContainerMaxThroughput.HasValue || UseSharedThroughput))
+            {
+                yield return new ValidationResult("Serverless accounts cannot have throughput set", new[] { nameof(CreatedContainerMaxThroughput), nameof(UseSharedThroughput) });
             }
 
             if (PartitionKeyPaths?.Any(p => !string.IsNullOrEmpty(p)) == true)
