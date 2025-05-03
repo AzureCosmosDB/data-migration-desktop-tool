@@ -11,8 +11,20 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public int MaxRetryCount { get; set; } = 5;
         public int InitialRetryDurationMs { get; set; } = 200;
         public int? CreatedContainerMaxThroughput { get; set; }
+
+        /// <summary>
+        /// If true, the database will be created with autoscale enabled otherise it'll be manual.
+        /// </summary>
+        public bool UseAutoscaleForDatabase { get; set; } = false;
+
         public bool UseAutoscaleForCreatedContainer { get; set; } = true;
+
+        /// <summary>
+        /// If true, the database will be created with serverless mode enabled.
+        /// Autoscaling and throughput cannot be set when serverless mode is enabled.
+        /// </summary>
         public bool IsServerlessAccount { get; set; } = false;
+
         public bool UseSharedThroughput { get; set; } = false;
         public bool PreserveMixedCaseIds { get; set; } = false;
         public DataWriteMode WriteMode { get; set; } = DataWriteMode.Insert;
