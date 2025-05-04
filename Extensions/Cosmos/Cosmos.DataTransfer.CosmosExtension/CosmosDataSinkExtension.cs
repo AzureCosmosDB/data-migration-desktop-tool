@@ -51,18 +51,18 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         var currentThroughput = throughputResponse.Value;
 
                         // Check if the current throughput matches the desired configuration
-                        if (settings.UseAutoscaleForDatabase && currentThroughput != settings.CreatedContainerMaxThroughput)
+                        if (settings.UseAutoscaleForDatabase && currentThroughput.HasValue && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
                         {
                             // Update to autoscaling throughput
                             await database.ReplaceThroughputAsync(
-                                ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000),
+                                ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput.Value),
                                 cancellationToken: cancellationToken);
                         }
-                        else if (!settings.UseAutoscaleForDatabase && currentThroughput != settings.CreatedContainerMaxThroughput)
+                        else if (!settings.UseAutoscaleForDatabase && currentThroughput.HasValue && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
                         {
                             // Update to manual throughput
                             await database.ReplaceThroughputAsync(
-                                ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400),
+                                ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput.Value),
                                 requestOptions: null,
                                 cancellationToken: cancellationToken);
                         }
