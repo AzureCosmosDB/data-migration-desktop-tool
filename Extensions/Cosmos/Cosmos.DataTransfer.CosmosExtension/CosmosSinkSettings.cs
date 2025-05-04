@@ -20,6 +20,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
         /// <summary>
         /// If true, the container will be created with autoscale enabled otherwise it'll be manual.
         /// </summary>
+        /// <remarks>
+        /// Conversion from Manual to Autoscale is not supported by the SDK. In order to convert an
+        /// existing container from manual to auto you will need to recreate the container or convert
+        /// the container from the Azure Portal.
+        /// </remarks>
         public bool UseAutoscaleForCreatedContainer { get; set; } = true;
 
         /// <summary>
