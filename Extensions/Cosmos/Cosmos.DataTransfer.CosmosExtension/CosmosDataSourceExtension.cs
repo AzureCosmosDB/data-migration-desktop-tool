@@ -24,7 +24,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             
             if(settings.InitClientEncryption)
             {
-                container = await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync();
+                container = await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync(cancellationToken);
             }
             else
             {
