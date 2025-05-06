@@ -19,6 +19,121 @@ namespace Cosmos.DataTransfer.CosmosExtension
     {
         public string DisplayName => "Cosmos-nosql";
 
+        /// <summary>
+        /// Creates or retrieves a Cosmos DB database and container based on the provided settings.
+        /// </summary>
+        /// <param name="client">The <see cref="CosmosClient"/> instance used to interact with Cosmos DB.</param>
+        /// <param name="settings">The <see cref="CosmosSinkSettings"/> containing configuration for the database and container.</param>
+        /// <param name="logger">The <see cref="ILogger"/> instance for logging information and warnings.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>
+        /// A <see cref="Container"/> instance representing the created or retrieved Cosmos DB container.
+        /// </returns>
+        /// <remarks>
+        /// This method performs the following actions:
+        /// <list type="bullet">
+        /// <item>Checks if the database exists and creates it if necessary, applying the specified throughput settings.</item>
+        /// <item>Validates and adjusts the database throughput settings to match the configuration in <paramref name="settings"/>.</item>
+        /// <item>Deletes and recreates the container if the <see cref="CosmosSinkSettings.RecreateContainer"/> flag is set.</item>
+        /// <item>Handles serverless accounts and shared throughput configurations appropriately.</item>
+        /// <item>Logs warnings if certain configurations, such as throughput settings, are not supported in specific scenarios (e.g., serverless accounts).</item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="CosmosException">
+        /// Thrown if there is an error interacting with Cosmos DB, such as insufficient permissions or invalid configurations.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if required settings, such as the database or container name, are missing.
+        /// </exception>
+        private static async Task<Container> CreateDatabaseAndContainerAsync(
+            CosmosClient client,
+            CosmosSinkSettings settings,
+            ILogger logger,
+            CancellationToken cancellationToken)
+        {
+            Database database;
+
+            if (settings.UseSharedThroughput)
+            {
+                try
+                {
+                    database = client.GetDatabase(settings.Database);
+                    var throughputResponse = await database.ReadThroughputAsync(cancellationToken);
+                    var currentThroughput = throughputResponse.Value;
+
+                    if (settings.UseAutoscaleForDatabase && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
+                    {
+                        await database.ReplaceThroughputAsync(
+                            ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput.Value),
+                            cancellationToken: cancellationToken);
+                    }
+                    else if (!settings.UseAutoscaleForDatabase && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
+                    {
+                        await database.ReplaceThroughputAsync(
+                            ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput.Value),
+                            requestOptions: null,
+                            cancellationToken: cancellationToken);
+                    }
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    var newThroughputProperties = settings.UseAutoscaleForDatabase
+                        ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
+                        : ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400);
+
+                    database = await client.CreateDatabaseIfNotExistsAsync(
+                        settings.Database,
+                        newThroughputProperties,
+                        cancellationToken: cancellationToken);
+                }
+            }
+            else
+            {
+                database = await client.CreateDatabaseIfNotExistsAsync(settings.Database, cancellationToken: cancellationToken);
+            }
+
+            if (settings.RecreateContainer)
+            {
+                try
+                {
+                    await database.GetContainer(settings.Container).DeleteContainerAsync(cancellationToken: cancellationToken);
+                }
+                catch { }
+            }
+
+            var containerProperties = new ContainerProperties
+            {
+                Id = settings.Container,
+                PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2,
+            };
+
+            if (settings.PartitionKeyPaths != null)
+            {
+                logger.LogInformation("Using partition key paths: {PartitionKeyPaths}", string.Join(", ", settings.PartitionKeyPaths));
+                containerProperties.PartitionKeyPaths = settings.PartitionKeyPaths;
+            }
+            else
+            {
+                containerProperties.PartitionKeyPath = settings.PartitionKeyPath;
+            }
+
+            ThroughputProperties? throughputProperties = settings.IsServerlessAccount || settings.UseSharedThroughput
+                ? null
+                : settings.UseAutoscaleForCreatedContainer
+                ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
+                : ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400);
+
+            try
+            {
+                return await database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, cancellationToken: cancellationToken);
+            }
+            catch (CosmosException ex) when (ex.ResponseBody.Contains("not supported for serverless accounts", StringComparison.InvariantCultureIgnoreCase))
+            {
+                logger.LogWarning("Cosmos Serverless Account does not support throughput options. Creating Container {ContainerName} without those settings.", settings.Container);
+                return await database.CreateContainerIfNotExistsAsync(containerProperties, cancellationToken: cancellationToken);
+            }
+        }
+
         public async Task WriteAsync(IAsyncEnumerable<IDataItem> dataItems, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
         {
             var settings = config.Get<CosmosSinkSettings>();
@@ -26,108 +141,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             var client = CosmosExtensionServices.CreateClient(settings, DisplayName, dataSource.DisplayName);
 
-            Container? container;
-            if (settings.UseRbacAuth)
-            {
-                if (settings.InitClientEncryption)
-                {
-                    container = await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync(cancellationToken);
-                }
-                else
-                {
-                    container = client.GetContainer(settings.Database, settings.Container);
-                }
-            }
-            else
-            {
-                Database database;
-                if (settings.UseSharedThroughput)
-                {
-                    // Check if the database exists
-                    try
-                    {
-                        database = client.GetDatabase(settings.Database);
-                        var throughputResponse = await database.ReadThroughputAsync(cancellationToken);
-                        var currentThroughput = throughputResponse.Value;
-
-                        // Check if the current throughput matches the desired configuration
-                        if (settings.UseAutoscaleForDatabase && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
-                        {
-                            // Update to autoscaling throughput
-                            await database.ReplaceThroughputAsync(
-                                ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput.Value),
-                                cancellationToken: cancellationToken);
-                        }
-                        else if (!settings.UseAutoscaleForDatabase && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
-                        {
-                            // Update to manual throughput
-                            await database.ReplaceThroughputAsync(
-                                ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput.Value),
-                                requestOptions: null,
-                                cancellationToken: cancellationToken);
-                        }
-                    }
-                    catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-                    {
-                        // Database does not exist, create it with the desired throughput
-                        var newThroughputProperties = settings.UseAutoscaleForDatabase
-                            ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
-                            : ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400);
-
-                        database = await client.CreateDatabaseIfNotExistsAsync(
-                            settings.Database,
-                            newThroughputProperties,
-                            cancellationToken: cancellationToken);
-                    }
-                }
-                else
-                {
-                    database = await client.CreateDatabaseIfNotExistsAsync(settings.Database, cancellationToken: cancellationToken);
-                }
-
-                if (settings.RecreateContainer)
-                {
-                    try
-                    {
-                        await database.GetContainer(settings.Container).DeleteContainerAsync(cancellationToken: cancellationToken);
-                    }
-                    catch { }
-                }
-
-                var containerProperties = new ContainerProperties
-                {
-                    Id = settings.Container,
-                    PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2,
-                };
-
-                if (settings.PartitionKeyPaths != null)
-                {
-                    logger.LogInformation("Using partition key paths: {PartitionKeyPaths}", string.Join(", ", settings.PartitionKeyPaths));
-                    containerProperties.PartitionKeyPaths = settings.PartitionKeyPaths;
-                }
-                else
-                {
-                    containerProperties.PartitionKeyPath = settings.PartitionKeyPath;
-                }
-
-                ThroughputProperties? throughputProperties = settings.IsServerlessAccount || settings.UseSharedThroughput
-                    ? null
-                    : settings.UseAutoscaleForCreatedContainer
-                    ? ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput ?? 4000)
-                    : ThroughputProperties.CreateManualThroughput(settings.CreatedContainerMaxThroughput ?? 400);
-
-                try
-                {
-                    container = await database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, cancellationToken: cancellationToken);
-                }
-                catch (CosmosException ex) when (ex.ResponseBody.Contains("not supported for serverless accounts", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    logger.LogWarning("Cosmos Serverless Account does not support throughput options. Creating Container {ContainerName} without those settings.", settings.Container);
-
-                    // retry without throughput settings which are incompatible with serverless
-                    container = await database.CreateContainerIfNotExistsAsync(containerProperties, cancellationToken: cancellationToken);
-                }
-            }
+            Container container = settings.UseRbacAuth
+                ? await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync(cancellationToken)
+                : await CreateDatabaseAndContainerAsync(client, settings, logger, cancellationToken);
 
             await CosmosExtensionServices.VerifyContainerAccess(container, settings.Container, logger, cancellationToken);
 
