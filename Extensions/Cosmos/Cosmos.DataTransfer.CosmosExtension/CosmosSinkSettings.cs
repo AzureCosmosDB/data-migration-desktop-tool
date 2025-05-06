@@ -66,7 +66,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             if (IsServerlessAccount && (CreatedContainerMaxThroughput.HasValue || UseSharedThroughput))
             {
-                yield return new ValidationResult("Serverless accounts cannot have throughput set", new[] { nameof(CreatedContainerMaxThroughput), nameof(UseSharedThroughput) });
+                yield return new ValidationResult("Serverless accounts cannot have shared throughput", new[] { nameof(CreatedContainerMaxThroughput), nameof(UseSharedThroughput) });
             }
 
             if (PartitionKeyPaths?.Any(p => !string.IsNullOrEmpty(p)) == true)

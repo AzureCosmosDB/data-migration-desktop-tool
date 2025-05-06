@@ -31,7 +31,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             {
                 if (settings.InitClientEncryption)
                 {
-                    container = await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync();
+                    container = await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync(cancellationToken);
                 }
                 else
                 {
@@ -51,14 +51,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         var currentThroughput = throughputResponse.Value;
 
                         // Check if the current throughput matches the desired configuration
-                        if (settings.UseAutoscaleForDatabase && currentThroughput.HasValue && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
+                        if (settings.UseAutoscaleForDatabase && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
                         {
                             // Update to autoscaling throughput
                             await database.ReplaceThroughputAsync(
                                 ThroughputProperties.CreateAutoscaleThroughput(settings.CreatedContainerMaxThroughput.Value),
                                 cancellationToken: cancellationToken);
                         }
-                        else if (!settings.UseAutoscaleForDatabase && currentThroughput.HasValue && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
+                        else if (!settings.UseAutoscaleForDatabase && settings.CreatedContainerMaxThroughput.HasValue && currentThroughput != settings.CreatedContainerMaxThroughput)
                         {
                             // Update to manual throughput
                             await database.ReplaceThroughputAsync(
