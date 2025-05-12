@@ -34,7 +34,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
             }
             else
             {
-                logger.LogInformation("Connecting to Storage account using {ConnectionString}'", nameof(AzureTableAPIDataSinkSettings.ConnectionString));
+                logger.LogInformation("Connecting to Storage account using {ConnectionString}", nameof(AzureTableAPIDataSinkSettings.ConnectionString));
 
                 serviceClient = new TableServiceClient(settings.ConnectionString);
             }
