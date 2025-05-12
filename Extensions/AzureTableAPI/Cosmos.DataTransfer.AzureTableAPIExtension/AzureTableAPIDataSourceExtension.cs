@@ -25,7 +25,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             if (settings.UseRbacAuth)
             {
-                logger.LogInformation("Connecting to Storage account {AccountEndpoint} using {UseRbacAuth} with {EnableInteractiveCredentials}'", settings.AccountEndpoint, nameof(AzureTableAPIDataSinkSettings.UseRbacAuth), nameof(AzureTableAPIDataSinkSettings.EnableInteractiveCredentials));
+                logger.LogInformation("Connecting to Storage account {AccountEndpoint} using {UseRbacAuth} with {EnableInteractiveCredentials}'", settings.AccountEndpoint, nameof(AzureTableAPIDataSourceSettings.UseRbacAuth), nameof(AzureTableAPIDataSourceSettings.EnableInteractiveCredentials));
 
                 var credential = new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
 #pragma warning disable CS8604 // Validate above ensures AccountEndpoint is not null
