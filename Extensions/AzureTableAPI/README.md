@@ -10,7 +10,7 @@ The AzureTableAPI has a couple required and optional settings for configuring th
 
 The following are the required settings that must be defined for using either the data Source or Sink:
 
-- `ConnectionString` - This defines the Table API Connection String used for connecting to and authenticating with the Table API service. For example, this will contain the name of the Azure Storage Account and the Account Key for connecting to the Table API on the service. This is required.
+- `ConnectionString` or `UseRbacAuth` - These define the authentication method used to connect to the Table API. Se further description and examples [here](#authentication-methods). One of these settings is required.
 - `Table` - This defines the name of the Table to connect to on the Table API service. Such as the name of the Azure Storage Table. This is required.
 
 There are also a couple optional settings that can be configured on the AzureTableAPI to help with mapping data between the Source and Sink:
@@ -28,7 +28,30 @@ The following setting is supported for the Source:
 
 - `QueryFilter` - This enables you to specify an OData filter to be applied to the data being retrieved by the AzureTableAPI Source. This is used in cases where only a subset of data from the source Table is needed in the migration. Example usage to query a subset of entities from the source table: `PartitionKey eq 'foo'`.
 
-## Example Source and Sink Settings Usage
+## Authentication Methods
+
+The AzureTableAPI extension supports two authentication methods for connecting to Azure Table API services:
+
+- **Connection String Authentication**: Use the `ConnectionString` property to specify the account connection string, which includes the account name and key.
+- **Azure RBAC (Role Based Access Control) Authentication**: Set `UseRbacAuth` to `true` to use Entra credentials for authentication. When using RBAC, you must also specify the `AccountEndpoint` property (the Table service endpoint URL). Optionally, set `EnableInteractiveCredentials` to `true` to prompt for login if default credentials are not available (for example, when running locally).
+
+> **Note**: To use RBAC authentication, your Azure account must have the appropriate permissions (such as Storage Table Data Contributor) on the storage account. For more information, see [Authorize access to tables using Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/storage/tables/authorize-access-azure-active-directory).
+
+### Example RBAC Settings
+
+```json
+{
+  "UseRbacAuth": true,
+  "AccountEndpoint": "https://<storage-account-name>.table.core.windows.net",
+  "Table": "SourceTable1",
+  "PartitionKeyFieldName": "State",
+  "RowKeyFieldName": "id",
+  "EnableInteractiveCredentials": true,
+  "QueryFilter": "PartitionKey eq 'WI'"
+}
+```
+
+### Example ConnectionString Source and Sink Settings Usage
 
 The following are a couple example `settings.json` files for configuring the AzureTableAPI Source and Sink extensions.
 

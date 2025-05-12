@@ -9,9 +9,14 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension.Settings
         /// <summary>
         /// The Connection String.
         /// </summary>
-        [Required]
         [SensitiveValue]
         public string? ConnectionString { get; set; }
+
+        public string? AccountEndpoint { get; set; } = null!;
+
+        public bool UseRbacAuth { get; set; }
+
+        public bool EnableInteractiveCredentials { get; set; }
 
         /// <summary>
         /// The Table name.
@@ -28,5 +33,18 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension.Settings
         /// The field name to translate the PartitionKey from Table Entities to. (Optional)
         /// </summary>
         public string? PartitionKeyFieldName { get; set; }
+
+        public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))
+            {
+                yield return new ValidationResult($"{nameof(ConnectionString)} must be specified unless {nameof(UseRbacAuth)} is true", new[] { nameof(ConnectionString) });
+            }
+
+            if (UseRbacAuth && string.IsNullOrEmpty(AccountEndpoint))
+            {
+                yield return new ValidationResult($"{nameof(AccountEndpoint)} must be specified unless {nameof(UseRbacAuth)} is false", new[] { nameof(AccountEndpoint) });
+            }
+        }
     }
 }
