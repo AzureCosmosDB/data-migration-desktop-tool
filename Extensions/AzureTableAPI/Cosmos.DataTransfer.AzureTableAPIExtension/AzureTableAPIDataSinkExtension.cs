@@ -43,19 +43,57 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             await tableClient.CreateIfNotExistsAsync();
 
-            var createTasks = new List<Task>();
-            await foreach(var item in dataItems.WithCancellation(cancellationToken))
+            var maxConcurrency = settings.MaxConcurrentEntityWrites ?? 10;
+
+            var semaphore = new SemaphoreSlim(maxConcurrency);
+            var tasks = new List<Task>();
+
+            await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
-               var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-               createTasks.Add(tableClient.AddEntityAsync(entity));
+                await semaphore.WaitAsync(cancellationToken);
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
+                        await AddEntityWithRetryAsync(tableClient, entity, cancellationToken);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }, cancellationToken));
             }
 
-            await Task.WhenAll(createTasks);
+            await Task.WhenAll(tasks);
+
+            logger.LogInformation("Finished writing data to Azure Table Storage.");
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()
         {
             yield return new AzureTableAPIDataSinkSettings();
+        }
+
+        /// <summary>
+        /// Adds an entity to the Azure Table Storage with retry logic for transient errors.
+        /// This method uses the Polly library to implement a retry policy with exponential backoff.
+        /// </summary>
+        /// <param name="tableClient"></param>
+        /// <param name="entity"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        private async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken)
+        {
+            var retryPolicy = Policy
+                .Handle<Exception>() // Handle transient exceptions
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))); // Exponential backoff
+
+            await retryPolicy.ExecuteAsync(async () =>
+            {
+                await tableClient.AddEntityAsync(entity, cancellationToken);
+            });
         }
     }
 }
