@@ -14,7 +14,7 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
     <PackageVersion Include="coverlet.msbuild" Version="2.8.0" />
     <PackageVersion Include="CsvHelper" Version="33.0.1" />
-    <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.46.1" />
+    <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.49.0" />
     <PackageVersion Include="Microsoft.Azure.Cosmos.Encryption" Version="2.0.4" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.0.1" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.1" />

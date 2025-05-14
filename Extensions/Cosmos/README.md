@@ -57,7 +57,42 @@ Or with RBAC:
 }
 ```
 
-Sink requires an additional `PartitionKeyPath` parameter which is used when creating the container if it does not exist. To use hierarchical partition keys, instead use the `PartitionKeyPaths` setting to supply an array of up to 3 paths. It also supports an optional `RecreateContainer` parameter (`false` by default) to delete and then recreate the container to ensure only newly imported data is present. The optional `BatchSize` parameter (100 by default) sets the number of items to accumulate before inserting. `ConnectionMode` can be set to either `Gateway` (default) or `Direct` to control how the client connects to the CosmosDB service. For situations where a container is created as part of the transfer operation `CreatedContainerMaxThroughput` (in RUs) and `UseAutoscaleForCreatedContainer` provide the initial throughput settings which will be in effect when executing the transfer. To instead use shared throughput that has been provisioned at the database level, set the `UseSharedThroughput` parameter to `true`. The optional `WriteMode` parameter specifies the type of data write to use: `InsertStream`, `Insert`, `UpsertStream`, or `Upsert`. The `IsServerlessAccount` parameter specifies whether the target account uses Serverless instead of Provisioned throughput, which affects the way containers are created. Additional parameters allow changing the behavior of the Cosmos client appropriate to your environment. The `PreserveMixedCaseIds` parameter (`false` by default) ignores differently cased `id` fields and writes them through without modification, while generating a separate lowercased `id` field as required by Cosmos. The `IgnoreNullValues` parameter allows for excluding fields with null values when writing to Cosmos DB.
+### Sink Settings
+
+#### **Partition Key Settings**
+- **`PartitionKeyPath`**: Specifies the partition key path when creating the container (e.g., `/id`) if it does not exist.
+- **`PartitionKeyPaths`**: Use this to supply an array of up to 3 paths for hierarchical partition keys.
+
+#### **Database Management**
+- **`UseAutoscaleForDatabase`**: Specifies if the database will be created with autoscale enabled or manual. Defaults to `false`. manual.
+
+#### **Container Management**
+- **`RecreateContainer`**: Optional, defaults to `false`. Deletes and recreates the container to ensure only newly imported data is present.
+- **`CreatedContainerMaxThroughput`**: Specifies the initial throughput (in RUs) for a newly created container.
+- **`UseAutoscaleForCreatedContainer`**: Enables autoscale for the newly created container.
+- **`UseSharedThroughput`**: Set to `true` to use shared throughput provisioned at the database level.
+
+#### **Batching and Write Behavior**
+- **`BatchSize`**: Optional, defaults to `100`. Sets the number of items to accumulate before inserting.
+- **`WriteMode`**: Specifies the type of data write to use. Options:
+  - `InsertStream`
+  - `Insert`
+  - `UpsertStream`
+  - `Upsert`
+
+#### **Connection Settings**
+- **`ConnectionMode`**: Controls how the client connects to the Cosmos DB service. Options:
+  - `Gateway` (default)
+  - `Direct`
+
+#### **Serverless Account**
+- **`IsServerlessAccount`**: Specifies whether the target account uses Serverless instead of Provisioned throughput, which affects the way containers are created.
+  - **Note**: Serverless accounts cannot have shared throughput. See [Azure Cosmos DB serverless account type](https://learn.microsoft.com/azure/cosmos-db/serverless#use-serverless-resources).
+
+#### **Client Behavior**
+- **`PreserveMixedCaseIds`**: Optional, defaults to `false`. Writes `id` fields with their original casing while generating a separate lowercased `id` field as required by Cosmos.
+- **`IgnoreNullValues`**: Optional. Excludes fields with null values when writing to Cosmos DB.
+- **`InitClientEncryption`**: Optional, defaults to `false`. Uses client-side encryption with the container. Can only be used with `UseRbacAuth` set to `true`
 
 ### Sink
 
@@ -73,6 +108,7 @@ Sink requires an additional `PartitionKeyPath` parameter which is used when crea
     "MaxRetryCount": 5,
     "InitialRetryDurationMs": 200,
     "CreatedContainerMaxThroughput": 1000,
+    "UseAutoscaleForDatabase": false,
     "UseAutoscaleForCreatedContainer": true,
     "WriteMode": "InsertStream",
     "PreserveMixedCaseIds": false,
