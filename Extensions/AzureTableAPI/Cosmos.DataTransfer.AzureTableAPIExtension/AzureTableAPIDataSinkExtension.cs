@@ -6,6 +6,7 @@ using Cosmos.DataTransfer.AzureTableAPIExtension.Settings;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Polly;
 
 namespace Cosmos.DataTransfer.AzureTableAPIExtension
 {
@@ -84,7 +85,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
         /// <param name="entity"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        private async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken)
+        private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken)
         {
             var retryPolicy = Policy
                 .Handle<Exception>() // Handle transient exceptions
