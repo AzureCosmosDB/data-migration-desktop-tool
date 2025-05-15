@@ -28,6 +28,14 @@ The following setting is supported for the Source:
 
 - `QueryFilter` - This enables you to specify an OData filter to be applied to the data being retrieved by the AzureTableAPI Source. This is used in cases where only a subset of data from the source Table is needed in the migration. Example usage to query a subset of entities from the source table: `PartitionKey eq 'foo'`.
 
+### Additional Sink Settings
+
+The AzureTableAPI Source extension has an additional setting that can be configured for writing Table entities.
+
+The following setting is supported for the Sink:
+
+- `MaxConcurrentEntityWrites` - The Maximum number of concurrent entity writes to the Azure Table API. This setting is used to control the number of concurrent writes to the Azure Table API.
+
 ## Authentication Methods
 
 The AzureTableAPI extension supports two authentication methods for connecting to Azure Table API services:

@@ -9,8 +9,9 @@
 
 	<ItemGroup>
 		<PackageReference Include="Azure.Data.Tables" />
-    <PackageReference Include="Azure.Identity" />
+		<PackageReference Include="Azure.Identity" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+		<PackageReference Include="Polly" />
 		<PackageReference Include="System.ComponentModel.Composition" />
 		<PackageReference Include="System.Text.Json" />
 	</ItemGroup>
@@ -19,16 +20,8 @@
 		<ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
 	</ItemGroup>
 
-	<Target Name="PublishToExtensionsFolder"
-					AfterTargets="Build"
-					Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
-		<MSBuild
-			Projects="$(MSBuildProjectFile)"
-			Targets="Publish"
-			Properties="Configuration=$(Configuration);
-									PublishProfile=PublishToExtensionsFolder;
-									BuildProjectReferences=false;
-									PublishingToExtensionsFolder=true" />
+	<Target Name="PublishToExtensionsFolder" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="Configuration=$(Configuration);&#xD;&#xA;									PublishProfile=PublishToExtensionsFolder;&#xD;&#xA;									BuildProjectReferences=false;&#xD;&#xA;									PublishingToExtensionsFolder=true" />
 	</Target>
 
 </Project>
