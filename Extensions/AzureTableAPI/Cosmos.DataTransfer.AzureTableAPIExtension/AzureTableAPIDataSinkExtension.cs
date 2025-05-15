@@ -85,7 +85,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
         /// <param name="entity"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        private async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken)
+        private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken)
         {
             var retryPolicy = Policy
                 .Handle<Exception>() // Handle transient exceptions
