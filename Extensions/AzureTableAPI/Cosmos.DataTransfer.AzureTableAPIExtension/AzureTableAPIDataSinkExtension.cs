@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.Composition;
+using Azure;
 using Azure.Data.Tables;
 using Azure.Identity;
 using Cosmos.DataTransfer.AzureTableAPIExtension.Data;
@@ -13,6 +14,8 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
     [Export(typeof(IDataSinkExtension))]
     public class AzureTableAPIDataSinkExtension : IDataSinkExtensionWithSettings
     {
+        private static readonly int[] TransientStatusCodes = { 408, 429, 500, 502, 503, 504 };
+
         public string DisplayName => "AzureTableAPI";
 
         public async Task WriteAsync(IAsyncEnumerable<IDataItem> dataItems, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
@@ -60,6 +63,10 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
                         var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
                         await AddEntityWithRetryAsync(tableClient, entity, cancellationToken);
                     }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Error adding entity to table.");
+                    }
                     finally
                     {
                         semaphore.Release();
@@ -88,8 +95,8 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
         private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken)
         {
             var retryPolicy = Policy
-                .Handle<Exception>() // Handle transient exceptions
-                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))); // Exponential backoff
+                .Handle<RequestFailedException>(ex => TransientStatusCodes.Contains(ex.Status))
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
 
             await retryPolicy.ExecuteAsync(async () =>
             {
