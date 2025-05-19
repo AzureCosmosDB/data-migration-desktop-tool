@@ -21,7 +21,14 @@
 	</ItemGroup>
 
 	<Target Name="PublishToExtensionsFolder" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">
-		<MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="Configuration=$(Configuration);&#xD;&#xA;									PublishProfile=PublishToExtensionsFolder;&#xD;&#xA;									BuildProjectReferences=false;&#xD;&#xA;									PublishingToExtensionsFolder=true" />
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish">
+			<Properties>
+				<Configuration>$(Configuration)</Configuration>
+				<PublishProfile>PublishToExtensionsFolder</PublishProfile>
+				<BuildProjectReferences>false</BuildProjectReferences>
+				<PublishingToExtensionsFolder>true</PublishingToExtensionsFolder>
+			</Properties>
+		</MSBuild>
 	</Target>
 
 </Project>
