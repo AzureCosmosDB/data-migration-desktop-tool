@@ -45,39 +45,28 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             var tableClient = serviceClient.GetTableClient(settings.Table);
 
-            await tableClient.CreateIfNotExistsAsync();
+            await tableClient.CreateIfNotExistsAsync().ConfigureAwait(false);
 
             var maxConcurrency = settings.MaxConcurrentEntityWrites ?? 10;
 
             logger.LogInformation("Writing data to Azure Table Storage with a maximum of {MaxConcurrency} concurrent writes.", maxConcurrency);
 
-            var semaphore = new SemaphoreSlim(maxConcurrency);
-            var tasks = new List<Task>();
+            logger.LogInformation("Using PartitionKeyFieldName: `{ParitionKeyFieldName}` and RowKeyFieldName: `{RowKeyFieldName}`", settings.PartitionKeyFieldName, settings.RowKeyFieldName);
 
-            await foreach (var item in dataItems.WithCancellation(cancellationToken))
+            await Parallel.ForEachAsync<IDataItem>(dataItems,
+            new ParallelOptions { MaxDegreeOfParallelism = maxConcurrency, CancellationToken = cancellationToken },
+            async (item, ct) =>
             {
-                await semaphore.WaitAsync(cancellationToken);
-
-                tasks.Add(Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-                        await AddEntityWithRetryAsync(tableClient, entity, cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Error adding entity to table.");
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                }, cancellationToken));
-            }
-
-            await Task.WhenAll(tasks);
-
+                    var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
+                    await AddEntityWithRetryAsync(tableClient, entity, ct);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error adding entity to table.");
+                }
+            });
             logger.LogInformation("Finished writing data to Azure Table Storage.");
         }
 
