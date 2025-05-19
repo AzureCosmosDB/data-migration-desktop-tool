@@ -49,6 +49,8 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             var maxConcurrency = settings.MaxConcurrentEntityWrites ?? 10;
 
+            logger.LogInformation("Writing data to Azure Table Storage with a maximum of {MaxConcurrency} concurrent writes.", maxConcurrency);
+
             var semaphore = new SemaphoreSlim(maxConcurrency);
             var tasks = new List<Task>();
 
