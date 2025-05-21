@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using MongoDB.Driver;
+using System.Linq;
 
 namespace Cosmos.DataTransfer.MongoLegacyExtension;
 
@@ -29,6 +30,6 @@ public class MongoRepository<TDocument> : IRepository<TDocument>
 
     public IQueryable<TDocument> AsQueryable()
     {
-        return collection.AsQueryable();
+        return collection.FindAll().AsQueryable();
     }
 }
