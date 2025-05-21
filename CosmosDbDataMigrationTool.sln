@@ -41,6 +41,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mongo", "Mongo", "{F18E789A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.MongoVectorExtension", "Extensions\Mongo\Cosmos.DataTransfer.MongoVectorExtension\Cosmos.DataTransfer.MongoVectorExtension.csproj", "{F6EAC33B-9F7D-433B-9328-622FB8938C24}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.MongoLegacyExtension", "Extensions\Mongo\Cosmos.DataTransfer.MongoLegacyExtension\Cosmos.DataTransfer.MongoLegacyExtension.csproj", "{EEC6B3F5-68DE-4BA5-B0B8-A91D2FC9E3DE}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.JsonExtension.UnitTests", "Extensions\Json\Cosmos.DataTransfer.JsonExtension.UnitTests\Cosmos.DataTransfer.JsonExtension.UnitTests.csproj", "{ED1E375E-A5A3-47EA-A7D5-07344C7E152F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cosmos.DataTransfer.CosmosExtension.UnitTests", "Extensions\Cosmos\Cosmos.DataTransfer.CosmosExtension.UnitTests\Cosmos.DataTransfer.CosmosExtension.UnitTests.csproj", "{C7A3910D-A7F6-4767-9A7A-19CFA4CCB7A8}"
@@ -211,6 +213,10 @@ Global
 		{8C755891-38F4-4155-9A60-51BC6841FA36}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C755891-38F4-4155-9A60-51BC6841FA36}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C755891-38F4-4155-9A60-51BC6841FA36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EEC6B3F5-68DE-4BA5-B0B8-A91D2FC9E3DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEC6B3F5-68DE-4BA5-B0B8-A91D2FC9E3DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEC6B3F5-68DE-4BA5-B0B8-A91D2FC9E3DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEC6B3F5-68DE-4BA5-B0B8-A91D2FC9E3DE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -246,6 +252,7 @@ Global
 		{1B927C5F-50FC-42A6-BAF6-B00E6D760543} = {A8A1CEAB-2D82-460C-9B86-74ABD17CD201}
 		{31BC84E1-55E5-45AA-BFAC-90732F20588B} = {F18E789A-D32D-48D3-B75F-1196D7215F74}
 		{8C755891-38F4-4155-9A60-51BC6841FA36} = {AC56D40C-6A65-42E5-8881-D126FD080774}
+		{EEC6B3F5-68DE-4BA5-B0B8-A91D2FC9E3DE} = {F18E789A-D32D-48D3-B75F-1196D7215F74}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {662B3F27-70D8-45E6-A1C0-1438A9C8A542}

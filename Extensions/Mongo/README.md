@@ -4,6 +4,8 @@ The MongoDB data transfer extension provides source and sink capabilities for re
 
 > **Note**: When specifying the MongoDB extension as the Source or Sink property in configuration, utilize the name **MongoDB**.
 > 
+> **Note for MongoDB Wire Version 2 Users**: If you're connecting to a MongoDB instance that uses wire version 2 (such as older CosmosDB MongoDB API instances that use the `documents.azure.com` endpoint), use the **MongoDB-Legacy (Wire v2)** extension instead. See the [MongoDB Legacy Extension](#mongodb-legacy-extension-wire-version-2) section below for details.
+> 
 ## Settings
 
 Source and sink settings require both `ConnectionString` and `DatabaseName` parameters. The source takes an optional `Collection` parameter (if this parameter is not set, it will read from all collections). The sink requires the `Collection` parameter and will insert all records received from a source into that collection, as well as an optional `BatchSize` parameter (default value is 100) to batch the writes into the collection.
@@ -25,6 +27,37 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
     "ConnectionString": "",
     "DatabaseName": "",
     "Collection": ""
+}
+```
+
+# MongoDB Legacy Extension (Wire Version 2)
+
+The MongoDB Legacy extension provides source and sink capabilities for reading from and writing to MongoDB instances that use wire version 2, which is not supported by the standard MongoDB extension. This extension is specifically designed for older MongoDB instances, including Azure Cosmos DB for MongoDB API instances using the `documents.azure.com` endpoint.
+
+> **Note**: When specifying the MongoDB Legacy extension as the Source or Sink property in configuration, utilize the name **MongoDB-Legacy (Wire v2)**.
+
+## Settings
+
+Source and sink settings require both `ConnectionString` and `DatabaseName` parameters. The source takes an optional `Collection` parameter (if this parameter is not set, it will read from all collections). The sink requires the `Collection` parameter and will insert all records received from a source into that collection, as well as an optional `BatchSize` parameter (default value is 1000) to batch the writes into the collection.
+
+### Source
+
+```json
+{
+    "ConnectionString": "",
+    "DatabaseName": "",
+    "Collection": ""
+}
+```
+
+### Sink
+
+```json
+{
+    "ConnectionString": "",
+    "DatabaseName": "",
+    "Collection": "",
+    "BatchSize": 1000
 }
 ```
 
