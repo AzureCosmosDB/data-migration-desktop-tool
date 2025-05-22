@@ -67,6 +67,30 @@
 }
 ```
 
+## MongoDB Legacy (Wire v2) to Cosmos-NoSQL
+
+```json
+{
+    "Source": "MongoDB-Legacy (Wire v2)",
+    "Sink": "cosmos-nosql",
+    "SourceSettings": {
+        "ConnectionString": "******mycluster.documents.azure.com:10255/?ssl=true",
+        "DatabaseName": "sales",
+        "Collection": "person"
+    },
+    "SinkSettings": {
+        "ConnectionString": "AccountEndpoint=https://...",
+        "Database": "users",
+        "Container": "migrated",
+        "PartitionKeyPath": "/id",
+        "ConnectionMode": "Direct",
+        "WriteMode": "UpsertStream",
+        "CreatedContainerMaxThroughput": 8000,
+        "UseAutoscaleForCreatedContainer": false
+    }
+}
+```
+
 ## SqlServer to AzureTableAPI
 
 ```json

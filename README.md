@@ -28,6 +28,10 @@ The Azure Cosmos DB Desktop Data Migration Tool is an open-source project contai
 
 To use the tool, download the latest archive file for your platform (win-x64, win-arm64, mac-x64, mac-arm64, linux-x64, linux-arm64) from [Releases](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases) and extract all files to your desired install location. To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below or [review examples](ExampleConfigs.md)), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms. 
 
+### Special Extensions
+
+- **MongoDB with Wire Version 2**: For older MongoDB instances (like Azure Cosmos DB for MongoDB API using `documents.azure.com` endpoint), use the **MongoDB-Legacy (Wire v2)** extension. See [MongoDB Legacy Extension documentation](Extensions/Mongo/README.md#mongodb-legacy-extension-wire-version-2) for details.
+
 If using RBAC (Role Based Access Control) [migrate-passwordless](https://learn.microsoft.com/azure/cosmos-db/nosql/migrate-passwordless?tabs=sign-in-azure-cli%2Cdotnet%2Cazure-portal-create%2Cazure-portal-associate%2Capp-service-identity) ensure you are authenticated with Azure see [Troubleshoot Azure Identity authentication issues](https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/identity/Azure.Identity/TROUBLESHOOTING.md) One common way to authenticate is using the Azure CLI [How to install the Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and `az login`
 ## Extension documentation
 
