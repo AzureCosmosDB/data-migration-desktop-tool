@@ -32,7 +32,16 @@ To use the tool, download the latest archive file for your platform (win-x64, wi
 
 You can also run the Data Migration Tool as a Docker container, which is useful for CI/CD pipelines or environments where installing the tool directly isn't preferred.
 
-### Building the Docker Image
+### Using Pre-built Docker Image
+
+The easiest way to use the container is to pull the pre-built image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/azurecosmosdb/data-migration-desktop-tool:latest
+docker run -v $(pwd)/config:/config -v $(pwd)/data:/data ghcr.io/azurecosmosdb/data-migration-desktop-tool:latest run --settings /config/migrationsettings.json
+```
+
+### Building the Docker Image Locally
 
 To build the Docker image locally:
 
