@@ -1,0 +1,42 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+[Ll]og/
+
+# User-specific files
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.vs
+
+# Test results
+TestResults/
+coverage/
+
+# Docker files (for clean recursive builds)
+Dockerfile
+.dockerignore
+
+# NuGet packages
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+
+# Temp files
+.DS_Store
+Thumbs.db
+*.tmp
+*~

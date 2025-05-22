@@ -1,0 +1,6 @@
+# Ignore all files in this directory
+*
+# Except this file
+!.gitignore
+# And except the sample file
+!sample-data.json

@@ -26,7 +26,56 @@ The Azure Cosmos DB Desktop Data Migration Tool is an open-source project contai
 
 ## Quick Installation
 
-To use the tool, download the latest archive file for your platform (win-x64, win-arm64, mac-x64, mac-arm64, linux-x64, linux-arm64) from [Releases](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases) and extract all files to your desired install location. To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below or [review examples](ExampleConfigs.md)), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms. 
+To use the tool, download the latest archive file for your platform (win-x64, win-arm64, mac-x64, mac-arm64, linux-x64, linux-arm64) from [Releases](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases) and extract all files to your desired install location. To begin a data transfer operation, first populate the `migrationsettings.json` file with appropriate settings for your data source and sink (see [detailed instructions](#using-the-command-line) below or [review examples](ExampleConfigs.md)), and then run the application from a command line: `dmt.exe` on Windows or `dmt` on other platforms.
+
+## Docker Container
+
+You can also run the Data Migration Tool as a Docker container, which is useful for CI/CD pipelines or environments where installing the tool directly isn't preferred.
+
+### Using Pre-built Docker Image
+
+The easiest way to use the container is to pull the pre-built image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/azurecosmosdb/data-migration-desktop-tool:latest
+docker run -v $(pwd)/config:/config -v $(pwd)/data:/data ghcr.io/azurecosmosdb/data-migration-desktop-tool:latest run --settings /config/migrationsettings.json
+```
+
+### Building the Docker Image Locally
+
+To build the Docker image locally:
+
+```bash
+docker build -t data-migration-tool .
+```
+
+### Running the Container
+
+Run the container with your configuration files mounted:
+
+```bash
+docker run -v $(pwd)/config:/config -v $(pwd)/data:/data data-migration-tool run --settings /config/migrationsettings.json
+```
+
+Where:
+- `/config` contains your configuration files including `migrationsettings.json`
+- `/data` is the directory for your data files
+
+You can also mount custom extensions:
+
+```bash
+docker run -v $(pwd)/config:/config -v $(pwd)/data:/data -v $(pwd)/extensions:/extensions data-migration-tool run --source customsource --sink customsink --settings /config/migrationsettings.json
+```
+
+### Docker Compose Example
+
+A `docker-compose.yml` file is provided as an example:
+
+```bash
+docker-compose up
+```
+
+This will build the image and run the container with the mounted volumes. You can modify the `docker-compose.yml` file to customize the command and volumes.
 
 ### Special Extensions
 

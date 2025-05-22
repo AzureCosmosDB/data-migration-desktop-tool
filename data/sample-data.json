@@ -1,0 +1,12 @@
+[
+  {
+    "id": "1",
+    "name": "Sample Item 1",
+    "description": "This is a sample item for testing the data migration tool"
+  },
+  {
+    "id": "2",
+    "name": "Sample Item 2",
+    "description": "This is another sample item"
+  }
+]
