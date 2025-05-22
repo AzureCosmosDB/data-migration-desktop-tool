@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  data-migration-tool:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Mount configuration files from the host
+      - ./config:/config
+      # Mount data files for import/export
+      - ./data:/data
+    # Example command (customize based on your needs)
+    # The default entrypoint is "dotnet dmt.dll"
+    command: run --settings /config/migrationsettings.json
+    # Uncomment these environment variables to use RBAC authentication
+    # environment:
+    #   - AZURE_TENANT_ID=your-tenant-id
+    #   - AZURE_CLIENT_ID=your-client-id
+    #   - AZURE_CLIENT_SECRET=your-client-secret
