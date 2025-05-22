@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.Composition;
+using Azure;
 using Azure.Data.Tables;
 using Azure.Identity;
 using Cosmos.DataTransfer.AzureTableAPIExtension.Data;
@@ -6,12 +7,15 @@ using Cosmos.DataTransfer.AzureTableAPIExtension.Settings;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Polly;
 
 namespace Cosmos.DataTransfer.AzureTableAPIExtension
 {
     [Export(typeof(IDataSinkExtension))]
     public class AzureTableAPIDataSinkExtension : IDataSinkExtensionWithSettings
     {
+        private static readonly int[] TransientStatusCodes = { 408, 429, 500, 502, 503, 504 };
+
         public string DisplayName => "AzureTableAPI";
 
         public async Task WriteAsync(IAsyncEnumerable<IDataItem> dataItems, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
@@ -41,21 +45,54 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             var tableClient = serviceClient.GetTableClient(settings.Table);
 
-            await tableClient.CreateIfNotExistsAsync();
+            await tableClient.CreateIfNotExistsAsync().ConfigureAwait(false);
 
-            var createTasks = new List<Task>();
-            await foreach(var item in dataItems.WithCancellation(cancellationToken))
+            var maxConcurrency = settings.MaxConcurrentEntityWrites ?? 10;
+
+            logger.LogInformation("Writing data to Azure Table Storage with a maximum of {MaxConcurrency} concurrent writes.", maxConcurrency);
+
+            logger.LogInformation("Using PartitionKeyFieldName: `{ParitionKeyFieldName}` and RowKeyFieldName: `{RowKeyFieldName}`", settings.PartitionKeyFieldName, settings.RowKeyFieldName);
+
+            await Parallel.ForEachAsync<IDataItem>(dataItems,
+            new ParallelOptions { MaxDegreeOfParallelism = maxConcurrency, CancellationToken = cancellationToken },
+            async (item, ct) =>
             {
-               var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-               createTasks.Add(tableClient.AddEntityAsync(entity));
-            }
-
-            await Task.WhenAll(createTasks);
+                try
+                {
+                    var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
+                    await AddEntityWithRetryAsync(tableClient, entity, ct);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error adding entity to table.");
+                }
+            });
+            logger.LogInformation("Finished writing data to Azure Table Storage.");
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()
         {
             yield return new AzureTableAPIDataSinkSettings();
+        }
+
+        /// <summary>
+        /// Adds an entity to the Azure Table Storage with retry logic for transient errors.
+        /// This method uses the Polly library to implement a retry policy with exponential backoff.
+        /// </summary>
+        /// <param name="tableClient"></param>
+        /// <param name="entity"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken)
+        {
+            var retryPolicy = Policy
+                .Handle<RequestFailedException>(ex => TransientStatusCodes.Contains(ex.Status))
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+
+            await retryPolicy.ExecuteAsync(async () =>
+            {
+                await tableClient.AddEntityAsync(entity, cancellationToken);
+            });
         }
     }
 }
