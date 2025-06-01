@@ -155,4 +155,58 @@ public class CosmosSinkSettingsTests
 
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.PartitionKeyPaths))));
     }
+
+    [TestMethod]
+    public void GetValidationErrors_WhenInitClientEncryptionWithoutRbac_ReturnsError()
+    {
+        var settings = new CosmosSinkSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+            UseRbacAuth = false,
+            InitClientEncryption = true,
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
+
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.InitClientEncryption))));
+    }
+
+    [TestMethod]
+    public void GetValidationErrors_WhenInitClientEncryptionWithRbac_Succeeds()
+    {
+        var settings = new CosmosSinkSettings
+        {
+            UseRbacAuth = true,
+            AccountEndpoint = "https://localhost:8081/",
+            Database = "db",
+            Container = "container",
+            InitClientEncryption = true,
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
+
+        Assert.AreEqual(0, validationErrors.Count());
+    }
+
+    [TestMethod]
+    public void GetValidationErrors_WhenRbacWithoutInitClientEncryption_Succeeds()
+    {
+        var settings = new CosmosSinkSettings
+        {
+            UseRbacAuth = true,
+            AccountEndpoint = "https://localhost:8081/",
+            Database = "db",
+            Container = "container",
+            InitClientEncryption = false,
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
+
+        Assert.AreEqual(0, validationErrors.Count());
+    }
 }
