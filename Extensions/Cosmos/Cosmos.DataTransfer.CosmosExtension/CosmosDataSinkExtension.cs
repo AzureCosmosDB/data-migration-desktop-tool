@@ -141,9 +141,18 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             var client = CosmosExtensionServices.CreateClient(settings, DisplayName, dataSource.DisplayName);
 
-            Container container = settings.UseRbacAuth
-                ? await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync(cancellationToken)
-                : await CreateDatabaseAndContainerAsync(client, settings, logger, cancellationToken);
+            Container container;
+            if (settings.UseRbacAuth)
+            {
+                var cosmosContainer = client.GetContainer(settings.Database, settings.Container);
+                container = settings.InitClientEncryption
+                    ? await cosmosContainer.InitializeEncryptionAsync(cancellationToken)
+                    : cosmosContainer;
+            }
+            else
+            {
+                container = await CreateDatabaseAndContainerAsync(client, settings, logger, cancellationToken);
+            }
 
             await CosmosExtensionServices.VerifyContainerAccess(container, settings.Container, logger, cancellationToken);
 
