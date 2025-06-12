@@ -7,5 +7,10 @@
         /// This setting is used to control the number of concurrent writes to the Azure Table API.
         /// </summary>
         public int? MaxConcurrentEntityWrites { get; set; }
+        
+        /// <summary>
+        /// Do an Upsert instead of Add
+        /// </summary>
+        public bool? ReplaceIfExists { get; set; } = false;
     }
 }

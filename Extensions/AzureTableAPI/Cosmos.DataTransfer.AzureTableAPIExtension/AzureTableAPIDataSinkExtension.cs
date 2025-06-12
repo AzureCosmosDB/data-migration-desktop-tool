@@ -48,6 +48,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
             await tableClient.CreateIfNotExistsAsync().ConfigureAwait(false);
 
             var maxConcurrency = settings.MaxConcurrentEntityWrites ?? 10;
+            var replaceIfExists = settings.ReplaceIfExists ?? false;
 
             logger.LogInformation("Writing data to Azure Table Storage with a maximum of {MaxConcurrency} concurrent writes.", maxConcurrency);
 
@@ -60,7 +61,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
                 try
                 {
                     var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-                    await AddEntityWithRetryAsync(tableClient, entity, ct);
+                    await AddEntityWithRetryAsync(tableClient, entity, ct, replaceIfExists);
                 }
                 catch (Exception ex)
                 {
@@ -82,8 +83,9 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
         /// <param name="tableClient"></param>
         /// <param name="entity"></param>
         /// <param name="cancellationToken"></param>
+        /// <param name="replaceIfExists"></param>
         /// <returns></returns>
-        private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken)
+        private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken, bool replaceIfExists = false)
         {
             var retryPolicy = Policy
                 .Handle<RequestFailedException>(ex => TransientStatusCodes.Contains(ex.Status))
@@ -91,7 +93,14 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             await retryPolicy.ExecuteAsync(async () =>
             {
-                await tableClient.AddEntityAsync(entity, cancellationToken);
+                if (!replaceIfExists)
+                {
+                    await tableClient.AddEntityAsync(entity, cancellationToken);
+                }
+                else
+                {
+                    await tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, cancellationToken);
+                }
             });
         }
     }
