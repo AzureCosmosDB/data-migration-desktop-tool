@@ -48,7 +48,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
             await tableClient.CreateIfNotExistsAsync().ConfigureAwait(false);
 
             var maxConcurrency = settings.MaxConcurrentEntityWrites ?? 10;
-            var replaceIfExists = settings.ReplaceIfExists ?? false;
+            var writeMode = settings.WriteMode ?? EntityWriteMode.Create;
 
             logger.LogInformation("Writing data to Azure Table Storage with a maximum of {MaxConcurrency} concurrent writes.", maxConcurrency);
 
@@ -61,7 +61,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
                 try
                 {
                     var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-                    await AddEntityWithRetryAsync(tableClient, entity, ct, replaceIfExists);
+                    await AddEntityWithRetryAsync(tableClient, entity, ct, writeMode);
                 }
                 catch (Exception ex)
                 {
@@ -83,9 +83,9 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
         /// <param name="tableClient"></param>
         /// <param name="entity"></param>
         /// <param name="cancellationToken"></param>
-        /// <param name="replaceIfExists"></param>
+        /// <param name="writeMode"></param>
         /// <returns></returns>
-        private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken, bool replaceIfExists = false)
+        private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken, EntityWriteMode writeMode = EntityWriteMode.Create)
         {
             var retryPolicy = Policy
                 .Handle<RequestFailedException>(ex => TransientStatusCodes.Contains(ex.Status))
@@ -93,13 +93,19 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             await retryPolicy.ExecuteAsync(async () =>
             {
-                if (!replaceIfExists)
+                switch (writeMode)
                 {
-                    await tableClient.AddEntityAsync(entity, cancellationToken);
-                }
-                else
-                {
-                    await tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, cancellationToken);
+                    case EntityWriteMode.Create:
+                        await tableClient.AddEntityAsync(entity, cancellationToken);
+                        break;
+                    case EntityWriteMode.Replace:
+                        await tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, cancellationToken);
+                        break;
+                    case EntityWriteMode.Merge:
+                        await tableClient.UpsertEntityAsync(entity, TableUpdateMode.Merge, cancellationToken);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(writeMode), writeMode, "Unsupported EntityWriteMode");
                 }
             });
         }

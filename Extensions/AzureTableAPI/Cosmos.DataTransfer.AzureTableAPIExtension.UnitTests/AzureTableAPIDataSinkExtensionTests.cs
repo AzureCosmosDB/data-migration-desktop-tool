@@ -7,44 +7,55 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension.UnitTests
     public class AzureTableAPIDataSinkExtensionTests
     {
         [TestMethod]
-        public void AzureTableAPIDataSinkSettings_ReplaceIfExists_DefaultsFalse()
+        public void AzureTableAPIDataSinkSettings_WriteMode_DefaultsToCreate()
         {
             var settings = new AzureTableAPIDataSinkSettings();
             
-            Assert.IsFalse(settings.ReplaceIfExists ?? true, "ReplaceIfExists should default to false");
+            Assert.AreEqual(EntityWriteMode.Create, settings.WriteMode ?? EntityWriteMode.Replace, "WriteMode should default to Create");
         }
 
         [TestMethod]
-        public void AzureTableAPIDataSinkSettings_ReplaceIfExists_CanBeSetTrue()
+        public void AzureTableAPIDataSinkSettings_WriteMode_CanBeSetToCreate()
         {
             var settings = new AzureTableAPIDataSinkSettings()
             {
-                ReplaceIfExists = true
+                WriteMode = EntityWriteMode.Create
             };
             
-            Assert.IsTrue(settings.ReplaceIfExists ?? false, "ReplaceIfExists should be settable to true");
+            Assert.AreEqual(EntityWriteMode.Create, settings.WriteMode ?? EntityWriteMode.Replace, "WriteMode should be settable to Create");
         }
 
         [TestMethod]
-        public void AzureTableAPIDataSinkSettings_ReplaceIfExists_CanBeSetFalse()
+        public void AzureTableAPIDataSinkSettings_WriteMode_CanBeSetToReplace()
         {
             var settings = new AzureTableAPIDataSinkSettings()
             {
-                ReplaceIfExists = false
+                WriteMode = EntityWriteMode.Replace
             };
             
-            Assert.IsFalse(settings.ReplaceIfExists ?? true, "ReplaceIfExists should be settable to false");
+            Assert.AreEqual(EntityWriteMode.Replace, settings.WriteMode ?? EntityWriteMode.Create, "WriteMode should be settable to Replace");
         }
 
         [TestMethod]
-        public void AzureTableAPIDataSinkSettings_ReplaceIfExists_CanBeNull()
+        public void AzureTableAPIDataSinkSettings_WriteMode_CanBeSetToMerge()
         {
             var settings = new AzureTableAPIDataSinkSettings()
             {
-                ReplaceIfExists = null
+                WriteMode = EntityWriteMode.Merge
             };
             
-            Assert.IsNull(settings.ReplaceIfExists, "ReplaceIfExists should be settable to null");
+            Assert.AreEqual(EntityWriteMode.Merge, settings.WriteMode ?? EntityWriteMode.Create, "WriteMode should be settable to Merge");
+        }
+
+        [TestMethod]
+        public void AzureTableAPIDataSinkSettings_WriteMode_CanBeNull()
+        {
+            var settings = new AzureTableAPIDataSinkSettings()
+            {
+                WriteMode = null
+            };
+            
+            Assert.IsNull(settings.WriteMode, "WriteMode should be settable to null");
         }
     }
 }

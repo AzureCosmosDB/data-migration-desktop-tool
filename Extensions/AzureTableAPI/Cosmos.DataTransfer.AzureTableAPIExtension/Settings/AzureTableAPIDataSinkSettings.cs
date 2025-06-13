@@ -9,8 +9,11 @@
         public int? MaxConcurrentEntityWrites { get; set; }
         
         /// <summary>
-        /// Do an Upsert instead of Add
+        /// Specifies the behavior when writing entities to the table.
+        /// Create: Adds new entities only, fails if entity already exists (default).
+        /// Replace: Upserts entities, completely replacing existing ones.
+        /// Merge: Upserts entities, merging properties with existing ones.
         /// </summary>
-        public bool? ReplaceIfExists { get; set; } = false;
+        public EntityWriteMode? WriteMode { get; set; } = EntityWriteMode.Create;
     }
 }
