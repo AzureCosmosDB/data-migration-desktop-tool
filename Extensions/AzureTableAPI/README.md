@@ -30,11 +30,15 @@ The following setting is supported for the Source:
 
 ### Additional Sink Settings
 
-The AzureTableAPI Source extension has an additional setting that can be configured for writing Table entities.
+The AzureTableAPI Sink extension has additional settings that can be configured for writing Table entities.
 
-The following setting is supported for the Sink:
+The following settings are supported for the Sink:
 
 - `MaxConcurrentEntityWrites` - The Maximum number of concurrent entity writes to the Azure Table API. This setting is used to control the number of concurrent writes to the Azure Table API.
+- `WriteMode` - Specifies the behavior when writing entities to the table. Options are:
+  - `Create` (default): Creates new entities only. Fails if an entity with the same partition key and row key already exists.
+  - `Replace`: Upserts entities, completely replacing existing ones if they exist.
+  - `Merge`: Upserts entities, merging properties with existing entities if they exist.
 
 ## Authentication Methods
 
@@ -47,6 +51,7 @@ The AzureTableAPI extension supports two authentication methods for connecting t
 
 ### Example RBAC Settings
 
+**Source Example (RBAC)**
 ```json
 {
   "UseRbacAuth": true,
@@ -56,6 +61,20 @@ The AzureTableAPI extension supports two authentication methods for connecting t
   "RowKeyFieldName": "id",
   "EnableInteractiveCredentials": true,
   "QueryFilter": "PartitionKey eq 'WI'"
+}
+```
+
+**Sink Example (RBAC)**
+```json
+{
+  "UseRbacAuth": true,
+  "AccountEndpoint": "https://<storage-account-name>.table.core.windows.net",
+  "Table": "DestinationTable1",
+  "PartitionKeyFieldName": "State",
+  "RowKeyFieldName": "id",
+  "EnableInteractiveCredentials": true,
+  "WriteMode": "Merge",
+  "MaxConcurrentEntityWrites": 10
 }
 ```
 
@@ -82,6 +101,8 @@ The following are a couple example `settings.json` files for configuring the Azu
   "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=<storage-account-name>;AccountKey=<key>;EndpointSuffix=core.windows.net",
   "Table": "DestinationTable1",
   "PartitionKeyFieldName": "State",
-  "RowKeyFieldName":  "id"
+  "RowKeyFieldName": "id",
+  "WriteMode": "Replace",
+  "MaxConcurrentEntityWrites": 5
 }
 ```
