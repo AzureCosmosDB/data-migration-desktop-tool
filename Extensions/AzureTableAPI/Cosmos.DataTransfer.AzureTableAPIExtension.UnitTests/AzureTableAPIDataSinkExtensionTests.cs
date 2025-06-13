@@ -1,5 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Cosmos.DataTransfer.AzureTableAPIExtension.Settings;
+using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 
 namespace Cosmos.DataTransfer.AzureTableAPIExtension.UnitTests
 {
@@ -56,6 +58,34 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension.UnitTests
             };
             
             Assert.IsNull(settings.WriteMode, "WriteMode should be settable to null");
+        }
+
+        [TestMethod]
+        public void AzureTableAPIDataSinkSettings_WriteMode_JsonSerializationSupported()
+        {
+            // Test JSON to enum conversion for Create
+            var jsonCreate = """{"WriteMode": "Create"}""";
+            var configCreate = new ConfigurationBuilder()
+                .AddJsonStream(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonCreate)))
+                .Build();
+            var settingsCreate = configCreate.Get<AzureTableAPIDataSinkSettings>();
+            Assert.AreEqual(EntityWriteMode.Create, settingsCreate?.WriteMode, "WriteMode should be deserialized from JSON string 'Create'");
+
+            // Test JSON to enum conversion for Replace
+            var jsonReplace = """{"WriteMode": "Replace"}""";
+            var configReplace = new ConfigurationBuilder()
+                .AddJsonStream(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonReplace)))
+                .Build();
+            var settingsReplace = configReplace.Get<AzureTableAPIDataSinkSettings>();
+            Assert.AreEqual(EntityWriteMode.Replace, settingsReplace?.WriteMode, "WriteMode should be deserialized from JSON string 'Replace'");
+
+            // Test JSON to enum conversion for Merge
+            var jsonMerge = """{"WriteMode": "Merge"}""";
+            var configMerge = new ConfigurationBuilder()
+                .AddJsonStream(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonMerge)))
+                .Build();
+            var settingsMerge = configMerge.Get<AzureTableAPIDataSinkSettings>();
+            Assert.AreEqual(EntityWriteMode.Merge, settingsMerge?.WriteMode, "WriteMode should be deserialized from JSON string 'Merge'");
         }
     }
 }
