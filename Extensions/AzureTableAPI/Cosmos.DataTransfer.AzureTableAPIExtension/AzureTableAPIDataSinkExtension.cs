@@ -61,7 +61,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
                 try
                 {
                     var entity = item.ToTableEntity(settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-                    await AddEntityWithRetryAsync(tableClient, entity, ct, writeMode);
+                    await AddEntityWithRetryAsync(tableClient, entity, writeMode, ct);
                 }
                 catch (Exception ex)
                 {
@@ -82,10 +82,10 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
         /// </summary>
         /// <param name="tableClient"></param>
         /// <param name="entity"></param>
-        /// <param name="cancellationToken"></param>
         /// <param name="writeMode"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, CancellationToken cancellationToken, EntityWriteMode writeMode = EntityWriteMode.Create)
+        private static async Task AddEntityWithRetryAsync(TableClient tableClient, TableEntity entity, EntityWriteMode writeMode, CancellationToken cancellationToken)
         {
             var retryPolicy = Policy
                 .Handle<RequestFailedException>(ex => TransientStatusCodes.Contains(ex.Status))
