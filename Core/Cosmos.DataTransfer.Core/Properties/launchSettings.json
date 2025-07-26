@@ -1,12 +1,11 @@
 {
   "profiles": {
     "Cosmos.DataTransfer.Core": {
-      "commandName": "Project",
-      "commandLineArgs": ""
+      "commandName": "Project"
     },
     "JSON->Cosmos": {
       "commandName": "Project",
-      "commandLineArgs": "run -from json --sink cosmos-nosql --settings c:\\temp\\Json-CosmosSettings.json"
+      "commandLineArgs": "run -from json --sink cosmos-nosql --settings \"C:\\temp\\datamigration.json\""
     },
     "Cosmos->JSON": {
       "commandName": "Project",
@@ -35,6 +34,10 @@
     "SettingsCommand": {
       "commandName": "Project",
       "commandLineArgs": "settings --sink"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
     }
   }
 }
