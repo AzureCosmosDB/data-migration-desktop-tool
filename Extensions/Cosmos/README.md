@@ -87,7 +87,7 @@ Or with RBAC:
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
   write and read regions, and use them when the configured application region is not available. 
-  when set to `true`, availability is limited to the endpoint specified.
+  When set to `true`, availability is limited to the endpoint specified.
   - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint?view=azure-dotnet). When using the Cosmos DB Emulator Container for Linux it's been observed
     setting the value to `true` enables import and export of data.  
 
