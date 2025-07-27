@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using MongoDB.Driver;
 
 namespace Cosmos.DataTransfer.MongoExtension;
 
@@ -11,4 +12,5 @@ public interface IRepository<TDocument>
     ValueTask Remove(Expression<Func<TDocument, bool>> filter);
     ValueTask RemoveRange(Expression<Func<TDocument, bool>> filter);
     IQueryable<TDocument> AsQueryable();
+    IAsyncEnumerable<TDocument> FindAsync(FilterDefinition<TDocument> filter);
 }

@@ -8,7 +8,7 @@ The MongoDB data transfer extension provides source and sink capabilities for re
 > 
 ## Settings
 
-Source and sink settings require both `ConnectionString` and `DatabaseName` parameters. The source takes an optional `Collection` parameter (if this parameter is not set, it will read from all collections). The sink requires the `Collection` parameter and will insert all records received from a source into that collection, as well as an optional `BatchSize` parameter (default value is 100) to batch the writes into the collection.
+Source and sink settings require both `ConnectionString` and `DatabaseName` parameters. The source takes an optional `Collection` parameter (if this parameter is not set, it will read from all collections) and an optional `Query` parameter for filtering documents. The sink requires the `Collection` parameter and will insert all records received from a source into that collection, as well as an optional `BatchSize` parameter (default value is 100) to batch the writes into the collection.
 
 ### Source
 
@@ -16,9 +16,55 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
 {
     "ConnectionString": "",
     "DatabaseName": "",
-    "Collection": ""
+    "Collection": "",
+    "Query": ""
 }
 ```
+
+#### Query Parameter
+
+The `Query` parameter allows you to filter documents during data migration using MongoDB query syntax in JSON format. This parameter supports two input methods:
+
+1. **Direct JSON Query**: Provide the MongoDB query directly as a JSON string
+2. **File Path**: Provide a path to a JSON file containing the MongoDB query
+
+**Examples:**
+
+Direct JSON query:
+```json
+{
+    "ConnectionString": "mongodb://localhost:27017",
+    "DatabaseName": "mydb",
+    "Collection": "vertex-txn-archive",
+    "Query": "{\"timestamp\":{\"$gte\":\"2025-01-01\",\"$lt\":\"2025-02-01\"}}"
+}
+```
+
+Query from file:
+```json
+{
+    "ConnectionString": "mongodb://localhost:27017",
+    "DatabaseName": "mydb",
+    "Collection": "vertex-txn-archive",
+    "Query": "/path/to/query.json"
+}
+```
+
+Where `query.json` contains:
+```json
+{"timestamp":{"$gte":"2025-01-01","$lt":"2025-02-01"}}
+```
+
+**Supported Query Operators:**
+
+The query parameter supports all standard MongoDB query operators including:
+- Comparison operators: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`
+- Logical operators: `$and`, `$or`, `$not`, `$nor`
+- Element operators: `$exists`, `$type`
+- Array operators: `$all`, `$elemMatch`, `$size`
+- And more...
+
+For more information on MongoDB query syntax, see the [MongoDB Query Documentation](https://docs.mongodb.com/manual/tutorial/query-documents/).
 
 ### Sink
 

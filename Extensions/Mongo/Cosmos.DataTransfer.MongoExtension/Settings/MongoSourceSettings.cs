@@ -5,6 +5,8 @@ public class MongoSourceSettings : MongoBaseSettings
 {
     public string? Collection { get; set; }
 
+    public string? Query { get; set; }
+
     [SensitiveValue]
     public Dictionary<string, IReadOnlyDictionary<string, object>>? KMSProviders { get; set; }
 
