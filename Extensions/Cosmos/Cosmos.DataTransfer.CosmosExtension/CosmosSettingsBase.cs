@@ -19,7 +19,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         
         /// <summary>
         /// <see cref="CosmosClientOptions.LimitToEndpoint"/>
-        /// When running the Azure CosmosDB emulator in a Linux Container on Windows
+        /// When running the Azure Cosmos DB emulator in a Linux Container on Windows
         /// a value of false results in failure to connect to Cosmos DB emulator. 
         /// </summary>
         public bool LimitToEndpoint { get; set; } = false;
