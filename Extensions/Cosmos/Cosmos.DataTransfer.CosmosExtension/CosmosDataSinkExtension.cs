@@ -174,7 +174,6 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 .Where(o => o != null)
                 .OfType<ExpandoObject>();
             var batches = convertedObjects.Buffer(settings.BatchSize);
-
             var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
             await foreach (var batch in batches.WithCancellation(cancellationToken))
             {
