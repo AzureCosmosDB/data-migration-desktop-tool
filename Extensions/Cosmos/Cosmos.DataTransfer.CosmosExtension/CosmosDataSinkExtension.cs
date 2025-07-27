@@ -169,31 +169,13 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 }
             }
 
-            var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
-
             var convertedObjects = dataItems
                 .Select(di => di.BuildDynamicObjectTree(requireStringId: true, ignoreNullValues: settings.IgnoreNullValues, preserveMixedCaseIds: settings.PreserveMixedCaseIds, transformations: settings.Transformations))
                 .Where(o => o != null)
                 .OfType<ExpandoObject>();
             var batches = convertedObjects.Buffer(settings.BatchSize);
 
-            //await Parallel.ForEachAsync(batches,
-            //new ParallelOptions { MaxDegreeOfParallelism = 1, CancellationToken = cancellationToken },
-            //async (item, ct) =>
-            //{
-            //    try
-            //    {
-            //        var addTasks = item.Select(item => AddItemAsync(container, item, settings.PartitionKeyPath ?? settings.PartitionKeyPaths?.FirstOrDefault(), settings.WriteMode, retry, logger, cancellationToken)).ToList();
-            //        var results = await Task.WhenAll(addTasks);
-            //        ReportCount(results.Sum(i => i.ItemCount));
-            //        inputCount += results.Length;
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        logger.LogError(ex, "Error adding entity to table.");
-            //    }
-            //});
-            //var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
+            var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
             await foreach (var batch in batches.WithCancellation(cancellationToken))
             {
                 var addTasks = batch.Select(item => AddItemAsync(container, item, settings.PartitionKeyPath ?? settings.PartitionKeyPaths?.FirstOrDefault(), settings.WriteMode, retry, logger, cancellationToken)).ToList();
