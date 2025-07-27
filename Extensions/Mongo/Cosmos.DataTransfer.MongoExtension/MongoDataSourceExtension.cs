@@ -51,6 +51,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         }
         else
         {
+            logger.LogInformation("No query filter specified for collection '{Collection}', reading all documents", collectionName);
             // Use existing queryable approach when no filter is specified
             documents = GetAllDocumentsAsync(collection);
         }
@@ -88,6 +89,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
             }
             else
             {
+                logger.LogInformation("Treating query input as direct JSON string (file does not exist): {Query}", query);
                 queryJson = query;
             }
         }
