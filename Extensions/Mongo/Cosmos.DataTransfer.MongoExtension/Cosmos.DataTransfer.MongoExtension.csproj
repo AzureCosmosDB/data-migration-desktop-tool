@@ -8,6 +8,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Cosmos.DataTransfer.MongoExtension.UnitTests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
 		<PackageReference Include="MongoDB.Driver" />
 		<PackageReference Include="System.ComponentModel.Composition" />

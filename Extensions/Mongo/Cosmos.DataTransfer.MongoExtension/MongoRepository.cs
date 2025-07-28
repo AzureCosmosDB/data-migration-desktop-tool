@@ -46,4 +46,16 @@ public class MongoRepository<TDocument> : IRepository<TDocument>
     {
         return collection.AsQueryable();
     }
+
+    public async IAsyncEnumerable<TDocument> FindAsync(FilterDefinition<TDocument> filter)
+    {
+        using var cursor = await collection.FindAsync(filter);
+        while (await cursor.MoveNextAsync())
+        {
+            foreach (var document in cursor.Current)
+            {
+                yield return document;
+            }
+        }
+    }
 }
