@@ -9,11 +9,27 @@ on:
 
 jobs:
   cosmos_tests_linux:
-    name: Run Cosmos .NET unit tests on Linux
+    name: Run Cosmos .NET unit tests on Linux (${{ matrix.emulator_version.name }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        emulator_version: [
+          {
+            name: "current",
+            image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest",
+            allow_failure: false
+          },
+          {
+            name: "vnext",
+            image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview",
+            allow_failure: true
+          }
+        ]
+      fail-fast: false
+    continue-on-error: ${{ matrix.emulator_version.allow_failure }}
     services:
       cosmos-emulator:
-        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+        image: ${{ matrix.emulator_version.image }}
         ports:
           - 8081:8081
           - 10251:10251
@@ -46,7 +62,7 @@ jobs:
         
       - name: Wait for Cosmos Emulator
         run: |
-          echo "Waiting for Cosmos DB Emulator to be ready..."
+          echo "Waiting for Cosmos DB Emulator (${{ matrix.emulator_version.name }}) to be ready..."
           timeout 300 bash -c 'until curl -f -k https://127.0.0.1:8081/_explorer/emulator.pem; do sleep 5; done'
           echo "Cosmos DB Emulator is ready!"
           
@@ -58,7 +74,7 @@ jobs:
           
       - name: Run Cosmos Extension Tests
         run: |
-          echo "Running Cosmos extension unit tests with emulator connection..."
+          echo "Running Cosmos extension unit tests with emulator connection (${{ matrix.emulator_version.name }})..."
           echo "Cosmos_Endpoint: $Cosmos_Endpoint"
           echo "Testing connectivity to emulator..."
           curl -k -s https://127.0.0.1:8081/_explorer/index.html > /dev/null && echo "Emulator is responding" || echo "Warning: Emulator may not be fully ready"
