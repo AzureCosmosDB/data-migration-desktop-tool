@@ -85,6 +85,12 @@ Or with RBAC:
   - `Gateway` (default)
   - `Direct`
 
+- **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
+  write and read regions, and use them when the configured application region is not available. 
+  When set to `true`, availability is limited to the endpoint specified.
+  - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint?view=azure-dotnet). When using the Cosmos DB Emulator Container for Linux it's been observed
+    setting the value to `true` enables import and export of data.  
+
 #### **Serverless Account**
 - **`IsServerlessAccount`**: Specifies whether the target account uses Serverless instead of Provisioned throughput, which affects the way containers are created.
   - **Note**: Serverless accounts cannot have shared throughput. See [Azure Cosmos DB serverless account type](https://learn.microsoft.com/azure/cosmos-db/serverless#use-serverless-resources).
@@ -115,6 +121,7 @@ Or with RBAC:
     "IgnoreNullValues": false,
     "IsServerlessAccount": false,
     "UseSharedThroughput": false,
-    "InitClientEncryption": false
+    "InitClientEncryption": false,
+    "LimitToEndpoint": false
 }
 ```
