@@ -41,7 +41,7 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            ${{ github.event.inputs.tag || 'latest' }}
+            type=raw,value=${{ github.event.inputs.tag || 'latest' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
@@ -52,3 +52,19 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Make package public
+        run: |
+          # Extract package name from repository name (convert to lowercase for package registry)
+          PACKAGE_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          
+          echo "Making package public: $PACKAGE_NAME"
+          
+          # Make the container package public
+          curl -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE_NAME}/visibility" \
+            -d '{"visibility":"public"}' \
+            -f || echo "Failed to make package public - it may already be public or require manual intervention"
