@@ -34,8 +34,8 @@ Direct JSON query:
 ```json
 {
     "ConnectionString": "mongodb://localhost:27017",
-    "DatabaseName": "mydb",
-    "Collection": "vertex-txn-archive",
+    "DatabaseName": "sales",
+    "Collection": "person",
     "Query": "{\"timestamp\":{\"$gte\":\"2025-01-01\",\"$lt\":\"2025-02-01\"}}"
 }
 ```
@@ -44,8 +44,8 @@ Query from file:
 ```json
 {
     "ConnectionString": "mongodb://localhost:27017",
-    "DatabaseName": "mydb",
-    "Collection": "vertex-txn-archive",
+    "DatabaseName": "sales",
+    "Collection": "person",
     "Query": "/path/to/query.json"
 }
 ```
