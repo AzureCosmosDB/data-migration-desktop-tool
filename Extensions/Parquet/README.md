@@ -18,4 +18,12 @@ Supported storage sources:
 
 ## Settings
 
-The Parquet format does not currently include any settings. See storage extension documentation for any storage specific settings needed ([ex. File Storage](../../Interfaces/Cosmos.DataTransfer.Common/README.md)).
+The Parquet format supports an optional `DocumentProgressFrequency` parameter (`1000` by default) that controls how often document processing progress is logged during migration.
+
+```json
+{
+    "DocumentProgressFrequency": 1000
+}
+```
+
+See storage extension documentation for any storage specific settings needed ([ex. File Storage](../../Interfaces/Cosmos.DataTransfer.Common/README.md)).

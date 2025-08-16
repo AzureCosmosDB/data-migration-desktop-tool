@@ -33,10 +33,13 @@ Source does not require any formatter specific settings.
 
 Sink supports an optional `Indented` parameter (`false` by default) and an optional `IncludeNullFields` parameter (`false` by default) to control the formatting of the JSON output. Sink also supports an optional `BufferSizeMB` parameter (`200` by default) to constrain the in-memory stream buffer.
 
+Additionally, an optional `DocumentProgressFrequency` parameter (`1000` by default) controls how often document processing progress is logged during migration.
+
 ```json
 {
     "Indented": true,
     "IncludeNullFields": true,
-    "BufferSizeMB": 200
+    "BufferSizeMB": 200,
+    "DocumentProgressFrequency": 1000
 }
 ```
