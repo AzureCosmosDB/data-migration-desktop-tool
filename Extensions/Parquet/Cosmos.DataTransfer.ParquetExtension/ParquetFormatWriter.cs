@@ -14,20 +14,34 @@ namespace Cosmos.DataTransfer.ParquetExtension
 
         public async Task FormatDataAsync(IAsyncEnumerable<IDataItem> dataItems, Stream target, IConfiguration config, ILogger logger, CancellationToken cancellationToken = default)
         {
-            var settings = config.Get<ParquetSinkSettings>();
+            var settings = config.Get<ParquetSinkSettings>() ?? new ParquetSinkSettings();
             settings.Validate();
 
             logger.LogInformation("Writing parquet format");
             long row = 0;
+            int documentCount = 0;
             await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
                 ProcessColumns(item, row);
                 row++;
+                documentCount++;
+                
+                // Log progress periodically based on DocumentProgressFrequency setting
+                if (documentCount % settings.DocumentProgressFrequency == 0)
+                {
+                    logger.LogInformation("Processed {DocumentCount} documents for transfer to Azure Blob", documentCount);
+                }
             }
 
             var schema = CreateSchema();
             CreateParquetColumns();
             await SaveFile(schema, target, cancellationToken);
+            
+            // Log final document count
+            if (documentCount > 0)
+                logger.LogInformation("Completed processing {DocumentCount} total documents for transfer to Azure Blob", documentCount);
+            else
+                logger.LogWarning("No documents were processed for transfer to Azure Blob");
         }
 
         private void ProcessColumns(IDataItem item, long row)

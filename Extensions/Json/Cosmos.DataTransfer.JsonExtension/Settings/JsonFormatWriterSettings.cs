@@ -7,5 +7,6 @@ namespace Cosmos.DataTransfer.JsonExtension.Settings
         public bool IncludeNullFields { get; set; }
         public bool Indented { get; set; }
         public int BufferSizeMB { get; set; } = 200;
+        public int DocumentProgressFrequency { get; set; } = 1000;
     }
 }
