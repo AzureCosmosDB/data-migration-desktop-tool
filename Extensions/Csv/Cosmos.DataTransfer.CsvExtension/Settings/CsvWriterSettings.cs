@@ -9,7 +9,7 @@ public class CsvWriterSettings : IDataExtensionSettings, IValidatableObject
     public bool IncludeHeader { get; set; } = true;
     public string? Delimiter { get; set; } = ",";
     public string? Culture { get; set; } = "InvariantCulture";
-    public int DocumentProgressFrequency { get; set; } = 1000;
+    public int ItemProgressFrequency { get; set; } = 1000;
     
     public CultureInfo GetCultureInfo() {
         switch (this.Culture?.ToLower())

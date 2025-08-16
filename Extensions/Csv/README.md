@@ -45,13 +45,13 @@ or e.g., `"en"`, `"en-GB"`, or `"en-US"` for English standards (period, `.`, as 
 Note, if using a culture with comma as decimal separator, specify a different delimiter (e.g., semi-colon, `;`), else all numbers
 will be written enclosed with quotes.
 
-Additionally, an optional `DocumentProgressFrequency` parameter (`1000` by default) controls how often document processing progress is logged during migration.
+Additionally, an optional `ItemProgressFrequency` parameter (`1000` by default) controls how often item processing progress is logged during migration.
 
 ```json
 {
     "Delimiter": ",",
     "IncludeHeader": true,
     "Culture": "Invariant",
-    "DocumentProgressFrequency": 1000
+    "ItemProgressFrequency": 1000
 }
 ```

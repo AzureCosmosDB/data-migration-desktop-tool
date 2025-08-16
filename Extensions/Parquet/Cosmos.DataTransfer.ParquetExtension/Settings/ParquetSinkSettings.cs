@@ -8,6 +8,6 @@ namespace Cosmos.DataTransfer.ParquetExtension.Settings
         // Add option to set a custom row group size for very large files.
         //public int? CustomRowGroupSize { get; set; }
         
-        public int DocumentProgressFrequency { get; set; } = 1000;
+        public int ItemProgressFrequency { get; set; } = 1000;
     }
 }

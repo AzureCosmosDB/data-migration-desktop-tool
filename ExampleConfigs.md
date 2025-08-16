@@ -39,7 +39,7 @@
     {
         "FilePath": "c:\\data\\cosmicworks\\customers.json",
         "Indented": true,
-        "DocumentProgressFrequency": 1000
+        "ItemProgressFrequency": 1000
     }
 }
 ```
@@ -174,7 +174,7 @@
     "AccountEndpoint": "https://<storage-account>.blob.core.windows.net",
     "EnableInteractiveCredentials": true,
     "BlobName": "jan-alerts",
-    "DocumentProgressFrequency": 1000
+    "ItemProgressFrequency": 1000
   },
   "Operations": [
   ]

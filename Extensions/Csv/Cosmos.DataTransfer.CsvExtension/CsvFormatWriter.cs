@@ -22,7 +22,7 @@ public class CsvFormatWriter : IFormattedDataWriter
         var settings = config.Get<CsvWriterSettings>() ?? new CsvWriterSettings();
         settings.Validate();
 
-        var progressTracker = new DocumentProgressTracker(logger, settings.DocumentProgressFrequency);
+        var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency);
 
         await using var textWriter = new StreamWriter(target, leaveOpen: true);
         await using var writer = new CsvWriter(textWriter, new CsvConfiguration(settings.GetCultureInfo())
@@ -56,7 +56,7 @@ public class CsvFormatWriter : IFormattedDataWriter
             }
 
             firstRecord = false;
-            progressTracker.IncrementDocument();
+            progressTracker.IncrementItem();
         }
 
         await writer.FlushAsync();

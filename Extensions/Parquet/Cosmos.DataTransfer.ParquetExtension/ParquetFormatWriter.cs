@@ -18,7 +18,7 @@ namespace Cosmos.DataTransfer.ParquetExtension
             var settings = config.Get<ParquetSinkSettings>() ?? new ParquetSinkSettings();
             settings.Validate();
 
-            var progressTracker = new DocumentProgressTracker(logger, settings.DocumentProgressFrequency);
+            var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency);
 
             logger.LogInformation("Writing parquet format");
             long row = 0;
@@ -26,7 +26,7 @@ namespace Cosmos.DataTransfer.ParquetExtension
             {
                 ProcessColumns(item, row);
                 row++;
-                progressTracker.IncrementDocument();
+                progressTracker.IncrementItem();
             }
 
             var schema = CreateSchema();

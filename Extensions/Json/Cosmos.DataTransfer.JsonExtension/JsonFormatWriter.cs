@@ -14,7 +14,7 @@ public class JsonFormatWriter : IFormattedDataWriter
         var settings = config.Get<JsonFormatWriterSettings>() ?? new JsonFormatWriterSettings();
         settings.Validate();
 
-        var progressTracker = new DocumentProgressTracker(logger, settings.DocumentProgressFrequency);
+        var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency);
 
         await using var writer = new Utf8JsonWriter(target, new JsonWriterOptions
         {
@@ -25,7 +25,7 @@ public class JsonFormatWriter : IFormattedDataWriter
         await foreach (var item in dataItems.WithCancellation(cancellationToken))
         {
             DataItemJsonConverter.WriteDataItem(writer, item, settings.IncludeNullFields);
-            progressTracker.IncrementDocument();
+            progressTracker.IncrementItem();
             
             int max = settings.BufferSizeMB * 1024 * 1024;
             if (writer.BytesPending > max)
