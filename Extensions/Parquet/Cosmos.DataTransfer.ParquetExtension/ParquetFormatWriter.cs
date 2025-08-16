@@ -1,4 +1,5 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common;
 using Cosmos.DataTransfer.ParquetExtension.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -14,8 +15,10 @@ namespace Cosmos.DataTransfer.ParquetExtension
 
         public async Task FormatDataAsync(IAsyncEnumerable<IDataItem> dataItems, Stream target, IConfiguration config, ILogger logger, CancellationToken cancellationToken = default)
         {
-            var settings = config.Get<ParquetSinkSettings>();
+            var settings = config.Get<ParquetSinkSettings>() ?? new ParquetSinkSettings();
             settings.Validate();
+
+            var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency);
 
             logger.LogInformation("Writing parquet format");
             long row = 0;
@@ -23,11 +26,13 @@ namespace Cosmos.DataTransfer.ParquetExtension
             {
                 ProcessColumns(item, row);
                 row++;
+                progressTracker.IncrementItem();
             }
 
             var schema = CreateSchema();
             CreateParquetColumns();
             await SaveFile(schema, target, cancellationToken);
+            progressTracker.LogFinalCount();
         }
 
         private void ProcessColumns(IDataItem item, long row)

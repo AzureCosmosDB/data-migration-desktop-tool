@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using Cosmos.DataTransfer.CsvExtension.Settings;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.Extensions.Configuration;
@@ -18,8 +19,10 @@ public class CsvFormatWriter : IFormattedDataWriter
 
     public async Task FormatDataAsync(IAsyncEnumerable<IDataItem> dataItems, Stream target, IConfiguration config, ILogger logger, CancellationToken cancellationToken = default)
     {
-        var settings = config.Get<CsvWriterSettings>();
+        var settings = config.Get<CsvWriterSettings>() ?? new CsvWriterSettings();
         settings.Validate();
+
+        var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency);
 
         await using var textWriter = new StreamWriter(target, leaveOpen: true);
         await using var writer = new CsvWriter(textWriter, new CsvConfiguration(settings.GetCultureInfo())
@@ -53,8 +56,10 @@ public class CsvFormatWriter : IFormattedDataWriter
             }
 
             firstRecord = false;
+            progressTracker.IncrementItem();
         }
 
         await writer.FlushAsync();
+        progressTracker.LogFinalCount();
     }
 }

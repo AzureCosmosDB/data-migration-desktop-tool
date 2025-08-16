@@ -11,8 +11,10 @@ public class JsonFormatWriter : IFormattedDataWriter
 {
     public async Task FormatDataAsync(IAsyncEnumerable<IDataItem> dataItems, Stream target, IConfiguration config, ILogger logger, CancellationToken cancellationToken = default)
     {
-        var settings = config.Get<JsonFormatWriterSettings>();
+        var settings = config.Get<JsonFormatWriterSettings>() ?? new JsonFormatWriterSettings();
         settings.Validate();
+
+        var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency);
 
         await using var writer = new Utf8JsonWriter(target, new JsonWriterOptions
         {
@@ -23,6 +25,8 @@ public class JsonFormatWriter : IFormattedDataWriter
         await foreach (var item in dataItems.WithCancellation(cancellationToken))
         {
             DataItemJsonConverter.WriteDataItem(writer, item, settings.IncludeNullFields);
+            progressTracker.IncrementItem();
+            
             int max = settings.BufferSizeMB * 1024 * 1024;
             if (writer.BytesPending > max)
             {
@@ -31,6 +35,7 @@ public class JsonFormatWriter : IFormattedDataWriter
         }
 
         writer.WriteEndArray();
+        progressTracker.LogFinalCount();
     }
 
     public IEnumerable<IDataExtensionSettings> GetSettings()
