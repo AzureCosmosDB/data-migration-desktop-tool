@@ -14,23 +14,18 @@ public class JsonFormatWriter : IFormattedDataWriter
         var settings = config.Get<JsonFormatWriterSettings>() ?? new JsonFormatWriterSettings();
         settings.Validate();
 
+        var progressTracker = new DocumentProgressTracker(logger, settings.DocumentProgressFrequency);
+
         await using var writer = new Utf8JsonWriter(target, new JsonWriterOptions
         {
             Indented = settings.Indented
         });
         writer.WriteStartArray();
 
-        int documentCount = 0;
         await foreach (var item in dataItems.WithCancellation(cancellationToken))
         {
             DataItemJsonConverter.WriteDataItem(writer, item, settings.IncludeNullFields);
-            documentCount++;
-            
-            // Log progress periodically based on DocumentProgressFrequency setting
-            if (documentCount % settings.DocumentProgressFrequency == 0)
-            {
-                logger.LogInformation("Processed {DocumentCount} documents for transfer to Azure Blob", documentCount);
-            }
+            progressTracker.IncrementDocument();
             
             int max = settings.BufferSizeMB * 1024 * 1024;
             if (writer.BytesPending > max)
@@ -40,12 +35,7 @@ public class JsonFormatWriter : IFormattedDataWriter
         }
 
         writer.WriteEndArray();
-        
-        // Log final document count
-        if (documentCount > 0)
-            logger.LogInformation("Completed processing {DocumentCount} total documents for transfer to Azure Blob", documentCount);
-        else
-            logger.LogWarning("No documents were processed for transfer to Azure Blob");
+        progressTracker.LogFinalCount();
     }
 
     public IEnumerable<IDataExtensionSettings> GetSettings()

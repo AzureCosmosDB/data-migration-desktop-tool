@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using Cosmos.DataTransfer.CsvExtension.Settings;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +22,8 @@ public class CsvFormatWriter : IFormattedDataWriter
         var settings = config.Get<CsvWriterSettings>() ?? new CsvWriterSettings();
         settings.Validate();
 
+        var progressTracker = new DocumentProgressTracker(logger, settings.DocumentProgressFrequency);
+
         await using var textWriter = new StreamWriter(target, leaveOpen: true);
         await using var writer = new CsvWriter(textWriter, new CsvConfiguration(settings.GetCultureInfo())
         {
@@ -30,7 +33,6 @@ public class CsvFormatWriter : IFormattedDataWriter
 
         var headerWritten = false;
         var firstRecord = true;
-        int documentCount = 0;
         await foreach (var item in dataItems.WithCancellation(cancellationToken))
         {
             if (!firstRecord)
@@ -54,21 +56,10 @@ public class CsvFormatWriter : IFormattedDataWriter
             }
 
             firstRecord = false;
-            documentCount++;
-            
-            // Log progress periodically based on DocumentProgressFrequency setting
-            if (documentCount % settings.DocumentProgressFrequency == 0)
-            {
-                logger.LogInformation("Processed {DocumentCount} documents for transfer to Azure Blob", documentCount);
-            }
+            progressTracker.IncrementDocument();
         }
 
         await writer.FlushAsync();
-        
-        // Log final document count
-        if (documentCount > 0)
-            logger.LogInformation("Completed processing {DocumentCount} total documents for transfer to Azure Blob", documentCount);
-        else
-            logger.LogWarning("No documents were processed for transfer to Azure Blob");
+        progressTracker.LogFinalCount();
     }
 }
