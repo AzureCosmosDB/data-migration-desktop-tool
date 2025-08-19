@@ -4,8 +4,8 @@ namespace Cosmos.DataTransfer.Common;
 
 /// <summary>
 /// Static utility class for tracking and logging item processing progress during data migrations.
-/// Since only one migration runs at a time, this uses static state to share item counts between format writers and data sinks.
-/// </summary>
+/// Since only one migration runs at a time, this uses static thread safe class.
+/// It is designed to be initialized at the start of a migration and reset for each new migration
 public static class ItemProgressTracker
 {
     private static int _itemCount;
@@ -44,11 +44,11 @@ public static class ItemProgressTracker
     /// </summary>
     public static void IncrementItem()
     {
-        _itemCount++;
-        
-        if (_logger != null && _itemCount % _progressFrequency == 0)
+        int currentCount = Interlocked.Increment(ref _itemCount);
+
+        if (_logger != null && currentCount % _progressFrequency == 0)
         {
-            _logger.LogInformation("Formatted {ItemCount} items for transfer to Azure Blob", _itemCount);
+            _logger.LogInformation("Processed {ItemCount} items for data migration.", currentCount);
         }
     }
 
@@ -61,7 +61,7 @@ public static class ItemProgressTracker
         // Only log if no items were processed (warning case)
         if (_logger != null && _itemCount == 0)
         {
-            _logger.LogWarning("No items were formatted for transfer to Azure Blob");
+            _logger.LogWarning("No items were process for data migration.");
         }
     }
 }
