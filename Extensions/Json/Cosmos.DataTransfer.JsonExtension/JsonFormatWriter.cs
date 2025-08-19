@@ -1,7 +1,6 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
 using Cosmos.DataTransfer.Common;
 using Cosmos.DataTransfer.JsonExtension.Settings;
-using Cosmos.DataTransfer.AzureBlobStorage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -15,13 +14,9 @@ public class JsonFormatWriter : IFormattedDataWriter
         var settings = config.Get<JsonFormatWriterSettings>() ?? new JsonFormatWriterSettings();
         settings.Validate();
 
-        // Try to get Azure Blob settings for more detailed logging
-        var blobSettings = config.Get<AzureBlobSinkSettings>();
-        
         // Initialize the static progress tracker
         ItemProgressTracker.Reset();
-        ItemProgressTracker.Initialize(logger, settings.ItemProgressFrequency, 
-            blobSettings?.BlobName, blobSettings?.ContainerName);
+        ItemProgressTracker.Initialize(logger, settings.ItemProgressFrequency);
 
         await using var writer = new Utf8JsonWriter(target, new JsonWriterOptions
         {

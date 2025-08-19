@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using Cosmos.DataTransfer.CsvExtension.Settings;
 using Cosmos.DataTransfer.Interfaces;
 using Cosmos.DataTransfer.Common;
-using Cosmos.DataTransfer.AzureBlobStorage;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.Extensions.Configuration;
@@ -23,13 +22,9 @@ public class CsvFormatWriter : IFormattedDataWriter
         var settings = config.Get<CsvWriterSettings>() ?? new CsvWriterSettings();
         settings.Validate();
 
-        // Try to get Azure Blob settings for more detailed logging
-        var blobSettings = config.Get<AzureBlobSinkSettings>();
-        
         // Initialize the static progress tracker
         ItemProgressTracker.Reset();
-        ItemProgressTracker.Initialize(logger, settings.ItemProgressFrequency, 
-            blobSettings?.BlobName, blobSettings?.ContainerName);
+        ItemProgressTracker.Initialize(logger, settings.ItemProgressFrequency);
 
         await using var textWriter = new StreamWriter(target, leaveOpen: true);
         await using var writer = new CsvWriter(textWriter, new CsvConfiguration(settings.GetCultureInfo())
