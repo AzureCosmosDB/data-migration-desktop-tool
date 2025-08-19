@@ -36,7 +36,7 @@ namespace Cosmos.DataTransfer.ParquetExtension
             var schema = CreateSchema();
             CreateParquetColumns();
             await SaveFile(schema, target, cancellationToken);
-            progressTracker.LogFinalCount();
+            progressTracker.CompleteFormatting();
         }
 
         private void ProcessColumns(IDataItem item, long row)

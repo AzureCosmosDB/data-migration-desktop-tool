@@ -64,6 +64,6 @@ public class CsvFormatWriter : IFormattedDataWriter
         }
 
         await writer.FlushAsync();
-        progressTracker.LogFinalCount();
+        progressTracker.CompleteFormatting();
     }
 }

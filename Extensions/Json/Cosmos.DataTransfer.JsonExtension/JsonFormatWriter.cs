@@ -39,7 +39,7 @@ public class JsonFormatWriter : IFormattedDataWriter
         }
 
         writer.WriteEndArray();
-        progressTracker.LogFinalCount();
+        progressTracker.CompleteFormatting();
     }
 
     public IEnumerable<IDataExtensionSettings> GetSettings()

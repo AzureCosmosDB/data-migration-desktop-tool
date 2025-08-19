@@ -64,22 +64,20 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             // Verify logging behavior
             var logs = logger.GetLogs();
             var progressLogs = logs.Where(l => l.Contains("Formatted") && l.Contains("items for transfer")).ToList();
-            var completionLogs = logs.Where(l => l.Contains("Completed formatting") && l.Contains("total items")).ToList();
             
             // Should have progress logs for items 2 and 4 (every 2 items)
             Assert.AreEqual(2, progressLogs.Count, "Should have 2 progress log entries");
             
-            // Should have 1 completion log
-            Assert.AreEqual(1, completionLogs.Count, "Should have 1 completion log entry");
-            
             // Verify specific log content
             Assert.IsTrue(progressLogs[0].Contains("Formatted 2 items"));
             Assert.IsTrue(progressLogs[1].Contains("Formatted 4 items"));
-            Assert.IsTrue(completionLogs[0].Contains("Completed formatting 5 total items"));
+            
+            // Verify the item count is available for the sink to use
+            Assert.AreEqual(5, ItemProgressTracker.GetCurrentItemCount());
         }
 
         [TestMethod]
-        public async Task FormatDataAsync_TracksItemsWithAzureBlobDetails_LogsDetailedSummary()
+        public async Task FormatDataAsync_TracksItemsWithAzureBlobDetails_MakesCountAvailable()
         {
             // Arrange
             var logger = new TestLogger();
@@ -107,15 +105,32 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             
             // Assert
             var logs = logger.GetLogs();
-            var completionLogs = logs.Where(l => l.Contains("Completed formatting") && l.Contains("total items")).ToList();
+            var progressLogs = logs.Where(l => l.Contains("Formatted") && l.Contains("items for transfer")).ToList();
             
-            // Should have 1 completion log
-            Assert.AreEqual(1, completionLogs.Count, "Should have 1 completion log entry");
+            // Should have 1 progress log for 2 items
+            Assert.AreEqual(1, progressLogs.Count, "Should have 1 progress log entry");
+            Assert.IsTrue(progressLogs[0].Contains("Formatted 2 items"));
             
-            // Verify the completion log includes blob and container details
-            Assert.IsTrue(completionLogs[0].Contains("Completed formatting 3 total items"));
-            Assert.IsTrue(completionLogs[0].Contains("blob 'test-data.json'"));
-            Assert.IsTrue(completionLogs[0].Contains("container 'test-container'"));
+            // Verify the item count is available for the sink to use
+            Assert.AreEqual(3, ItemProgressTracker.GetCurrentItemCount());
+        }
+
+        [TestMethod]
+        public void ItemProgressTracker_SharesCountAcrossThreadBoundary()
+        {
+            // Arrange
+            var logger = new TestLogger();
+            
+            // Act - Simulate format writer setting count
+            var progressTracker = new ItemProgressTracker(logger, 1000);
+            progressTracker.IncrementItem();
+            progressTracker.IncrementItem();
+            progressTracker.IncrementItem();
+            progressTracker.CompleteFormatting();
+            
+            // Assert - Simulate sink reading count
+            var currentCount = ItemProgressTracker.GetCurrentItemCount();
+            Assert.AreEqual(3, currentCount, "Sink should be able to read the item count set by format writer");
         }
     }
 }

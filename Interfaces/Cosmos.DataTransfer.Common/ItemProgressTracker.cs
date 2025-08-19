@@ -7,6 +7,9 @@ namespace Cosmos.DataTransfer.Common;
 /// </summary>
 public class ItemProgressTracker
 {
+    [ThreadStatic]
+    private static int _currentItemCount;
+    
     private readonly ILogger _logger;
     private readonly int _progressFrequency;
     private readonly string? _blobName;
@@ -35,11 +38,17 @@ public class ItemProgressTracker
     public int ItemCount => _itemCount;
 
     /// <summary>
+    /// Gets the current item count from the thread-static context (for sinks to access).
+    /// </summary>
+    public static int GetCurrentItemCount() => _currentItemCount;
+
+    /// <summary>
     /// Increments the item count and logs progress if threshold is reached.
     /// </summary>
     public void IncrementItem()
     {
         _itemCount++;
+        _currentItemCount = _itemCount;
         
         if (_itemCount % _progressFrequency == 0)
         {
@@ -48,23 +57,15 @@ public class ItemProgressTracker
     }
 
     /// <summary>
-    /// Logs the final item count summary.
+    /// Completes the item counting and makes the final count available to sinks.
+    /// The actual final logging will be done by the sink with comprehensive details.
     /// </summary>
-    public void LogFinalCount()
+    public void CompleteFormatting()
     {
-        if (_itemCount > 0)
-        {
-            if (!string.IsNullOrEmpty(_blobName) && !string.IsNullOrEmpty(_containerName))
-            {
-                _logger.LogInformation("Completed formatting {ItemCount} total items for transfer to blob '{BlobName}' in container '{ContainerName}'", 
-                    _itemCount, _blobName, _containerName);
-            }
-            else
-            {
-                _logger.LogInformation("Completed formatting {ItemCount} total items for transfer to Azure Blob", _itemCount);
-            }
-        }
-        else
+        _currentItemCount = _itemCount;
+        
+        // Only log if no items were processed (warning case)
+        if (_itemCount == 0)
         {
             _logger.LogWarning("No items were formatted for transfer to Azure Blob");
         }

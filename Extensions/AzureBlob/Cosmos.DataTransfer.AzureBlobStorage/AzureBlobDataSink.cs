@@ -3,6 +3,7 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -53,8 +54,20 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             // Log final summary after upload completes
             var finalBlob = account.GetBlobClient(settings.BlobName);
             var properties = await finalBlob.GetPropertiesAsync(cancellationToken: cancellationToken);
-            logger.LogInformation("Successfully transferred {TotalBytes} total bytes to blob '{BlobName}' in container '{ContainerName}'", 
-                properties.Value.ContentLength, settings.BlobName, settings.ContainerName);
+            
+            // Get the item count from the format writer
+            var itemCount = ItemProgressTracker.GetCurrentItemCount();
+            
+            if (itemCount > 0)
+            {
+                logger.LogInformation("Successfully transferred {TotalBytes} total bytes from {ItemCount} items to blob '{BlobName}' in container '{ContainerName}'", 
+                    properties.Value.ContentLength, itemCount, settings.BlobName, settings.ContainerName);
+            }
+            else
+            {
+                logger.LogInformation("Successfully transferred {TotalBytes} total bytes to blob '{BlobName}' in container '{ContainerName}'", 
+                    properties.Value.ContentLength, settings.BlobName, settings.ContainerName);
+            }
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()
