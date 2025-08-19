@@ -77,5 +77,45 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             Assert.IsTrue(progressLogs[1].Contains("Formatted 4 items"));
             Assert.IsTrue(completionLogs[0].Contains("Completed formatting 5 total items"));
         }
+
+        [TestMethod]
+        public async Task FormatDataAsync_TracksItemsWithAzureBlobDetails_LogsDetailedSummary()
+        {
+            // Arrange
+            var logger = new TestLogger();
+            var formatter = new JsonFormatWriter();
+            var data = new[]
+            {
+                new JsonDictionaryDataItem(new Dictionary<string, object?> { { "Id", 1 }, { "Name", "One" } }),
+                new JsonDictionaryDataItem(new Dictionary<string, object?> { { "Id", 2 }, { "Name", "Two" } }),
+                new JsonDictionaryDataItem(new Dictionary<string, object?> { { "Id", 3 }, { "Name", "Three" } }),
+            };
+
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "ItemProgressFrequency", "2" }, // Log every 2 items for testing
+                    { "BlobName", "test-data.json" },
+                    { "ContainerName", "test-container" }
+                })
+                .Build();
+
+            using var stream = new MemoryStream();
+            
+            // Act
+            await formatter.FormatDataAsync(data.Cast<Cosmos.DataTransfer.Interfaces.IDataItem>().ToAsyncEnumerable(), stream, config, logger);
+            
+            // Assert
+            var logs = logger.GetLogs();
+            var completionLogs = logs.Where(l => l.Contains("Completed formatting") && l.Contains("total items")).ToList();
+            
+            // Should have 1 completion log
+            Assert.AreEqual(1, completionLogs.Count, "Should have 1 completion log entry");
+            
+            // Verify the completion log includes blob and container details
+            Assert.IsTrue(completionLogs[0].Contains("Completed formatting 3 total items"));
+            Assert.IsTrue(completionLogs[0].Contains("blob 'test-data.json'"));
+            Assert.IsTrue(completionLogs[0].Contains("container 'test-container'"));
+        }
     }
 }

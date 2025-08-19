@@ -1,6 +1,7 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
 using Cosmos.DataTransfer.Common;
 using Cosmos.DataTransfer.ParquetExtension.Settings;
+using Cosmos.DataTransfer.AzureBlobStorage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Parquet;
@@ -18,7 +19,10 @@ namespace Cosmos.DataTransfer.ParquetExtension
             var settings = config.Get<ParquetSinkSettings>() ?? new ParquetSinkSettings();
             settings.Validate();
 
-            var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency);
+            // Try to get Azure Blob settings for more detailed logging
+            var blobSettings = config.Get<AzureBlobSinkSettings>();
+            var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency, 
+                blobSettings?.BlobName, blobSettings?.ContainerName);
 
             logger.LogInformation("Writing parquet format");
             long row = 0;

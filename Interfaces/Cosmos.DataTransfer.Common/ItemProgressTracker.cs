@@ -9,6 +9,8 @@ public class ItemProgressTracker
 {
     private readonly ILogger _logger;
     private readonly int _progressFrequency;
+    private readonly string? _blobName;
+    private readonly string? _containerName;
     private int _itemCount;
 
     /// <summary>
@@ -16,10 +18,14 @@ public class ItemProgressTracker
     /// </summary>
     /// <param name="logger">Logger instance for writing progress messages</param>
     /// <param name="progressFrequency">Frequency at which to log progress updates (default: 1000)</param>
-    public ItemProgressTracker(ILogger logger, int progressFrequency = 1000)
+    /// <param name="blobName">Optional blob name for more detailed final summary</param>
+    /// <param name="containerName">Optional container name for more detailed final summary</param>
+    public ItemProgressTracker(ILogger logger, int progressFrequency = 1000, string? blobName = null, string? containerName = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _progressFrequency = progressFrequency;
+        _blobName = blobName;
+        _containerName = containerName;
         _itemCount = 0;
     }
 
@@ -47,8 +53,20 @@ public class ItemProgressTracker
     public void LogFinalCount()
     {
         if (_itemCount > 0)
-            _logger.LogInformation("Completed formatting {ItemCount} total items for transfer to Azure Blob", _itemCount);
+        {
+            if (!string.IsNullOrEmpty(_blobName) && !string.IsNullOrEmpty(_containerName))
+            {
+                _logger.LogInformation("Completed formatting {ItemCount} total items for transfer to blob '{BlobName}' in container '{ContainerName}'", 
+                    _itemCount, _blobName, _containerName);
+            }
+            else
+            {
+                _logger.LogInformation("Completed formatting {ItemCount} total items for transfer to Azure Blob", _itemCount);
+            }
+        }
         else
+        {
             _logger.LogWarning("No items were formatted for transfer to Azure Blob");
+        }
     }
 }
