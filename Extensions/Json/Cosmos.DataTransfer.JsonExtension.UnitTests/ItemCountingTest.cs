@@ -63,8 +63,8 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             
             // Verify logging behavior
             var logs = logger.GetLogs();
-            var progressLogs = logs.Where(l => l.Contains("Processed") && l.Contains("items for transfer")).ToList();
-            var completionLogs = logs.Where(l => l.Contains("Completed processing") && l.Contains("total items")).ToList();
+            var progressLogs = logs.Where(l => l.Contains("Formatted") && l.Contains("items for transfer")).ToList();
+            var completionLogs = logs.Where(l => l.Contains("Completed formatting") && l.Contains("total items")).ToList();
             
             // Should have progress logs for items 2 and 4 (every 2 items)
             Assert.AreEqual(2, progressLogs.Count, "Should have 2 progress log entries");
@@ -73,9 +73,9 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             Assert.AreEqual(1, completionLogs.Count, "Should have 1 completion log entry");
             
             // Verify specific log content
-            Assert.IsTrue(progressLogs[0].Contains("Processed 2 items"));
-            Assert.IsTrue(progressLogs[1].Contains("Processed 4 items"));
-            Assert.IsTrue(completionLogs[0].Contains("Completed processing 5 total items"));
+            Assert.IsTrue(progressLogs[0].Contains("Formatted 2 items"));
+            Assert.IsTrue(progressLogs[1].Contains("Formatted 4 items"));
+            Assert.IsTrue(completionLogs[0].Contains("Completed formatting 5 total items"));
         }
     }
 }

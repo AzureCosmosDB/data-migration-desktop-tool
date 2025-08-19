@@ -49,6 +49,12 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
                 })
             }, cancellationToken);
             await writeToStream(blobStream);
+            
+            // Log final summary after upload completes
+            var finalBlob = account.GetBlobClient(settings.BlobName);
+            var properties = await finalBlob.GetPropertiesAsync(cancellationToken: cancellationToken);
+            logger.LogInformation("Successfully transferred {TotalBytes} total bytes to blob '{BlobName}' in container '{ContainerName}'", 
+                properties.Value.ContentLength, settings.BlobName, settings.ContainerName);
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()

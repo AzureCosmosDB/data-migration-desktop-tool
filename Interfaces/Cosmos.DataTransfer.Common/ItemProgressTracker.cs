@@ -37,7 +37,7 @@ public class ItemProgressTracker
         
         if (_itemCount % _progressFrequency == 0)
         {
-            _logger.LogInformation("Processed {ItemCount} items for transfer to Azure Blob", _itemCount);
+            _logger.LogInformation("Formatted {ItemCount} items for transfer to Azure Blob", _itemCount);
         }
     }
 
@@ -47,8 +47,8 @@ public class ItemProgressTracker
     public void LogFinalCount()
     {
         if (_itemCount > 0)
-            _logger.LogInformation("Completed processing {ItemCount} total items for transfer to Azure Blob", _itemCount);
+            _logger.LogInformation("Completed formatting {ItemCount} total items for transfer to Azure Blob", _itemCount);
         else
-            _logger.LogWarning("No items were processed for transfer to Azure Blob");
+            _logger.LogWarning("No items were formatted for transfer to Azure Blob");
     }
 }
