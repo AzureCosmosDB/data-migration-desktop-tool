@@ -17,7 +17,10 @@ public class JsonFormatWriter : IFormattedDataWriter
 
         // Try to get Azure Blob settings for more detailed logging
         var blobSettings = config.Get<AzureBlobSinkSettings>();
-        var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency, 
+        
+        // Initialize the static progress tracker
+        ItemProgressTracker.Reset();
+        ItemProgressTracker.Initialize(logger, settings.ItemProgressFrequency, 
             blobSettings?.BlobName, blobSettings?.ContainerName);
 
         await using var writer = new Utf8JsonWriter(target, new JsonWriterOptions
@@ -29,7 +32,7 @@ public class JsonFormatWriter : IFormattedDataWriter
         await foreach (var item in dataItems.WithCancellation(cancellationToken))
         {
             DataItemJsonConverter.WriteDataItem(writer, item, settings.IncludeNullFields);
-            progressTracker.IncrementItem();
+            ItemProgressTracker.IncrementItem();
             
             int max = settings.BufferSizeMB * 1024 * 1024;
             if (writer.BytesPending > max)
@@ -39,7 +42,7 @@ public class JsonFormatWriter : IFormattedDataWriter
         }
 
         writer.WriteEndArray();
-        progressTracker.CompleteFormatting();
+        ItemProgressTracker.CompleteFormatting();
     }
 
     public IEnumerable<IDataExtensionSettings> GetSettings()

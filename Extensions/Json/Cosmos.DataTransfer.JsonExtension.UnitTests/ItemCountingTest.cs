@@ -73,7 +73,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             Assert.IsTrue(progressLogs[1].Contains("Formatted 4 items"));
             
             // Verify the item count is available for the sink to use
-            Assert.AreEqual(5, ItemProgressTracker.GetCurrentItemCount());
+            Assert.AreEqual(5, ItemProgressTracker.ItemCount);
         }
 
         [TestMethod]
@@ -112,7 +112,7 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             Assert.IsTrue(progressLogs[0].Contains("Formatted 2 items"));
             
             // Verify the item count is available for the sink to use
-            Assert.AreEqual(3, ItemProgressTracker.GetCurrentItemCount());
+            Assert.AreEqual(3, ItemProgressTracker.ItemCount);
         }
 
         [TestMethod]
@@ -122,14 +122,15 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
             var logger = new TestLogger();
             
             // Act - Simulate format writer setting count
-            var progressTracker = new ItemProgressTracker(logger, 1000);
-            progressTracker.IncrementItem();
-            progressTracker.IncrementItem();
-            progressTracker.IncrementItem();
-            progressTracker.CompleteFormatting();
+            ItemProgressTracker.Reset();
+            ItemProgressTracker.Initialize(logger, 1000);
+            ItemProgressTracker.IncrementItem();
+            ItemProgressTracker.IncrementItem();
+            ItemProgressTracker.IncrementItem();
+            ItemProgressTracker.CompleteFormatting();
             
             // Assert - Simulate sink reading count
-            var currentCount = ItemProgressTracker.GetCurrentItemCount();
+            var currentCount = ItemProgressTracker.ItemCount;
             Assert.AreEqual(3, currentCount, "Sink should be able to read the item count set by format writer");
         }
     }

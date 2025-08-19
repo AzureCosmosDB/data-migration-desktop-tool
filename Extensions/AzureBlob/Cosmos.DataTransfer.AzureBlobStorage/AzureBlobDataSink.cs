@@ -56,7 +56,7 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             var properties = await finalBlob.GetPropertiesAsync(cancellationToken: cancellationToken);
             
             // Get the item count from the format writer
-            var itemCount = ItemProgressTracker.GetCurrentItemCount();
+            var itemCount = ItemProgressTracker.ItemCount;
             
             if (itemCount > 0)
             {

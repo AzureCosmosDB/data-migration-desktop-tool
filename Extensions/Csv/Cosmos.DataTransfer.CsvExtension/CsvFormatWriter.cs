@@ -25,7 +25,10 @@ public class CsvFormatWriter : IFormattedDataWriter
 
         // Try to get Azure Blob settings for more detailed logging
         var blobSettings = config.Get<AzureBlobSinkSettings>();
-        var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency, 
+        
+        // Initialize the static progress tracker
+        ItemProgressTracker.Reset();
+        ItemProgressTracker.Initialize(logger, settings.ItemProgressFrequency, 
             blobSettings?.BlobName, blobSettings?.ContainerName);
 
         await using var textWriter = new StreamWriter(target, leaveOpen: true);
@@ -60,10 +63,10 @@ public class CsvFormatWriter : IFormattedDataWriter
             }
 
             firstRecord = false;
-            progressTracker.IncrementItem();
+            ItemProgressTracker.IncrementItem();
         }
 
         await writer.FlushAsync();
-        progressTracker.CompleteFormatting();
+        ItemProgressTracker.CompleteFormatting();
     }
 }

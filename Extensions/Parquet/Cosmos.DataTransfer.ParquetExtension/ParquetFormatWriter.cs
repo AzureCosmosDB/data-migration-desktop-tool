@@ -21,7 +21,10 @@ namespace Cosmos.DataTransfer.ParquetExtension
 
             // Try to get Azure Blob settings for more detailed logging
             var blobSettings = config.Get<AzureBlobSinkSettings>();
-            var progressTracker = new ItemProgressTracker(logger, settings.ItemProgressFrequency, 
+            
+            // Initialize the static progress tracker
+            ItemProgressTracker.Reset();
+            ItemProgressTracker.Initialize(logger, settings.ItemProgressFrequency, 
                 blobSettings?.BlobName, blobSettings?.ContainerName);
 
             logger.LogInformation("Writing parquet format");
@@ -30,13 +33,13 @@ namespace Cosmos.DataTransfer.ParquetExtension
             {
                 ProcessColumns(item, row);
                 row++;
-                progressTracker.IncrementItem();
+                ItemProgressTracker.IncrementItem();
             }
 
             var schema = CreateSchema();
             CreateParquetColumns();
             await SaveFile(schema, target, cancellationToken);
-            progressTracker.CompleteFormatting();
+            ItemProgressTracker.CompleteFormatting();
         }
 
         private void ProcessColumns(IDataItem item, long row)
