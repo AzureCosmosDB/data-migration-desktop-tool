@@ -9,32 +9,46 @@ using System.Data;
 
 namespace Cosmos.DataTransfer.ParquetExtension
 {
-    public class ParquetFormatWriter : IFormattedDataWriter
+    public class ParquetFormatWriter : IFormattedDataWriter, IProgressAwareFormattedDataWriter
     {
         private List<ParquetDataCol> parquetDataCols = new List<ParquetDataCol>();
 
         public async Task FormatDataAsync(IAsyncEnumerable<IDataItem> dataItems, Stream target, IConfiguration config, ILogger logger, CancellationToken cancellationToken = default)
         {
+            // Call the progress-aware version with null progress
+            await FormatDataAsync(dataItems, target, config, logger, null, cancellationToken);
+        }
+
+        public async Task FormatDataAsync(IAsyncEnumerable<IDataItem> dataItems, Stream target, IConfiguration config, ILogger logger, IProgress<DataTransferProgress>? progress, CancellationToken cancellationToken = default)
+        {
             var settings = config.Get<ParquetSinkSettings>() ?? new ParquetSinkSettings();
             settings.Validate();
 
-            // Initialize the static progress tracker
-            ItemProgressTracker.Reset();
-            ItemProgressTracker.Initialize(logger, settings.ItemProgressFrequency);
-
             logger.LogInformation("Writing parquet format");
             long row = 0;
+            int itemCount = 0;
             await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
                 ProcessColumns(item, row);
                 row++;
-                ItemProgressTracker.IncrementItem();
+                itemCount++;
+                
+                // Report progress if progress reporter is available
+                if (progress != null && itemCount % settings.ItemProgressFrequency == 0)
+                {
+                    progress.Report(new DataTransferProgress(itemCount, 0, $"Formatted {itemCount} items for transfer"));
+                }
             }
 
             var schema = CreateSchema();
             CreateParquetColumns();
             await SaveFile(schema, target, cancellationToken);
-            ItemProgressTracker.CompleteFormatting();
+            
+            // Report final count
+            if (progress != null && itemCount > 0)
+            {
+                progress.Report(new DataTransferProgress(itemCount, 0, null));
+            }
         }
 
         private void ProcessColumns(IDataItem item, long row)

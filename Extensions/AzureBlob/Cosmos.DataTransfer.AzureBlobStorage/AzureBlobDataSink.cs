@@ -9,9 +9,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Cosmos.DataTransfer.AzureBlobStorage
 {
-    public class AzureBlobDataSink : IComposableDataSink
+    public class AzureBlobDataSink : IComposableDataSink, IProgressAwareComposableDataSink
     {
         public async Task WriteToTargetAsync(Func<Stream, Task> writeToStream, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
+        {
+            // Call the progress-aware version with null progress
+            await WriteToTargetAsync(writeToStream, config, dataSource, logger, null, cancellationToken);
+        }
+
+        public async Task WriteToTargetAsync(Func<Stream, Task> writeToStream, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, IProgress<DataTransferProgress>? progress, CancellationToken cancellationToken = default)
         {
             var settings = config.Get<AzureBlobSinkSettings>();
             settings.Validate();
@@ -55,8 +61,13 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
             var finalBlob = account.GetBlobClient(settings.BlobName);
             var properties = await finalBlob.GetPropertiesAsync(cancellationToken: cancellationToken);
             
-            // Get the item count from the format writer
-            var itemCount = ItemProgressTracker.ItemCount;
+            // Get the item count from the progress reporter if available
+            int itemCount = 0;
+            if (progress is DataTransferProgressReporter progressReporter && 
+                progressReporter.Context != null)
+            {
+                itemCount = progressReporter.Context.GetCurrentProgress().ItemCount;
+            }
             
             if (itemCount > 0)
             {
