@@ -2,7 +2,7 @@
   "profiles": {
     "Cosmos.DataTransfer.Core": {
       "commandName": "Project",
-      "commandLineArgs": "--settings c:\\temp\\migrationsettings-mongodb-2.json"
+      "commandLineArgs": ""
     },
     "JSON->Cosmos": {
       "commandName": "Project",
