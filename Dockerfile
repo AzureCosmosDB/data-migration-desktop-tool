@@ -160,7 +160,7 @@ RUN dotnet publish \
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0 AS runtime
 WORKDIR /app
 
-# Enable this section to use Microsoft Entra ID authentication
+# Enable this section for local development verificationto use Microsoft Entra ID authentication
 # Install curl and Azure CLI
 # RUN apt-get clean && apt-get update
 # RUN apt install curl -y
