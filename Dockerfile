@@ -178,7 +178,7 @@ VOLUME /config
 VOLUME /data
 
 # Make the executable file executable (for Linux)
-RUN chmod +x dmt || true
+RUN chmod +x dmt
 
 # Set the entrypoint to the self-contained executable
 ENTRYPOINT ["./dmt"]
