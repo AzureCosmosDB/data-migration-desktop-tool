@@ -43,7 +43,7 @@ docker pull ghcr.io/azurecosmosdb/data-migration-desktop-tool:latest
 docker run -v $(pwd)/config:/config -v $(pwd)/data:/data ghcr.io/azurecosmosdb/data-migration-desktop-tool:latest run --settings /config/migrationsettings.json
 ```
 
-**For now, we recommend [building the Docker image locally](#building-the-docker-image-locally) as an alternative.**
+**For now, we recommend [Building the Docker Image Locally](#building-the-docker-image-locally) as an alternative.**
 
 ### Building the Docker Image Locally
 
