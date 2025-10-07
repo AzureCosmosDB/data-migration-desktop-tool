@@ -77,12 +77,44 @@ namespace Cosmos.DataTransfer.Core
                 try
                 {
                     var configuredOptions = _configuration.Get<DataTransferOptions>() ?? new DataTransferOptions();
+                    var settingsPath = Settings?.FullName ?? configuredOptions.SettingsPath;
+                    
+                    // Check if settings file exists when no source/sink provided via command line
+                    if (string.IsNullOrEmpty(Source) && string.IsNullOrEmpty(Sink))
+                    {
+                        var defaultSettingsPath = settingsPath ?? "migrationsettings.json";
+                        if (!File.Exists(defaultSettingsPath))
+                        {
+                            Console.Error.WriteLine($"Error: Settings file '{defaultSettingsPath}' not found.");
+                            Console.Error.WriteLine("Please provide a valid settings file or specify --source and --sink options.");
+                            Console.Error.WriteLine();
+                            Console.Error.WriteLine("Use --help for more information.");
+                            return 1;
+                        }
+                    }
+
                     var combinedConfig = await BuildSettingsConfiguration(_configuration,
-                        Settings?.FullName ?? configuredOptions.SettingsPath,
-                        string.IsNullOrEmpty(Source ?? configuredOptions.Source) && string.IsNullOrEmpty(Sink ?? configuredOptions.Sink),
+                        settingsPath,
                         cancellationToken);
 
                     var options = combinedConfig.Get<DataTransferOptions>();
+
+                    // Validate that we have source and sink configured
+                    var sourceValue = Source ?? options?.Source;
+                    var sinkValue = Sink ?? options?.Sink;
+                    
+                    if (string.IsNullOrWhiteSpace(sourceValue) || string.IsNullOrWhiteSpace(sinkValue))
+                    {
+                        Console.Error.WriteLine("Error: Invalid configuration. Both Source and Sink must be specified.");
+                        if (!string.IsNullOrEmpty(settingsPath) && File.Exists(settingsPath))
+                        {
+                            Console.Error.WriteLine($"The settings file '{settingsPath}' is missing required Source or Sink values.");
+                        }
+                        Console.Error.WriteLine("Please provide valid Source and Sink in the settings file or via command line arguments.");
+                        Console.Error.WriteLine();
+                        Console.Error.WriteLine("Use --help for more information.");
+                        return 1;
+                    }
 
                     string extensionsPath = _extensionLoader.GetExtensionFolderPath();
                     CompositionContainer container = _extensionLoader.BuildExtensionCatalog(extensionsPath);
@@ -92,9 +124,9 @@ namespace Cosmos.DataTransfer.Core
 
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var source = await GetExtensionSelection(Source ?? options.Source, sources, "Source", cancellationToken);
+                    var source = await GetExtensionSelection(sourceValue, sources, "Source", cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
-                    var sink = await GetExtensionSelection(Sink ?? options.Sink, sinks, "Sink", cancellationToken);
+                    var sink = await GetExtensionSelection(sinkValue, sinks, "Sink", cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var sourceConfig = combinedConfig.GetSection("SourceSettings");
@@ -191,56 +223,35 @@ namespace Cosmos.DataTransfer.Core
             private static async Task<T> GetExtensionSelection<T>(string? selectionName, List<T> extensions, string inputPrompt, CancellationToken cancellationToken)
                 where T : class, IDataTransferExtension
             {
-                if (!string.IsNullOrWhiteSpace(selectionName))
+                await Task.CompletedTask; // Maintain async signature for compatibility
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                if (string.IsNullOrWhiteSpace(selectionName))
                 {
-                    var extension = extensions.FirstOrDefault(s => s.MatchesExtensionSelection(selectionName));
-                    if (extension != null)
-                    {
-                        Console.WriteLine($"Using {extension.DisplayName} {inputPrompt}");
-                        return extension;
-                    }
+                    throw new InvalidOperationException($"{inputPrompt} extension name is required. Use --source and --sink options or configure them in the settings file.");
                 }
 
-                Console.WriteLine($"Select {inputPrompt}");
-                for (var index = 0; index < extensions.Count; index++)
+                var extension = extensions.FirstOrDefault(s => s.MatchesExtensionSelection(selectionName));
+                if (extension == null)
                 {
-                    var extension = extensions[index];
-                    Console.WriteLine($"{index + 1}:{extension.DisplayName}");
+                    throw new InvalidOperationException($"{inputPrompt} extension '{selectionName}' not found. Use 'dmt list' to see available extensions.");
                 }
-
-                string? selection = "";
-                int input;
-                while (!int.TryParse(selection, out input) || input > extensions.Count || input <= 0)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    selection = await Console.In.ReadLineAsync(cancellationToken);
-                }
-
-                T selected = extensions[input - 1];
-                Console.WriteLine($"Using {selected.DisplayName} {inputPrompt}");
-                return selected;
+                
+                Console.WriteLine($"Using {extension.DisplayName} {inputPrompt}");
+                return extension;
             }
 
-            private async Task<IConfiguration> BuildSettingsConfiguration(IConfiguration configuration, string? settingsPath, bool promptForFile, CancellationToken cancellationToken)
+            private async Task<IConfiguration> BuildSettingsConfiguration(IConfiguration configuration, string? settingsPath, CancellationToken cancellationToken)
             {
+                await Task.CompletedTask; // Maintain async signature for compatibility
+                cancellationToken.ThrowIfCancellationRequested();
+                
                 IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
                 if (!string.IsNullOrEmpty(settingsPath) && File.Exists(settingsPath))
                 {
                     var fullFilePath = Path.GetFullPath(settingsPath);
                     _logger.LogInformation("Settings loading from file at configured path '{FilePath}'.", fullFilePath);
                     configurationBuilder = configurationBuilder.AddJsonFile(fullFilePath);
-                }
-                else if (promptForFile)
-                {
-                    Console.Write("Path to settings file? (leave empty to skip): ");
-                    var path = await Console.In.ReadLineAsync(cancellationToken);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (!string.IsNullOrWhiteSpace(path))
-                    {
-                        var fullFilePath = Path.GetFullPath(path);
-                        _logger.LogInformation("Settings loading from file at entered path '{FilePath}'.", fullFilePath);
-                        configurationBuilder = configurationBuilder.AddJsonFile(fullFilePath);
-                    }
                 }
 
                 return configurationBuilder
