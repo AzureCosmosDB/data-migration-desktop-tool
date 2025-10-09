@@ -18,8 +18,8 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
 
         if (!string.IsNullOrEmpty(settings.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName) && !string.IsNullOrEmpty(settings.Collection))
         {
-            var context = new Context(settings.ConnectionString, settings.DatabaseName);
-            var repo = context.GetRepository<BsonDocument>(settings.Collection);
+            var context = new Context(settings.ConnectionString!, settings.DatabaseName!);
+            var repo = context.GetRepository<BsonDocument>(settings.Collection!);
 
             var batchSize = settings.BatchSize ?? 1000;
 

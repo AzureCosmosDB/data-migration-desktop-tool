@@ -92,9 +92,9 @@ namespace Cosmos.DataTransfer.Core
 
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var source = await GetExtensionSelection(Source ?? options.Source, sources, "Source", cancellationToken);
+                    var source = await GetExtensionSelection(Source ?? options?.Source, sources, "Source", cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
-                    var sink = await GetExtensionSelection(Sink ?? options.Sink, sinks, "Sink", cancellationToken);
+                    var sink = await GetExtensionSelection(Sink ?? options?.Sink, sinks, "Sink", cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var sourceConfig = combinedConfig.GetSection("SourceSettings");
