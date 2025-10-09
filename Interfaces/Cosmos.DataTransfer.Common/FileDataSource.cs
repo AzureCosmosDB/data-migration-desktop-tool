@@ -33,7 +33,7 @@ public class FileDataSource : IComposableDataSource
         var settings = config.Get<FileSourceSettings>();
         settings.Validate();
 
-        if (File.Exists(settings.FilePath!))
+        if (File.Exists(settings!.FilePath!))
         {
             yield return ReadFile(settings.FilePath, settings.Compression, logger);
         }

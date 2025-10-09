@@ -20,7 +20,7 @@ namespace Cosmos.DataTransfer.CognitiveSearchExtension
             var settings = config.Get<CognitiveSearchDataSourceSettings>();
             settings.Validate();
 
-            var indexClient = new SearchIndexClient(new Uri(settings.Endpoint!), new AzureKeyCredential(settings.ApiKey!));
+            var indexClient = new SearchIndexClient(new Uri(settings!.Endpoint!), new AzureKeyCredential(settings.ApiKey!));
             var searchClient = indexClient.GetSearchClient(settings.Index!);
 
             var response = await searchClient.SearchAsync<JsonElement>("*"

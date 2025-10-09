@@ -12,7 +12,7 @@ public class FileDataSink : IComposableDataSink
         var settings = config.Get<FileSinkSettings>();
         settings.Validate();
         
-        using var writer = GetCompressor(settings.Compression, settings.FilePath!, settings.Append);
+        using var writer = GetCompressor(settings!.Compression, settings.FilePath!, settings.Append);
         await writeToStream(writer);
         writer.Close();
     }
