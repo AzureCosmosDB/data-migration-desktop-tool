@@ -139,10 +139,10 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var settings = config.Get<CosmosSinkSettings>();
             settings.Validate();
 
-            var client = CosmosExtensionServices.CreateClient(settings, DisplayName, dataSource.DisplayName);
+            var client = CosmosExtensionServices.CreateClient(settings!, DisplayName, dataSource.DisplayName);
 
             Container container;
-            if (settings.UseRbacAuth)
+            if (settings!.UseRbacAuth)
             {
                 var cosmosContainer = client.GetContainer(settings.Database, settings.Container);
                 container = settings.InitClientEncryption

@@ -48,7 +48,7 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                 settings.Validate();
 
                 await connection.OpenAsync(cancellationToken);
-                var command = connection.CreateCommand();
+                var command = connection.CreateCommand()!;
                 command.CommandText = queryText;
                 command.Parameters.AddRange(parameters);
 
