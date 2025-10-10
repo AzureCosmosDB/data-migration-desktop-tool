@@ -31,7 +31,7 @@ public class CsvFormatReader : IFormattedDataReader
             using var textReader = new StreamReader(source, leaveOpen: true);
             using var reader = new CsvReader(textReader, new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                HasHeaderRecord = settings.HasHeader,
+                HasHeaderRecord = settings!.HasHeader,
                 Delimiter = settings.Delimiter,
             });
 

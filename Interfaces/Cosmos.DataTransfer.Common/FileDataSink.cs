@@ -11,12 +11,10 @@ public class FileDataSink : IComposableDataSink
     {
         var settings = config.Get<FileSinkSettings>();
         settings.Validate();
-        if (settings.FilePath != null)
-        {
-            using var writer = GetCompressor(settings.Compression, settings.FilePath, settings.Append);
-            await writeToStream(writer);
-            writer.Close();
-        }
+        
+        using var writer = GetCompressor(settings!.Compression, settings.FilePath!, settings.Append);
+        await writeToStream(writer);
+        writer.Close();
     }
 
     public IEnumerable<IDataExtensionSettings> GetSettings()

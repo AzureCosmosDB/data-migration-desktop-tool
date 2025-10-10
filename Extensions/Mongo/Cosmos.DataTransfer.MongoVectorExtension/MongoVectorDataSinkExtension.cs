@@ -19,7 +19,7 @@ public class MongoVectorDataSinkExtension : IDataSinkExtensionWithSettings
         var settings = config.Get<MongoVectorSinkSettings>();        
         settings.Validate();
 
-        if (!string.IsNullOrEmpty(settings.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName) && !string.IsNullOrEmpty(settings.Collection))
+        if (!string.IsNullOrEmpty(settings!.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName) && !string.IsNullOrEmpty(settings.Collection))
         {
             var Isembeddingsetsvalid = false;
             var client = new OpenAIClient("");
