@@ -12,7 +12,7 @@ public class AwsS3DataSource : IComposableDataSource
         var settings = config.Get<AwsS3SourceSettings>();
         settings.Validate();
 
-        logger.LogInformation("Reading file {File} from AWS S3 Bucket '{BucketName}'", settings.FileName, settings.S3BucketName);
+        logger.LogInformation("Reading file {File} from AWS S3 Bucket '{BucketName}'", settings!.FileName, settings.S3BucketName);
 
         using var s3 = new S3Client(settings.S3AccessKey, settings.S3SecretKey, settings.S3Region);
         var stream = await s3.ReadFromS3(settings.S3BucketName, settings.FileName, cancellationToken);

@@ -18,9 +18,9 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         var settings = config.Get<MongoSourceSettings>();
         settings.Validate();
 
-        if (!string.IsNullOrEmpty(settings.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName))
+        if (!string.IsNullOrEmpty(settings!.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName))
         {
-            var context = new Context(settings.ConnectionString, settings.DatabaseName, settings.KeyVaultNamespace, settings.KMSProviders);
+            var context = new Context(settings.ConnectionString!, settings.DatabaseName!, settings.KeyVaultNamespace, settings.KMSProviders);
 
             var collectionNames = !string.IsNullOrEmpty(settings.Collection)
                 ? new List<string> { settings.Collection }
