@@ -32,10 +32,20 @@ namespace Cosmos.DataTransfer.ParquetExtension
         public ParquetDataCol(string name, Type coltype)
         {
             ColumnName = name;
-            ColumnType = coltype;
-            if (coltype != System.Type.Missing.GetType())
+            
+            // Convert DateTimeOffset to DateTime for Parquet compatibility
+            if (coltype == typeof(DateTimeOffset) || coltype == typeof(DateTimeOffset?))
             {
-                ParquetDataType = MapDataType(name, coltype);
+                ColumnType = typeof(DateTime);
+                ParquetDataType = MapDataType(name, typeof(DateTime));
+            }
+            else
+            {
+                ColumnType = coltype;
+                if (coltype != System.Type.Missing.GetType())
+                {
+                    ParquetDataType = MapDataType(name, coltype);
+                }
             }
         }
 
@@ -51,7 +61,15 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 return;
             }
 
-            SparseColumnData[row] = value;
+            // Convert DateTimeOffset to DateTime for Parquet compatibility
+            if (value is DateTimeOffset dateTimeOffset)
+            {
+                SparseColumnData[row] = dateTimeOffset.DateTime;
+            }
+            else
+            {
+                SparseColumnData[row] = value;
+            }
         }
     }
 }
