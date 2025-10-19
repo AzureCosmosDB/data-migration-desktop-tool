@@ -84,7 +84,8 @@ namespace Cosmos.DataTransfer.ParquetExtension.UnitTests
             var logger = new TestLogger();
             var config = new ConfigurationBuilder().Build();
 
-            var testTimestamp = new DateTimeOffset(2024, 1, 15, 10, 30, 45, TimeSpan.Zero);
+            // Use a non-zero offset to ensure UTC conversion is happening
+            var testTimestamp = new DateTimeOffset(2024, 1, 15, 10, 30, 45, TimeSpan.FromHours(5));
             var entity = new TableEntity("partition1", "row1");
             entity["Name"] = "TestEntity";
             entity.Timestamp = testTimestamp;
@@ -115,10 +116,13 @@ namespace Cosmos.DataTransfer.ParquetExtension.UnitTests
             using var rowGroupReader = parquetReader.OpenRowGroupReader(0);
             var timestampColumn = await rowGroupReader.ReadColumnAsync(dataField);
             
-            // Verify the value is correct (converted from DateTimeOffset to DateTime)
+            // Verify the value is correct (converted from DateTimeOffset to UTC DateTime)
             var timestampValue = timestampColumn.Data.GetValue(0) as DateTime?;
             Assert.IsNotNull(timestampValue, "Timestamp value should not be null");
-            Assert.AreEqual(testTimestamp.DateTime, timestampValue.Value, "Timestamp value should match the original DateTimeOffset.DateTime");
+            Assert.AreEqual(testTimestamp.UtcDateTime, timestampValue.Value, "Timestamp value should match the original DateTimeOffset.UtcDateTime");
+            
+            // Verify it's different from the local DateTime (confirming UTC conversion happened)
+            Assert.AreNotEqual(testTimestamp.DateTime, timestampValue.Value, "Timestamp should be converted to UTC, not preserve local time");
         }
     }
 }

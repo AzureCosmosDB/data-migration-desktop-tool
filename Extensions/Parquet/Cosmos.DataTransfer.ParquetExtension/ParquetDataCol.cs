@@ -61,10 +61,10 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 return;
             }
 
-            // Convert DateTimeOffset to DateTime for Parquet compatibility
+            // Convert DateTimeOffset to DateTime (UTC) for Parquet compatibility
             if (value is DateTimeOffset dateTimeOffset)
             {
-                SparseColumnData[row] = dateTimeOffset.DateTime;
+                SparseColumnData[row] = dateTimeOffset.UtcDateTime;
             }
             else
             {
