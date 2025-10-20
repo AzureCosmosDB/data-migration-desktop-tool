@@ -175,5 +175,166 @@ namespace Cosmos.DataTransfer.Core.UnitTests
             sourceExtension.Verify(se => se.ReadAsync(It.IsAny<IConfiguration>(), It.IsAny<ILogger>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
             sinkExtension.Verify(se => se.WriteAsync(It.IsAny<IAsyncEnumerable<IDataItem>>(), It.Is<IConfiguration>(c => c["FilePath"] == targetFile), sourceExtension.Object, It.IsAny<ILogger>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
+
+        [TestMethod]
+        public void Invoke_WithEmptySourceAndSink_ReturnsError()
+        {
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "Source", "" },
+                    { "Sink", "" },
+                })
+                .Build();
+            var loader = new Mock<IExtensionLoader>();
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension>());
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension>());
+
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            var result = handler.Invoke(new InvocationContext(parseResult));
+            
+            // Should return error code when source/sink are not configured
+            Assert.AreEqual(1, result);
+        }
+
+        [TestMethod]
+        public void Invoke_WithMissingSource_ReturnsError()
+        {
+            const string sink = "testSink";
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "Sink", sink },
+                })
+                .Build();
+            var loader = new Mock<IExtensionLoader>();
+            var sinkExtension = new Mock<IDataSinkExtension>();
+            sinkExtension.SetupGet(ds => ds.DisplayName).Returns(sink);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension>());
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sinkExtension.Object });
+
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            var result = handler.Invoke(new InvocationContext(parseResult));
+            
+            // Should return error code when source is not configured
+            Assert.AreEqual(1, result);
+        }
+
+        [TestMethod]
+        public void Invoke_WithMissingSink_ReturnsError()
+        {
+            const string source = "testSource";
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "Source", source },
+                })
+                .Build();
+            var loader = new Mock<IExtensionLoader>();
+            var sourceExtension = new Mock<IDataSourceExtension>();
+            sourceExtension.SetupGet(ds => ds.DisplayName).Returns(source);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { sourceExtension.Object });
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension>());
+
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            var result = handler.Invoke(new InvocationContext(parseResult));
+            
+            // Should return error code when sink is not configured
+            Assert.AreEqual(1, result);
+        }
+
+        [TestMethod]
+        public void Invoke_WithInvalidSourceExtension_ThrowsException()
+        {
+            const string source = "invalidSource";
+            const string sink = "testSink";
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "Source", source },
+                    { "Sink", sink },
+                })
+                .Build();
+            var loader = new Mock<IExtensionLoader>();
+            var sourceExtension = new Mock<IDataSourceExtension>();
+            sourceExtension.SetupGet(ds => ds.DisplayName).Returns("differentSource");
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { sourceExtension.Object });
+
+            var sinkExtension = new Mock<IDataSinkExtension>();
+            sinkExtension.SetupGet(ds => ds.DisplayName).Returns(sink);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sinkExtension.Object });
+
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            
+            // Should throw exception when source extension is not found
+            Assert.ThrowsException<InvalidOperationException>(() => handler.Invoke(new InvocationContext(parseResult)));
+        }
+
+        [TestMethod]
+        public void Invoke_WithInvalidSinkExtension_ThrowsException()
+        {
+            const string source = "testSource";
+            const string sink = "invalidSink";
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "Source", source },
+                    { "Sink", sink },
+                })
+                .Build();
+            var loader = new Mock<IExtensionLoader>();
+            var sourceExtension = new Mock<IDataSourceExtension>();
+            sourceExtension.SetupGet(ds => ds.DisplayName).Returns(source);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { sourceExtension.Object });
+
+            var sinkExtension = new Mock<IDataSinkExtension>();
+            sinkExtension.SetupGet(ds => ds.DisplayName).Returns("differentSink");
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sinkExtension.Object });
+
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            
+            // Should throw exception when sink extension is not found
+            Assert.ThrowsException<InvalidOperationException>(() => handler.Invoke(new InvocationContext(parseResult)));
+        }
     }
 }
