@@ -71,12 +71,28 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 }
                 else if (coltype != Type.Missing.GetType() && current.ColumnType != coltype)
                 {
-                    if (current != null)
+                    // Handle DateTimeOffset type compatibility with DateTime
+                    var isDateTimeOffsetToDateTime = 
+                        (coltype == typeof(DateTimeOffset) || coltype == typeof(DateTimeOffset?)) && 
+                        current.ColumnType == typeof(DateTime);
+                    var isDateTimeToDateTimeOffset = 
+                        (current.ColumnType == typeof(DateTimeOffset) || current.ColumnType == typeof(DateTimeOffset?)) && 
+                        coltype == typeof(DateTime);
+                    
+                    if (!isDateTimeOffsetToDateTime && !isDateTimeToDateTimeOffset && current != null)
                     {
                         current.ColumnType = coltype;
                         if (coltype != null)
                         {
-                            current.ParquetDataType = new DataField(col, coltype, true);
+                            // Convert DateTimeOffset to DateTime for Parquet compatibility
+                            if (coltype == typeof(DateTimeOffset) || coltype == typeof(DateTimeOffset?))
+                            {
+                                current.ParquetDataType = new DataField(col, typeof(DateTime), true);
+                            }
+                            else
+                            {
+                                current.ParquetDataType = new DataField(col, coltype, true);
+                            }
                         }
                     }
                 }
