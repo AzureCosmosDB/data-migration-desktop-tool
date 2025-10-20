@@ -7,4 +7,6 @@ public class MongoLegacySinkSettings : MongoLegacyBaseSettings
     public string? Collection { get; set; }
 
     public int? BatchSize { get; set; }
+
+    public string? IdFieldName { get; set; }
 }
