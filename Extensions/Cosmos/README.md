@@ -20,7 +20,7 @@ Source supports an optional `IncludeMetadataFields` parameter (`false` by defaul
 
 ### Always Encrypted
 
-Source and Sink support Always Encrypted as an optional parameter. When `InitClientEncryption` is set to `true`, the extension will initialize the Cosmos client with the Always Encrypted feature enabled. This allows for the use of encrypted fields in the Cosmos DB container. The extension will automatically decrypt the fields when reading from the source and encrypt the fields when writing to the sink. 
+Source and Sink support Always Encrypted as an optional parameter. When `InitClientEncryption` is set to `true`, the extension will initialize the Cosmos client with the Always Encrypted feature enabled. This allows for the use of encrypted fields in the Cosmos DB container. The extension will automatically decrypt the fields when reading from the source and encrypt the fields when writing to the sink.
 </br>
 The extension will also automatically handle the encryption keys and encryption policy for the client, but it requires `UseRbacAuth` to be set to `true` and the user to have the necessary permissions to access the key vault.
 </br>
@@ -52,27 +52,55 @@ Or with RBAC:
     "IncludeMetadataFields": false,
     "PartitionKeyValue":"123",
     "Query":"SELECT * FROM c WHERE c.category='event'",
-    "InitClientEncryption": false
+    "InitClientEncryption": false,
     "WebProxy":"http://yourproxy.server.com/"
+}
+```
+
+#### Certificate Configuration Examples
+
+For emulator development with SSL validation disabled:
+
+```json
+{
+    "ConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDj...",
+    "Database":"myDb",
+    "Container":"myContainer",
+    "DisableSslValidation": true
+}
+```
+
+For custom certificate validation:
+
+```json
+{
+    "ConnectionString": "AccountEndpoint=https://my-custom-cosmos.domain.com:8081/;AccountKey=...",
+    "Database":"myDb",
+    "Container":"myContainer",
+    "CustomCertificatePath": "C:\\certs\\cosmos-custom.cer"
 }
 ```
 
 ### Sink Settings
 
 #### **Partition Key Settings**
+
 - **`PartitionKeyPath`**: Specifies the partition key path when creating the container (e.g., `/id`) if it does not exist.
 - **`PartitionKeyPaths`**: Use this to supply an array of up to 3 paths for hierarchical partition keys.
 
 #### **Database Management**
+
 - **`UseAutoscaleForDatabase`**: Specifies if the database will be created with autoscale enabled or manual. Defaults to `false`. manual.
 
 #### **Container Management**
+
 - **`RecreateContainer`**: Optional, defaults to `false`. Deletes and recreates the container to ensure only newly imported data is present.
 - **`CreatedContainerMaxThroughput`**: Specifies the initial throughput (in RUs) for a newly created container.
 - **`UseAutoscaleForCreatedContainer`**: Enables autoscale for the newly created container.
 - **`UseSharedThroughput`**: Set to `true` to use shared throughput provisioned at the database level.
 
 #### **Batching and Write Behavior**
+
 - **`BatchSize`**: Optional, defaults to `100`. Sets the number of items to accumulate before inserting.
 - **`WriteMode`**: Specifies the type of data write to use. Options:
   - `InsertStream`
@@ -81,21 +109,30 @@ Or with RBAC:
   - `Upsert`
 
 #### **Connection Settings**
+
 - **`ConnectionMode`**: Controls how the client connects to the Cosmos DB service. Options:
   - `Gateway` (default)
   - `Direct`
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
-  write and read regions, and use them when the configured application region is not available. 
+  write and read regions, and use them when the configured application region is not available.
   When set to `true`, availability is limited to the endpoint specified.
   - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint?view=azure-dotnet). When using the Cosmos DB Emulator Container for Linux it's been observed
-    setting the value to `true` enables import and export of data.  
+    setting the value to `true` enables import and export of data.
+
+#### **SSL/Certificate Settings**
+
+- **`CustomCertificatePath`**: Optional. Path to a custom certificate file (.cer, .crt, .pem) for SSL validation. When specified, only connections using this certificate will be accepted. Useful for private/self-signed certificates or custom certificate authorities.
+- **`DisableSslValidation`**: Optional, defaults to `false`. Disables SSL certificate validation entirely.
+  - **⚠️ WARNING**: Only use this for development with the emulator. Never use in production environments as it makes connections vulnerable to man-in-the-middle attacks.
 
 #### **Serverless Account**
+
 - **`IsServerlessAccount`**: Specifies whether the target account uses Serverless instead of Provisioned throughput, which affects the way containers are created.
   - **Note**: Serverless accounts cannot have shared throughput. See [Azure Cosmos DB serverless account type](https://learn.microsoft.com/azure/cosmos-db/serverless#use-serverless-resources).
 
 #### **Client Behavior**
+
 - **`PreserveMixedCaseIds`**: Optional, defaults to `false`. Writes `id` fields with their original casing while generating a separate lowercased `id` field as required by Cosmos.
 - **`IgnoreNullValues`**: Optional. Excludes fields with null values when writing to Cosmos DB.
 - **`InitClientEncryption`**: Optional, defaults to `false`. Uses client-side encryption with the container. Can only be used with `UseRbacAuth` set to `true`

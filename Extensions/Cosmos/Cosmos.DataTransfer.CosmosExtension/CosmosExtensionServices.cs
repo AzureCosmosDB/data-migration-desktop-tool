@@ -9,6 +9,8 @@ using System.Text.RegularExpressions;
 using Microsoft.Azure.Cosmos.Encryption;
 using Azure.Security.KeyVault.Keys.Cryptography;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -38,6 +40,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             if (!string.IsNullOrEmpty(settings.WebProxy)){
                 clientOptions.WebProxy = new WebProxy(settings.WebProxy);
+            }
+
+            // Configure custom certificate validation
+            if (settings.DisableSslValidation || !string.IsNullOrEmpty(settings.CustomCertificatePath))
+            {
+                clientOptions.ServerCertificateCustomValidationCallback = CreateCertificateValidationCallback(settings);
             }
             
             CosmosClient? cosmosClient;
@@ -110,6 +118,48 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 logger.LogError(ex, "Failed to connect to CosmosDB. Please check your connection settings and try again.");
                 throw new InvalidOperationException("Failed to create CosmosClient");
             }
+        }
+
+        private static Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> CreateCertificateValidationCallback(CosmosSettingsBase settings)
+        {
+            return (cert, chain, errors) =>
+            {
+                // If SSL validation is disabled (development/emulator only)
+                if (settings.DisableSslValidation)
+                {
+                    return true;
+                }
+
+                // If a custom certificate path is specified
+                if (!string.IsNullOrEmpty(settings.CustomCertificatePath))
+                {
+                    try
+                    {
+                        var trustedCert = new X509Certificate2(settings.CustomCertificatePath);
+                        
+                        // Compare certificate thumbprints
+                        bool thumbprintMatch = cert.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase);
+                        
+                        if (!thumbprintMatch)
+                        {
+                            // Also try comparing by subject and issuer as fallback
+                            bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                            bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                            return subjectMatch && issuerMatch;
+                        }
+                        
+                        return thumbprintMatch;
+                    }
+                    catch (Exception)
+                    {
+                        // If we can't load the custom certificate, fail validation
+                        return false;
+                    }
+                }
+
+                // Default validation - accept only if no SSL policy errors
+                return errors == SslPolicyErrors.None;
+            };
         }
     }
 }

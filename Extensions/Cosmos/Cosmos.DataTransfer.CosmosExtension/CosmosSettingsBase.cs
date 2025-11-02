@@ -24,6 +24,18 @@ namespace Cosmos.DataTransfer.CosmosExtension
         /// </summary>
         public bool LimitToEndpoint { get; set; } = false;
 
+        /// <summary>
+        /// Path to a custom certificate file (.cer, .crt, .pem) for SSL validation.
+        /// When specified, only connections using this certificate will be accepted.
+        /// </summary>
+        public string? CustomCertificatePath { get; set; }
+
+        /// <summary>
+        /// Disable SSL certificate validation. 
+        /// WARNING: Only use this for development with the emulator. Never use in production.
+        /// </summary>
+        public bool DisableSslValidation { get; set; } = false;
+
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))
@@ -37,6 +49,10 @@ namespace Cosmos.DataTransfer.CosmosExtension
             if (!UseRbacAuth && InitClientEncryption)
             {
                 yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth is true", new[] { nameof(InitClientEncryption) });
+            }
+            if (!string.IsNullOrEmpty(CustomCertificatePath) && !File.Exists(CustomCertificatePath))
+            {
+                yield return new ValidationResult($"CustomCertificatePath file does not exist: {CustomCertificatePath}", new[] { nameof(CustomCertificatePath) });
             }
         }
     }
