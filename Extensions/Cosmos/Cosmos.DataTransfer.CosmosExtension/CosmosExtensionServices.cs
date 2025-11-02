@@ -43,7 +43,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             // Configure custom certificate validation
-            if (settings.DisableSslValidation || !string.IsNullOrEmpty(settings.CustomCertificatePath))
+            if (settings.DisableSslValidation || !string.IsNullOrEmpty(settings.CertificatePath))
             {
                 clientOptions.ServerCertificateCustomValidationCallback = CreateCertificateValidationCallback(settings);
             }
@@ -130,29 +130,71 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     return true;
                 }
 
-                // If a custom certificate path is specified
-                if (!string.IsNullOrEmpty(settings.CustomCertificatePath))
+                // If a certificate path is specified
+                if (!string.IsNullOrEmpty(settings.CertificatePath))
                 {
                     try
                     {
-                        var trustedCert = new X509Certificate2(settings.CustomCertificatePath);
+                        X509Certificate2 trustedCert;
+                        bool isPfxCertificate = IsPfxCertificate(settings.CertificatePath);
                         
-                        // Compare certificate thumbprints
+                        // Load certificate based on type and password availability
+                        if (isPfxCertificate)
+                        {
+                            // Load PFX certificate with or without password
+                            trustedCert = string.IsNullOrEmpty(settings.CertificatePassword)
+                                ? new X509Certificate2(settings.CertificatePath)
+                                : new X509Certificate2(settings.CertificatePath, settings.CertificatePassword);
+                        }
+                        else
+                        {
+                            // Load standard certificate file (.cer, .crt, .pem)
+                            trustedCert = new X509Certificate2(settings.CertificatePath);
+                        }
+                        
+                        // Compare certificate thumbprints (most reliable method)
                         bool thumbprintMatch = cert.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase);
                         
                         if (!thumbprintMatch)
                         {
-                            // Also try comparing by subject and issuer as fallback
-                            bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
-                            bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
-                            return subjectMatch && issuerMatch;
+                            // For PFX certificates, also check if the server cert was issued by our trusted cert
+                            // This handles cases where the PFX is a CA certificate
+                            if (isPfxCertificate)
+                            {
+                                try
+                                {
+                                    var certChain = new X509Chain();
+                                    certChain.ChainPolicy.ExtraStore.Add(trustedCert);
+                                    certChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                                    certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                                    
+                                    bool chainIsValid = certChain.Build(cert);
+                                    return chainIsValid && certChain.ChainElements
+                                        .Cast<X509ChainElement>()
+                                        .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
+                                }
+                                catch
+                                {
+                                    // Fallback to subject and issuer comparison
+                                    bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                                    bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                                    return subjectMatch && issuerMatch;
+                                }
+                            }
+                            else
+                            {
+                                // For standard certificates, try comparing by subject and issuer as fallback
+                                bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                                bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                                return subjectMatch && issuerMatch;
+                            }
                         }
                         
                         return thumbprintMatch;
                     }
                     catch (Exception)
                     {
-                        // If we can't load the custom certificate, fail validation
+                        // If we can't load the certificate, fail validation
                         return false;
                     }
                 }
@@ -160,6 +202,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 // Default validation - accept only if no SSL policy errors
                 return errors == SslPolicyErrors.None;
             };
+        }
+
+        private static bool IsPfxCertificate(string certificatePath)
+        {
+            var extension = Path.GetExtension(certificatePath).ToLowerInvariant();
+            return extension == ".pfx" || extension == ".p12";
         }
     }
 }

@@ -77,7 +77,31 @@ For custom certificate validation:
     "ConnectionString": "AccountEndpoint=https://my-custom-cosmos.domain.com:8081/;AccountKey=...",
     "Database":"myDb",
     "Container":"myContainer",
-    "CustomCertificatePath": "C:\\certs\\cosmos-custom.cer"
+    "CertificatePath": "C:\\certs\\cosmos-custom.cer"
+}
+```
+
+For enterprise PFX certificate with password:
+
+```json
+{
+    "ConnectionString": "AccountEndpoint=https://enterprise-cosmos.company.com:8081/;AccountKey=...",
+    "Database":"EnterpriseDB",
+    "Container":"SecureContainer",
+    "CertificatePath": "C:\\enterprise-certs\\cosmos-client.pfx",
+    "CertificatePassword": "SecureP@ssw0rd!"
+}
+```
+
+For enterprise PFX certificate without password:
+
+```json
+{
+    "UseRbacAuth": true,
+    "AccountEndpoint": "https://enterprise-cosmos.company.com:443/",
+    "Database":"EnterpriseDB",
+    "Container":"SecureContainer",
+    "CertificatePath": "C:\\enterprise-certs\\cosmos-client.p12"
 }
 ```
 
@@ -122,7 +146,11 @@ For custom certificate validation:
 
 #### **SSL/Certificate Settings**
 
-- **`CustomCertificatePath`**: Optional. Path to a custom certificate file (.cer, .crt, .pem) for SSL validation. When specified, only connections using this certificate will be accepted. Useful for private/self-signed certificates or custom certificate authorities.
+- **`CertificatePath`**: Optional. Path to a certificate file for SSL validation and client authentication. Supports multiple formats:
+  - `.cer`, `.crt`, `.pem` files for basic SSL validation
+  - `.pfx`, `.p12` files for client authentication (enterprise scenarios)
+  For PFX/P12 files, use `CertificatePassword` if the file is password-protected.
+- **`CertificatePassword`**: Optional. Password for PFX/P12 certificate files when they are password-protected. Only used when `CertificatePath` points to a `.pfx` or `.p12` file. ⚠️ Store securely and avoid hardcoding in configuration files.
 - **`DisableSslValidation`**: Optional, defaults to `false`. Disables SSL certificate validation entirely.
   - **⚠️ WARNING**: Only use this for development with the emulator. Never use in production environments as it makes connections vulnerable to man-in-the-middle attacks.
 

@@ -25,10 +25,20 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public bool LimitToEndpoint { get; set; } = false;
 
         /// <summary>
-        /// Path to a custom certificate file (.cer, .crt, .pem) for SSL validation.
-        /// When specified, only connections using this certificate will be accepted.
+        /// Path to a certificate file for SSL validation and client authentication.
+        /// Supports multiple formats:
+        /// - .cer, .crt, .pem files for basic SSL validation
+        /// - .pfx, .p12 files for client authentication (enterprise scenarios)
+        /// For PFX/P12 files, use CertificatePassword if the file is password-protected.
         /// </summary>
-        public string? CustomCertificatePath { get; set; }
+        public string? CertificatePath { get; set; }
+
+        /// <summary>
+        /// Password for PFX/P12 certificate files when they are password-protected.
+        /// Only used when CertificatePath points to a .pfx or .p12 file.
+        /// WARNING: Store this securely and avoid hardcoding in configuration files.
+        /// </summary>
+        public string? CertificatePassword { get; set; }
 
         /// <summary>
         /// Disable SSL certificate validation. 
@@ -50,9 +60,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
             {
                 yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth is true", new[] { nameof(InitClientEncryption) });
             }
-            if (!string.IsNullOrEmpty(CustomCertificatePath) && !File.Exists(CustomCertificatePath))
+            if (!string.IsNullOrEmpty(CertificatePath) && !File.Exists(CertificatePath))
             {
-                yield return new ValidationResult($"CustomCertificatePath file does not exist: {CustomCertificatePath}", new[] { nameof(CustomCertificatePath) });
+                yield return new ValidationResult($"CertificatePath file does not exist: {CertificatePath}", new[] { nameof(CertificatePath) });
             }
         }
     }
