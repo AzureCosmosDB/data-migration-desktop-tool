@@ -17,7 +17,7 @@ public class AzureBlobDataSource : IComposableDataSource
         settings.Validate();
 
         BlobContainerClient account;
-        if (settings.UseRbacAuth)
+        if (settings!.UseRbacAuth)
         {
             logger.LogInformation("Connecting to Storage account {AccountEndpoint} using {UseRbacAuth} with {EnableInteractiveCredentials}'", settings.AccountEndpoint, nameof(AzureBlobSourceSettings.UseRbacAuth), nameof(AzureBlobSourceSettings.EnableInteractiveCredentials));
 
