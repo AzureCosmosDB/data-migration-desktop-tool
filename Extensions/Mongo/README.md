@@ -8,7 +8,7 @@ The MongoDB data transfer extension provides source and sink capabilities for re
 > 
 ## Settings
 
-Source and sink settings require both `ConnectionString` and `DatabaseName` parameters. The source takes an optional `Collection` parameter (if this parameter is not set, it will read from all collections) and an optional `Query` parameter for filtering documents. The sink requires the `Collection` parameter and will insert all records received from a source into that collection, as well as an optional `BatchSize` parameter (default value is 100) to batch the writes into the collection.
+Source and sink settings require both `ConnectionString` and `DatabaseName` parameters. The source takes an optional `Collection` parameter (if this parameter is not set, it will read from all collections) and an optional `Query` parameter for filtering documents. The sink requires the `Collection` parameter and will insert all records received from a source into that collection, as well as optional `BatchSize` (default value is 1000) and `IdFieldName` parameters.
 
 ### Source
 
@@ -72,9 +72,49 @@ For more information on MongoDB query syntax, see the [MongoDB Query Documentati
 {
     "ConnectionString": "",
     "DatabaseName": "",
-    "Collection": ""
+    "Collection": "",
+    "IdFieldName": ""
 }
 ```
+
+#### IdFieldName Parameter
+
+The `IdFieldName` parameter allows you to specify which field from the source data should be mapped to MongoDB's `_id` field. When set, the value from the specified field will be used as the document's `_id` in MongoDB, while the original field will also remain in the document.
+
+**Example:**
+
+If your source data has an `id` field that you want to use as MongoDB's `_id`:
+
+```json
+{
+    "ConnectionString": "mongodb://localhost:27017",
+    "DatabaseName": "mydb",
+    "Collection": "mycollection",
+    "IdFieldName": "id"
+}
+```
+
+**Source data:**
+```json
+{
+    "id": "BSKT_1",
+    "CustomerId": 111
+}
+```
+
+**Result in MongoDB:**
+```json
+{
+    "_id": "BSKT_1",
+    "id": "BSKT_1",
+    "CustomerId": 111
+}
+```
+
+**Notes:**
+- The field name comparison is case-insensitive
+- If `IdFieldName` is not specified or is empty, MongoDB will generate a unique ObjectId for `_id` as usual
+- The original field specified in `IdFieldName` will remain in the document along with the `_id` field
 
 # MongoDB Legacy Extension (Wire Version 2)
 
@@ -103,9 +143,14 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
     "ConnectionString": "",
     "DatabaseName": "",
     "Collection": "",
-    "BatchSize": 1000
+    "BatchSize": 1000,
+    "IdFieldName": ""
 }
 ```
+
+#### IdFieldName Parameter
+
+The `IdFieldName` parameter allows you to specify which field from the source data should be mapped to MongoDB's `_id` field. When set, the value from the specified field will be used as the document's `_id` in MongoDB, while the original field will also remain in the document. See the [MongoDB Extension Sink IdFieldName Parameter](#idfieldname-parameter) section above for more details and examples.
 
 # MongoDB Vector Extension (Beta)
 

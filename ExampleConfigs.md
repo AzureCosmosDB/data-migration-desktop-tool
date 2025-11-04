@@ -44,6 +44,28 @@
 }
 ```
 
+## Cosmos-NoSQL to MongoDB (with custom _id mapping)
+
+```json
+{
+    "Source": "Cosmos-NoSql",
+    "Sink": "MongoDB",
+    "SourceSettings": {
+        "ConnectionString": "AccountEndpoint=https://...",
+        "Database": "cosmicworks",
+        "Container": "baskets"
+    },
+    "SinkSettings": {
+        "ConnectionString": "mongodb://localhost:27017",
+        "DatabaseName": "mydb",
+        "Collection": "baskets",
+        "IdFieldName": "id"
+    }
+}
+```
+
+> **Note**: The `IdFieldName` parameter specifies which field from the source should be mapped to MongoDB's `_id` field. In this example, the `id` field from Cosmos will be used as the `_id` in MongoDB while also keeping the original `id` field in the document.
+
 ## MongoDB to Cosmos-NoSQL
 
 ```json
