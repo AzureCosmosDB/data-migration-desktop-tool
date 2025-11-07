@@ -28,7 +28,23 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
             await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
                 var dict = item.BuildDynamicObjectTree();
-                objects.Add(new BsonDocument(dict));
+                var bsonDoc = new BsonDocument(dict);
+                
+                // Map the specified field to _id if IdFieldName is provided
+                if (!string.IsNullOrEmpty(settings.IdFieldName) && dict != null)
+                {
+                    var sourceField = item.GetFieldNames().FirstOrDefault(n => n.Equals(settings.IdFieldName, StringComparison.CurrentCultureIgnoreCase));
+                    if (sourceField != null)
+                    {
+                        var idValue = item.GetValue(sourceField);
+                        if (idValue != null)
+                        {
+                            bsonDoc["_id"] = BsonValue.Create(idValue);
+                        }
+                    }
+                }
+                
+                objects.Add(bsonDoc);
                 itemCount++;
 
                 if (objects.Count == batchSize)
