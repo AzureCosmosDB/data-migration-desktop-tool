@@ -1,4 +1,4 @@
-name: Release desktop binaries
+name: Release Binaries ${{ github.event.inputs.release-tag }}
 on: 
   workflow_dispatch:
     inputs:
