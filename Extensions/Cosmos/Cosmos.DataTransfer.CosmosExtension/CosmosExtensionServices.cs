@@ -135,62 +135,55 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 {
                     try
                     {
-                        X509Certificate2 trustedCert;
                         bool isPfxCertificate = IsPfxCertificate(settings.CertificatePath);
                         
                         // Load certificate based on type and password availability
-                        if (isPfxCertificate)
-                        {
-                            // Load PFX certificate with or without password
-                            trustedCert = string.IsNullOrEmpty(settings.CertificatePassword)
+                        using (X509Certificate2 trustedCert = isPfxCertificate
+                            ? (string.IsNullOrEmpty(settings.CertificatePassword)
                                 ? new X509Certificate2(settings.CertificatePath)
-                                : new X509Certificate2(settings.CertificatePath, settings.CertificatePassword);
-                        }
-                        else
+                                : new X509Certificate2(settings.CertificatePath, settings.CertificatePassword))
+                            : new X509Certificate2(settings.CertificatePath))
                         {
-                            // Load standard certificate file (.cer, .crt, .pem)
-                            trustedCert = new X509Certificate2(settings.CertificatePath);
-                        }
-                        
-                        // Compare certificate thumbprints (most reliable method)
-                        bool thumbprintMatch = cert.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase);
-                        
-                        if (!thumbprintMatch)
-                        {
-                            // For PFX certificates, also check if the server cert was issued by our trusted cert
-                            // This handles cases where the PFX is a CA certificate
-                            if (isPfxCertificate)
+                            // Compare certificate thumbprints (most reliable method)
+                            bool thumbprintMatch = cert.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase);
+                            
+                            if (!thumbprintMatch)
                             {
-                                try
+                                // For PFX certificates, also check if the server cert was issued by our trusted cert
+                                // This handles cases where the PFX is a CA certificate
+                                if (isPfxCertificate)
                                 {
-                                    var certChain = new X509Chain();
-                                    certChain.ChainPolicy.ExtraStore.Add(trustedCert);
-                                    certChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                                    certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                                    
-                                    bool chainIsValid = certChain.Build(cert);
-                                    return chainIsValid && certChain.ChainElements
-                                        .Cast<X509ChainElement>()
-                                        .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
+                                    try
+                                    {
+                                        var certChain = new X509Chain();
+                                        certChain.ChainPolicy.ExtraStore.Add(trustedCert);
+                                        certChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                                        certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                                        
+                                        bool chainIsValid = certChain.Build(cert);
+                                        return chainIsValid && certChain.ChainElements
+                                            .Cast<X509ChainElement>()
+                                            .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
+                                    }
+                                    catch
+                                    {
+                                        // Fallback to subject and issuer comparison
+                                        bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                                        bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                                        return subjectMatch && issuerMatch;
+                                    }
                                 }
-                                catch
+                                else
                                 {
-                                    // Fallback to subject and issuer comparison
+                                    // For standard certificates, try comparing by subject and issuer as fallback
                                     bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
                                     bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
                                     return subjectMatch && issuerMatch;
                                 }
                             }
-                            else
-                            {
-                                // For standard certificates, try comparing by subject and issuer as fallback
-                                bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
-                                bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
-                                return subjectMatch && issuerMatch;
-                            }
+                            
+                            return thumbprintMatch;
                         }
-                        
-                        return thumbprintMatch;
                     }
                     catch (Exception ex)
                     {
