@@ -155,15 +155,17 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                 {
                                     try
                                     {
-                                        var certChain = new X509Chain();
-                                        certChain.ChainPolicy.ExtraStore.Add(trustedCert);
-                                        certChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                                        certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                                        
-                                        bool chainIsValid = certChain.Build(cert);
-                                        return chainIsValid && certChain.ChainElements
-                                            .Cast<X509ChainElement>()
-                                            .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
+                                        using (var certChain = new X509Chain())
+                                        {
+                                            certChain.ChainPolicy.ExtraStore.Add(trustedCert);
+                                            certChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                                            certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                                            
+                                            bool chainIsValid = certChain.Build(cert);
+                                            return chainIsValid && certChain.ChainElements
+                                                .Cast<X509ChainElement>()
+                                                .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
+                                        }
                                     }
                                     catch
                                     {
