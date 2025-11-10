@@ -9,6 +9,9 @@ using System.Text.RegularExpressions;
 using Microsoft.Azure.Cosmos.Encryption;
 using Azure.Security.KeyVault.Keys.Cryptography;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -38,6 +41,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             if (!string.IsNullOrEmpty(settings.WebProxy)){
                 clientOptions.WebProxy = new WebProxy(settings.WebProxy);
+            }
+
+            // Configure custom certificate validation
+            if (settings.DisableSslValidation || !string.IsNullOrEmpty(settings.CertificatePath))
+            {
+                clientOptions.ServerCertificateCustomValidationCallback = CreateCertificateValidationCallback(settings);
             }
             
             CosmosClient? cosmosClient;
@@ -110,6 +119,124 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 logger.LogError(ex, "Failed to connect to CosmosDB. Please check your connection settings and try again.");
                 throw new InvalidOperationException("Failed to create CosmosClient");
             }
+        }
+
+        private static Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> CreateCertificateValidationCallback(CosmosSettingsBase settings)
+        {
+            return (cert, chain, errors) =>
+            {
+                // If SSL validation is disabled (development/emulator only)
+                if (settings.DisableSslValidation)
+                {
+                    return true;
+                }
+
+                // If a certificate path is specified
+                if (!string.IsNullOrEmpty(settings.CertificatePath))
+                {
+                    try
+                    {
+                        bool isPfxCertificate = IsPfxCertificate(settings.CertificatePath);
+                        
+                        // Load certificate based on type and password availability
+                        using (X509Certificate2 trustedCert = isPfxCertificate
+                            ? (string.IsNullOrEmpty(settings.CertificatePassword)
+                                ? new X509Certificate2(settings.CertificatePath)
+                                : new X509Certificate2(settings.CertificatePath, settings.CertificatePassword))
+                            : new X509Certificate2(settings.CertificatePath))
+                        {
+                            // Compare certificate thumbprints (most reliable method)
+                            bool thumbprintMatch = cert.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase);
+                            
+                            if (!thumbprintMatch)
+                            {
+                                // For PFX certificates, also check if the server cert was issued by our trusted cert
+                                // This handles cases where the PFX is a CA certificate
+                                if (isPfxCertificate)
+                                {
+                                    try
+                                    {
+                                        using (var certChain = new X509Chain())
+                                        {
+                                            certChain.ChainPolicy.ExtraStore.Add(trustedCert);
+                                            certChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                                            certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                                            
+                                            bool chainIsValid = certChain.Build(cert);
+                                            return chainIsValid && certChain.ChainElements
+                                                .Cast<X509ChainElement>()
+                                                .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
+                                        }
+                                    }
+                                    catch (ArgumentException ex)
+                                    {
+                                        // Certificate is invalid or null - log and fallback
+                                        Console.Error.WriteLine($"Certificate chain validation failed - Invalid certificate: {ex.Message}");
+                                        
+                                        // Fallback to subject and issuer comparison
+                                        bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                                        bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                                        return subjectMatch && issuerMatch;
+                                    }
+                                    catch (CryptographicException ex)
+                                    {
+                                        // Certificate is unreadable - log and fallback
+                                        Console.Error.WriteLine($"Certificate chain validation failed - Certificate unreadable: {ex.Message}");
+                                        
+                                        // Fallback to subject and issuer comparison
+                                        bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                                        bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                                        return subjectMatch && issuerMatch;
+                                    }
+                                    catch (InvalidOperationException ex)
+                                    {
+                                        // Chain elements collection is in invalid state - log and fallback
+                                        Console.Error.WriteLine($"Certificate chain validation failed - Invalid chain state: {ex.Message}");
+                                        
+                                        // Fallback to subject and issuer comparison
+                                        bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                                        bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                                        return subjectMatch && issuerMatch;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        // Unexpected exception - log with full details and fail validation for security
+                                        Console.Error.WriteLine($"Certificate chain validation failed - Unexpected error: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                                        
+                                        // For unknown exceptions, fail validation for security rather than fallback
+                                        return false;
+                                    }
+                                }
+                                else
+                                {
+                                    // For standard certificates, try comparing by subject and issuer as fallback
+                                    bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                                    bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                                    return subjectMatch && issuerMatch;
+                                }
+                            }
+                            
+                            return thumbprintMatch;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log the exception details to help diagnose certificate loading issues
+                        Console.Error.WriteLine($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
+                        // If we can't load the certificate, fail validation
+                        return false;
+                    }
+                }
+
+                // Default validation - accept only if no SSL policy errors
+                return errors == SslPolicyErrors.None;
+            };
+        }
+
+        private static bool IsPfxCertificate(string certificatePath)
+        {
+            var extension = Path.GetExtension(certificatePath).ToLowerInvariant();
+            return extension == ".pfx" || extension == ".p12";
         }
     }
 }
