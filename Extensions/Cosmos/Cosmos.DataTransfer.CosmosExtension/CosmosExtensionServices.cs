@@ -10,6 +10,7 @@ using Microsoft.Azure.Cosmos.Encryption;
 using Azure.Security.KeyVault.Keys.Cryptography;
 using System.Net;
 using System.Net.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Cosmos.DataTransfer.CosmosExtension
@@ -167,12 +168,43 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                                 .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
                                         }
                                     }
-                                    catch
+                                    catch (ArgumentException ex)
                                     {
+                                        // Certificate is invalid or null - log and fallback
+                                        Console.Error.WriteLine($"Certificate chain validation failed - Invalid certificate: {ex.Message}");
+                                        
                                         // Fallback to subject and issuer comparison
                                         bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
                                         bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
                                         return subjectMatch && issuerMatch;
+                                    }
+                                    catch (CryptographicException ex)
+                                    {
+                                        // Certificate is unreadable - log and fallback
+                                        Console.Error.WriteLine($"Certificate chain validation failed - Certificate unreadable: {ex.Message}");
+                                        
+                                        // Fallback to subject and issuer comparison
+                                        bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                                        bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                                        return subjectMatch && issuerMatch;
+                                    }
+                                    catch (InvalidOperationException ex)
+                                    {
+                                        // Chain elements collection is in invalid state - log and fallback
+                                        Console.Error.WriteLine($"Certificate chain validation failed - Invalid chain state: {ex.Message}");
+                                        
+                                        // Fallback to subject and issuer comparison
+                                        bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
+                                        bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
+                                        return subjectMatch && issuerMatch;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        // Unexpected exception - log with full details and fail validation for security
+                                        Console.Error.WriteLine($"Certificate chain validation failed - Unexpected error: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                                        
+                                        // For unknown exceptions, fail validation for security rather than fallback
+                                        return false;
                                     }
                                 }
                                 else
