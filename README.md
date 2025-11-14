@@ -34,11 +34,11 @@ You can also run the Data Migration Tool as a Docker container, which is useful 
 
 ### Using Pre-built Docker Image
 
-The easiest way to use the container is to pull the pre-built image from GitHub Container Registry:
+The easiest way to use the container is to pull the pre-built image from Microsoft Container Registry:
 
 ```bash
-docker pull ghcr.io/azurecosmosdb/data-migration-desktop-tool:latest
-docker run -v $(pwd)/config:/config -v $(pwd)/data:/data ghcr.io/azurecosmosdb/data-migration-desktop-tool:latest run --settings /config/migrationsettings.json
+docker pull mcr.microsoft.com/azurecosmosdb/linux/azure-cosmos-dmt:3.0.0
+docker run -v $(pwd)/config:/config -v $(pwd)/data:/data mcr.microsoft.com/azurecosmosdb/linux/azure-cosmos-dmt:3.0.0 run --settings /config/migrationsettings.json
 ```
 
 ### Building the Docker Image Locally
@@ -58,6 +58,7 @@ docker run -v $(pwd)/config:/config -v $(pwd)/data:/data data-migration-tool run
 ```
 
 Where:
+
 - `/config` contains your configuration files including `migrationsettings.json`
 - `/data` is the directory for your data files
 
