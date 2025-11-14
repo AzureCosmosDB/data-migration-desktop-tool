@@ -34,7 +34,7 @@ You can also run the Data Migration Tool as a Docker container, which is useful 
 
 ### Using Pre-built Docker Image
 
-The easiest way to use the container is to pull the pre-built image from GitHub Container Registry:
+The easiest way to use the container is to pull the pre-built image from Microsoft Container Registry:
 
 ```bash
 docker pull mcr.microsoft.com/azurecosmosdb/linux/azure-cosmos-dmt:3.0.0
