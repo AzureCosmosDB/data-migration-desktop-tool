@@ -16,10 +16,10 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
         var settings = config.Get<MongoSinkSettings>();
         settings.Validate();
 
-        if (!string.IsNullOrEmpty(settings.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName) && !string.IsNullOrEmpty(settings.Collection))
+        if (!string.IsNullOrEmpty(settings!.ConnectionString) && !string.IsNullOrEmpty(settings.DatabaseName) && !string.IsNullOrEmpty(settings.Collection))
         {
-            var context = new Context(settings.ConnectionString, settings.DatabaseName);
-            var repo = context.GetRepository<BsonDocument>(settings.Collection);
+            var context = new Context(settings.ConnectionString!, settings.DatabaseName!);
+            var repo = context.GetRepository<BsonDocument>(settings.Collection!);
 
             var batchSize = settings.BatchSize ?? 1000;
 
@@ -28,7 +28,23 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
             await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
                 var dict = item.BuildDynamicObjectTree();
-                objects.Add(new BsonDocument(dict));
+                var bsonDoc = new BsonDocument(dict);
+                
+                // Map the specified field to _id if IdFieldName is provided
+                if (!string.IsNullOrEmpty(settings.IdFieldName) && dict != null)
+                {
+                    var sourceField = item.GetFieldNames().FirstOrDefault(n => n.Equals(settings.IdFieldName, StringComparison.CurrentCultureIgnoreCase));
+                    if (sourceField != null)
+                    {
+                        var idValue = item.GetValue(sourceField);
+                        if (idValue != null)
+                        {
+                            bsonDoc["_id"] = BsonValue.Create(idValue);
+                        }
+                    }
+                }
+                
+                objects.Add(bsonDoc);
                 itemCount++;
 
                 if (objects.Count == batchSize)

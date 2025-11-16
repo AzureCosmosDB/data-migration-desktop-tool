@@ -11,7 +11,7 @@ namespace Cosmos.DataTransfer.AwsS3Storage
             var settings = config.Get<AwsS3SinkSettings>();
             settings.Validate();
 
-            logger.LogInformation("Saving file {File} to AWS S3 Bucket '{BucketName}'", settings.FileName, settings.S3BucketName);
+            logger.LogInformation("Saving file {File} to AWS S3 Bucket '{BucketName}'", settings!.FileName, settings.S3BucketName);
 
             using var s3 = new S3Client(settings.S3AccessKey, settings.S3SecretKey, settings.S3Region);
             await using var stream = new MemoryStream();

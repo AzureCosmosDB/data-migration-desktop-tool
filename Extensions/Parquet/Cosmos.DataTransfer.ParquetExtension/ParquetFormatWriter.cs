@@ -1,4 +1,5 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common;
 using Cosmos.DataTransfer.ParquetExtension.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -8,26 +9,46 @@ using System.Data;
 
 namespace Cosmos.DataTransfer.ParquetExtension
 {
-    public class ParquetFormatWriter : IFormattedDataWriter
+    public class ParquetFormatWriter : IFormattedDataWriter, IProgressAwareFormattedDataWriter
     {
         private List<ParquetDataCol> parquetDataCols = new List<ParquetDataCol>();
 
         public async Task FormatDataAsync(IAsyncEnumerable<IDataItem> dataItems, Stream target, IConfiguration config, ILogger logger, CancellationToken cancellationToken = default)
         {
-            var settings = config.Get<ParquetSinkSettings>();
+            // Call the progress-aware version with null progress
+            await FormatDataAsync(dataItems, target, config, logger, null, cancellationToken);
+        }
+
+        public async Task FormatDataAsync(IAsyncEnumerable<IDataItem> dataItems, Stream target, IConfiguration config, ILogger logger, IProgress<DataTransferProgress>? progress, CancellationToken cancellationToken = default)
+        {
+            var settings = config.Get<ParquetSinkSettings>() ?? new ParquetSinkSettings();
             settings.Validate();
 
             logger.LogInformation("Writing parquet format");
             long row = 0;
+            int itemCount = 0;
             await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
                 ProcessColumns(item, row);
                 row++;
+                itemCount++;
+                
+                // Report progress if progress reporter is available
+                if (progress != null && itemCount % settings.ItemProgressFrequency == 0)
+                {
+                    progress.Report(new DataTransferProgress(itemCount, 0, $"Formatted {itemCount} items for transfer"));
+                }
             }
 
             var schema = CreateSchema();
             CreateParquetColumns();
             await SaveFile(schema, target, cancellationToken);
+            
+            // Report final count
+            if (progress != null && itemCount > 0)
+            {
+                progress.Report(new DataTransferProgress(itemCount, 0, null));
+            }
         }
 
         private void ProcessColumns(IDataItem item, long row)
@@ -50,12 +71,28 @@ namespace Cosmos.DataTransfer.ParquetExtension
                 }
                 else if (coltype != Type.Missing.GetType() && current.ColumnType != coltype)
                 {
-                    if (current != null)
+                    // Handle DateTimeOffset type compatibility with DateTime
+                    var isDateTimeOffsetToDateTime = 
+                        (coltype == typeof(DateTimeOffset) || coltype == typeof(DateTimeOffset?)) && 
+                        current.ColumnType == typeof(DateTime);
+                    var isDateTimeToDateTimeOffset = 
+                        (current.ColumnType == typeof(DateTimeOffset) || current.ColumnType == typeof(DateTimeOffset?)) && 
+                        coltype == typeof(DateTime);
+                    
+                    if (!isDateTimeOffsetToDateTime && !isDateTimeToDateTimeOffset && current != null)
                     {
                         current.ColumnType = coltype;
                         if (coltype != null)
                         {
-                            current.ParquetDataType = new DataField(col, coltype, true);
+                            // Convert DateTimeOffset to DateTime for Parquet compatibility
+                            if (coltype == typeof(DateTimeOffset) || coltype == typeof(DateTimeOffset?))
+                            {
+                                current.ParquetDataType = new DataField(col, typeof(DateTime), true);
+                            }
+                            else
+                            {
+                                current.ParquetDataType = new DataField(col, coltype, true);
+                            }
                         }
                     }
                 }

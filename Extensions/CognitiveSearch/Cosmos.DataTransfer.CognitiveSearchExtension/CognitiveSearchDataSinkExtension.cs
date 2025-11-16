@@ -22,8 +22,8 @@ namespace Cosmos.DataTransfer.CognitiveSearchExtension
             var settings = config.Get<CognitiveSearchDataSinkSettings>();
             settings.Validate();
 
-            var indexClient = new SearchIndexClient(new Uri(settings.Endpoint!), new AzureKeyCredential(settings.ApiKey!));
-            var searchClient = indexClient.GetSearchClient(settings.Index);
+            var indexClient = new SearchIndexClient(new Uri(settings!.Endpoint!), new AzureKeyCredential(settings.ApiKey!));
+            var searchClient = indexClient.GetSearchClient(settings.Index!);
 
             var convertedObjects = dataItems.Select(di => BuildObject(di)).Where(o => o != null).OfType<ExpandoObject>();
             var batches = convertedObjects.Buffer(settings.BatchSize);

@@ -3,20 +3,27 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using Cosmos.DataTransfer.Interfaces;
+using Cosmos.DataTransfer.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Cosmos.DataTransfer.AzureBlobStorage
 {
-    public class AzureBlobDataSink : IComposableDataSink
+    public class AzureBlobDataSink : IComposableDataSink, IProgressAwareComposableDataSink
     {
         public async Task WriteToTargetAsync(Func<Stream, Task> writeToStream, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
+        {
+            // Call the progress-aware version with null progress
+            await WriteToTargetAsync(writeToStream, config, dataSource, logger, null, cancellationToken);
+        }
+
+        public async Task WriteToTargetAsync(Func<Stream, Task> writeToStream, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, IProgress<DataTransferProgress>? progress, CancellationToken cancellationToken = default)
         {
             var settings = config.Get<AzureBlobSinkSettings>();
             settings.Validate();
 
             BlobContainerClient account;
-            if (settings.UseRbacAuth)
+            if (settings!.UseRbacAuth)
             {
                 logger.LogInformation("Connecting to Storage account {AccountEndpoint} using {UseRbacAuth} with {EnableInteractiveCredentials}'", settings.AccountEndpoint, nameof(AzureBlobSourceSettings.UseRbacAuth), nameof(AzureBlobSourceSettings.EnableInteractiveCredentials));
 
@@ -49,6 +56,29 @@ namespace Cosmos.DataTransfer.AzureBlobStorage
                 })
             }, cancellationToken);
             await writeToStream(blobStream);
+            
+            // Log final summary after upload completes
+            var finalBlob = account.GetBlobClient(settings.BlobName);
+            var properties = await finalBlob.GetPropertiesAsync(cancellationToken: cancellationToken);
+            
+            // Get the item count from the progress reporter if available
+            int itemCount = 0;
+            if (progress is DataTransferProgressReporter progressReporter && 
+                progressReporter.Context != null)
+            {
+                itemCount = progressReporter.Context.GetCurrentProgress().ItemCount;
+            }
+            
+            if (itemCount > 0)
+            {
+                logger.LogInformation("Successfully transferred {TotalBytes} total bytes from {ItemCount} items to blob '{BlobName}' in container '{ContainerName}'", 
+                    properties.Value.ContentLength, itemCount, settings.BlobName, settings.ContainerName);
+            }
+            else
+            {
+                logger.LogInformation("Successfully transferred {TotalBytes} total bytes to blob '{BlobName}' in container '{ContainerName}'", 
+                    properties.Value.ContentLength, settings.BlobName, settings.ContainerName);
+            }
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()

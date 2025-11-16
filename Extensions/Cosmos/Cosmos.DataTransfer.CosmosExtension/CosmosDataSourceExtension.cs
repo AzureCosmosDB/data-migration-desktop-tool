@@ -18,11 +18,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var settings = config.Get<CosmosSourceSettings>();
             settings.Validate();
 
-            var client = CosmosExtensionServices.CreateClient(settings, DisplayName);
+            var client = CosmosExtensionServices.CreateClient(settings!, DisplayName);
 
             Container container;
             
-            if(settings.InitClientEncryption)
+            if(settings!.InitClientEncryption)
             {
                 container = await client.GetContainer(settings.Database, settings.Container).InitializeEncryptionAsync(cancellationToken);
             }

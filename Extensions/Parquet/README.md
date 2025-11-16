@@ -6,6 +6,17 @@ The Parquet extension provides formatter capabilities for reading from and writi
 
 > **Note**: When specifying the Parquet extension as the Source or Sink property in configuration, utilize the names listed below.
 
+## DateTimeOffset Handling
+
+**Important**: `DateTimeOffset` values are automatically converted to UTC `DateTime` when writing to Parquet format. This conversion is necessary because Parquet.NET dropped support for `DateTimeOffset` in version 4.3.0 due to ambiguity issues (see [Parquet.NET release notes](https://github.com/aloneguid/parquet-dotnet/releases/tag/4.3.0)).
+
+When migrating data with `DateTimeOffset` fields (such as the `Timestamp` property in Azure Table Storage entities):
+- The absolute point in time is preserved by converting to UTC
+- Timezone offset information is lost during conversion
+- All timestamps are stored consistently in UTC format
+
+This behavior enables migrations from sources like Azure Table Storage to Parquet, which would otherwise fail with a `NotSupportedException`.
+
 Supported storage sinks:
 - File - **Parquet**
 - Azure Blob Storage - **Parquet-AzureBlob**
@@ -18,4 +29,12 @@ Supported storage sources:
 
 ## Settings
 
-The Parquet format does not currently include any settings. See storage extension documentation for any storage specific settings needed ([ex. File Storage](../../Interfaces/Cosmos.DataTransfer.Common/README.md)).
+The Parquet format supports an optional `ItemProgressFrequency` parameter (`1000` by default) that controls how often item processing progress is logged during migration.
+
+```json
+{
+    "ItemProgressFrequency": 1000
+}
+```
+
+See storage extension documentation for any storage specific settings needed ([ex. File Storage](../../Interfaces/Cosmos.DataTransfer.Common/README.md)).

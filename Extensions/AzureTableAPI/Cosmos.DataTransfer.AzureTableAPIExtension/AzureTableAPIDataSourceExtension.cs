@@ -23,7 +23,7 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
 
             TableServiceClient serviceClient;
 
-            if (settings.UseRbacAuth)
+            if (settings!.UseRbacAuth)
             {
                 logger.LogInformation("Connecting to Storage account {AccountEndpoint} using {UseRbacAuth} with {EnableInteractiveCredentials}'", settings.AccountEndpoint, nameof(AzureTableAPIDataSourceSettings.UseRbacAuth), nameof(AzureTableAPIDataSourceSettings.EnableInteractiveCredentials));
 

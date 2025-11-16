@@ -2,6 +2,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
+# Set build arguments
+ARG RUNTIME=linux-x64
+ARG BUILD_VERSION=1.0.0
+
 # Copy solution file and project files
 COPY ["CosmosDbDataMigrationTool.sln", "."]
 COPY ["Directory.Packages.props", "."]
@@ -10,33 +14,171 @@ COPY ["Interfaces/", "Interfaces/"]
 COPY ["Extensions/", "Extensions/"]
 
 # Restore dependencies
-# Increase the timeout and number of retries for NuGet
-RUN dotnet nuget list source | grep -q 'nuget.org' || dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org
-ENV NUGET_PACKAGES=/nuget-packages
-ENV NUGET_HTTP_CACHE_PATH=/nuget-http-cache
-RUN mkdir -p /nuget-packages /nuget-http-cache
+RUN dotnet restore "Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj"
 
-# Restore and build the main project and the core project
-RUN dotnet restore "Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj" --disable-parallel
-RUN dotnet build "Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj" -c Release -o /app/build/Core --no-restore
-RUN dotnet publish "Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj" -c Release -o /app/publish/Core --no-restore
+# Build Core app package (self-contained)
+RUN dotnet publish \
+    Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME} \
+    --self-contained true \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=true \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
 
-# Build and publish ALL extensions
-RUN find Extensions -name "*.csproj" | grep -v "UnitTests" | xargs -I {} sh -c 'dotnet publish "{}" -c Release -o /app/publish/Core/Extensions || echo "Skipping $(basename $(dirname {}))"'
+# Build Cosmos Extension
+RUN dotnet publish \
+    Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension/Cosmos.DataTransfer.CosmosExtension.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME}/Extensions \
+    --self-contained false \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=false \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
 
-# Runtime stage
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
+# Build JSON Extension
+RUN dotnet publish \
+    Extensions/Json/Cosmos.DataTransfer.JsonExtension/Cosmos.DataTransfer.JsonExtension.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME}/Extensions \
+    --self-contained false \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=false \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
+
+# Build Azure Table Extension
+RUN dotnet publish \
+    Extensions/AzureTableAPI/Cosmos.DataTransfer.AzureTableAPIExtension/Cosmos.DataTransfer.AzureTableAPIExtension.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME}/Extensions \
+    --self-contained false \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=false \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
+
+# Build Mongo Extension
+RUN dotnet publish \
+    Extensions/Mongo/Cosmos.DataTransfer.MongoExtension/Cosmos.DataTransfer.MongoExtension.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME}/Extensions \
+    --self-contained false \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=false \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
+
+# Build SQL Server Extension
+RUN dotnet publish \
+    Extensions/SqlServer/Cosmos.DataTransfer.SqlServerExtension/Cosmos.DataTransfer.SqlServerExtension.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME}/Extensions \
+    --self-contained false \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=false \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
+
+# Build Parquet Extension
+RUN dotnet publish \
+    Extensions/Parquet/Cosmos.DataTransfer.ParquetExtension/Cosmos.DataTransfer.ParquetExtension.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME}/Extensions \
+    --self-contained false \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=false \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
+
+# Build Cognitive Search Extension
+RUN dotnet publish \
+    Extensions/CognitiveSearch/Cosmos.DataTransfer.CognitiveSearchExtension/Cosmos.DataTransfer.CognitiveSearchExtension.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME}/Extensions \
+    --self-contained false \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=false \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
+
+# Build CSV Extension
+RUN dotnet publish \
+    Extensions/Csv/Cosmos.DataTransfer.CsvExtension/Cosmos.DataTransfer.CsvExtension.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME}/Extensions \
+    --self-contained false \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=false \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
+
+# Build PostgreSQL Extension
+RUN dotnet publish \
+    Extensions/PostgreSQL/Cosmos.DataTransfer.PostgresqlExtension.csproj \
+    --configuration Release \
+    --output /app/${RUNTIME}/Extensions \
+    --self-contained false \
+    --runtime ${RUNTIME} \
+    -p:PublishSingleFile=false \
+    -p:DebugType=embedded \
+    -p:EnableCompressionInSingleFile=true \
+    -p:PublishReadyToRun=false \
+    -p:PublishTrimmed=false \
+    -p:Version=${BUILD_VERSION}
+
+# Runtime stage - use minimal base image since we have self-contained build
+FROM mcr.microsoft.com/dotnet/runtime-deps:8.0 AS runtime
 WORKDIR /app
 
-# Copy published files from build stage
-COPY --from=build /app/publish/Core ./
+# Enable this section for local development verification to use Microsoft Entra ID authentication
+# Install curl and Azure CLI
+# RUN apt-get clean && apt-get update
+# RUN apt install curl -y
+# RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# Copy the built application
+ARG RUNTIME=linux-x64
+COPY --from=build /app/${RUNTIME} ./
+
+# Verify the contents of the final image
+RUN echo "=== Final image contents ===" && ls -la ./ && echo "=== Extensions directory ===" && ls -la ./Extensions/ || echo "No Extensions directory"
 
 # Create volumes for configuration and data
 VOLUME /config
 VOLUME /data
 
-# Optional volume for custom extensions
-VOLUME /extensions
+# Make the executable file executable (for Linux)
+RUN chmod +x dmt
 
-# Set the entrypoint
-ENTRYPOINT ["dotnet", "dmt.dll"]
+# Set the entrypoint to the self-contained executable
+ENTRYPOINT ["./dmt"]

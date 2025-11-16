@@ -24,7 +24,7 @@ namespace Cosmos.DataTransfer.PostgresqlExtension
             settings.Validate();
             
             var cols = await FindPostgreDataTypes(dataItems, cancellationToken);
-            NpgsqlConnection con = new(settings.ConnectionString);
+            NpgsqlConnection con = new(settings!.ConnectionString);
 
             if (settings.AppendDataToTable == true && !string.IsNullOrEmpty(settings.TableName))
             {

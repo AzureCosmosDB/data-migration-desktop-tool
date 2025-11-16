@@ -33,6 +33,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 AllowBulkExecution = true,
                 EnableContentResponseOnWrite = false,
                 Serializer = cosmosSerializer,
+                LimitToEndpoint = settings.LimitToEndpoint,
             };
 
             if (!string.IsNullOrEmpty(settings.WebProxy)){

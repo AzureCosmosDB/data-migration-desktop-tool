@@ -24,7 +24,7 @@ internal class PostgresqlDataSourceExtension : IDataSourceExtensionWithSettings
         var settings = config.Get<PostgreSourceSettings>();
         settings.Validate();
 
-        await using var connection = new NpgsqlConnection(settings.ConnectionString);
+        await using var connection = new NpgsqlConnection(settings!.ConnectionString);
         await connection.OpenAsync(cancellationToken);
         await using var command = new NpgsqlCommand(settings.QueryText, connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);

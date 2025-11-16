@@ -16,6 +16,13 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? AccountEndpoint { get; set; }
         public bool EnableInteractiveCredentials { get; set; }
         public bool InitClientEncryption { get; set; } = false;
+        
+        /// <summary>
+        /// <see cref="CosmosClientOptions.LimitToEndpoint"/>
+        /// When running the Azure Cosmos DB emulator in a Linux Container on Windows
+        /// a value of false results in failure to connect to Cosmos DB emulator. 
+        /// </summary>
+        public bool LimitToEndpoint { get; set; } = false;
 
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
