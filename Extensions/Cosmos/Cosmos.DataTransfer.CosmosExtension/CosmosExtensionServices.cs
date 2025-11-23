@@ -171,32 +171,26 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                     catch (ArgumentException ex)
                                     {
                                         // Certificate is invalid or null - log and fallback
-                                        logger.LogError($"Certificate chain validation failed - Invalid certificate: {ex.Message}");
+                                        logger.LogError("Certificate chain validation failed - Invalid certificate: {message}", ex.Message);
                                         
                                         // Fallback to subject and issuer comparison
-                                        bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
-                                        bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
-                                        return subjectMatch && issuerMatch;
+                                        return ValidateCertificateBySubjectAndIssuer(cert, trustedCert);
                                     }
                                     catch (CryptographicException ex)
                                     {
                                         // Certificate is unreadable - log and fallback
-                                        logger.LogError($"Certificate chain validation failed - Certificate unreadable: {ex.Message}");
+                                        logger.LogError("Certificate chain validation failed - Certificate unreadable: {message}", ex.Message);
                                         
                                         // Fallback to subject and issuer comparison
-                                        bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
-                                        bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
-                                        return subjectMatch && issuerMatch;
+                                        return ValidateCertificateBySubjectAndIssuer(cert, trustedCert);                
                                     }
                                     catch (InvalidOperationException ex)
                                     {
                                         // Chain elements collection is in invalid state - log and fallback
-                                        logger.LogError($"Certificate chain validation failed - Invalid chain state: {ex.Message}");
+                                        logger.LogError("Certificate chain validation failed - Invalid chain state: {message}", ex.Message);
                                         
                                         // Fallback to subject and issuer comparison
-                                        bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
-                                        bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
-                                        return subjectMatch && issuerMatch;
+                                        return ValidateCertificateBySubjectAndIssuer(cert, trustedCert);
                                     }
                                     catch (Exception ex)
                                     {
@@ -210,9 +204,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                 else
                                 {
                                     // For standard certificates, try comparing by subject and issuer as fallback
-                                    bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
-                                    bool issuerMatch = cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
-                                    return subjectMatch && issuerMatch;
+                                    return ValidateCertificateBySubjectAndIssuer(cert, trustedCert);
                                 }
                             }
                             
@@ -237,6 +229,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
         {
             var extension = Path.GetExtension(certificatePath).ToLowerInvariant();
             return extension == ".pfx" || extension == ".p12";
+        }
+
+        private static bool ValidateCertificateBySubjectAndIssuer(X509Certificate2 cert, X509Certificate2 trustedCert)
+        {
+            return cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase) 
+                && cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
