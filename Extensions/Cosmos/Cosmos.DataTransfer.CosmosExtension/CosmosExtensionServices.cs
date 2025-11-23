@@ -17,7 +17,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
 {
     public static class CosmosExtensionServices
     {
-        public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, string? sourceDisplayName = null)
+        public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, ILogger logger, string? sourceDisplayName = null)
         {
             string userAgentString = CreateUserAgentString(displayName, sourceDisplayName);
 
@@ -46,7 +46,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             // Configure custom certificate validation
             if (settings.DisableSslValidation || !string.IsNullOrEmpty(settings.CertificatePath))
             {
-                clientOptions.ServerCertificateCustomValidationCallback = CreateCertificateValidationCallback(settings);
+                clientOptions.ServerCertificateCustomValidationCallback = CreateCertificateValidationCallback(settings, logger);
             }
             
             CosmosClient? cosmosClient;
@@ -121,7 +121,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
         }
 
-        private static Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> CreateCertificateValidationCallback(CosmosSettingsBase settings)
+        private static Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> CreateCertificateValidationCallback(CosmosSettingsBase settings, ILogger logger)
         {
             return (cert, chain, errors) =>
             {
@@ -171,7 +171,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                     catch (ArgumentException ex)
                                     {
                                         // Certificate is invalid or null - log and fallback
-                                        Console.Error.WriteLine($"Certificate chain validation failed - Invalid certificate: {ex.Message}");
+                                        logger.LogError($"Certificate chain validation failed - Invalid certificate: {ex.Message}");
                                         
                                         // Fallback to subject and issuer comparison
                                         bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
@@ -181,7 +181,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                     catch (CryptographicException ex)
                                     {
                                         // Certificate is unreadable - log and fallback
-                                        Console.Error.WriteLine($"Certificate chain validation failed - Certificate unreadable: {ex.Message}");
+                                        logger.LogError($"Certificate chain validation failed - Certificate unreadable: {ex.Message}");
                                         
                                         // Fallback to subject and issuer comparison
                                         bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
@@ -191,7 +191,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                     catch (InvalidOperationException ex)
                                     {
                                         // Chain elements collection is in invalid state - log and fallback
-                                        Console.Error.WriteLine($"Certificate chain validation failed - Invalid chain state: {ex.Message}");
+                                        logger.LogError($"Certificate chain validation failed - Invalid chain state: {ex.Message}");
                                         
                                         // Fallback to subject and issuer comparison
                                         bool subjectMatch = cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase);
@@ -201,7 +201,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                     catch (Exception ex)
                                     {
                                         // Unexpected exception - log with full details and fail validation for security
-                                        Console.Error.WriteLine($"Certificate chain validation failed - Unexpected error: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                                        logger.LogError($"Certificate chain validation failed - Unexpected error: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                                         
                                         // For unknown exceptions, fail validation for security rather than fallback
                                         return false;
@@ -222,7 +222,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     catch (Exception ex)
                     {
                         // Log the exception details to help diagnose certificate loading issues
-                        Console.Error.WriteLine($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
+                        logger.LogError($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
                         // If we can't load the certificate, fail validation
                         return false;
                     }
