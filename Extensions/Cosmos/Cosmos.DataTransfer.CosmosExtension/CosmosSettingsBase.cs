@@ -41,7 +41,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? CertificatePassword { get; set; }
 
         /// <summary>
-        /// Disable SSL certificate validation. 
+        /// Disable SSL certificate validation.
         /// WARNING: Only use this for development with the emulator. Never use in production.
         /// </summary>
         public bool DisableSslValidation { get; set; } = false;
