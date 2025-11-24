@@ -128,6 +128,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 // If SSL validation is disabled (development/emulator only)
                 if (settings.DisableSslValidation)
                 {
+                    logger.LogWarning("SSL validation is disabled. This should only be used for development/emulator scenarios.");
                     return true;
                 }
 
@@ -163,48 +164,45 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                             certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                                             
                                             bool chainIsValid = certChain.Build(cert);
-                                            return chainIsValid && certChain.ChainElements
+                                            bool issuedByTrustedCert = chainIsValid && certChain.ChainElements
                                                 .Cast<X509ChainElement>()
                                                 .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
+                                            
+                                            if (!issuedByTrustedCert)
+                                            {
+                                                logger.LogWarning("Certificate chain validation failed. Server certificate was not issued by the trusted CA certificate.");
+                                            }
+                                            
+                                            return issuedByTrustedCert;
                                         }
                                     }
                                     catch (ArgumentException ex)
                                     {
-                                        // Certificate is invalid or null - log and fallback
-                                        logger.LogError("Certificate chain validation failed - Invalid certificate: {message}", ex.Message);
-                                        
-                                        // Fallback to subject and issuer comparison
-                                        return ValidateCertificateBySubjectAndIssuer(cert, trustedCert);
+                                        logger.LogError(ex, "Certificate chain validation failed - Invalid certificate");
+                                        return false;
                                     }
                                     catch (CryptographicException ex)
                                     {
-                                        // Certificate is unreadable - log and fallback
-                                        logger.LogError("Certificate chain validation failed - Certificate unreadable: {message}", ex.Message);
-                                        
-                                        // Fallback to subject and issuer comparison
-                                        return ValidateCertificateBySubjectAndIssuer(cert, trustedCert);                
+                                        logger.LogError(ex, "Certificate chain validation failed - Certificate unreadable");
+                                        return false;
                                     }
                                     catch (InvalidOperationException ex)
                                     {
-                                        // Chain elements collection is in invalid state - log and fallback
-                                        logger.LogError("Certificate chain validation failed - Invalid chain state: {message}", ex.Message);
-                                        
-                                        // Fallback to subject and issuer comparison
-                                        return ValidateCertificateBySubjectAndIssuer(cert, trustedCert);
+                                        logger.LogError(ex, "Certificate chain validation failed - Invalid chain state");
+                                        return false;
                                     }
                                     catch (Exception ex)
                                     {
-                                        // Unexpected exception - log with full details and fail validation for security
-                                        logger.LogError($"Certificate chain validation failed - Unexpected error: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                                        
-                                        // For unknown exceptions, fail validation for security rather than fallback
+                                        logger.LogError(ex, "Certificate chain validation failed - Unexpected error");
                                         return false;
                                     }
                                 }
                                 else
                                 {
-                                    // For standard certificates, try comparing by subject and issuer as fallback
-                                    return ValidateCertificateBySubjectAndIssuer(cert, trustedCert);
+                                    // For standard certificates, thumbprint must match exactly
+                                    logger.LogWarning("Certificate thumbprint mismatch. Expected: {ExpectedThumbprint}, Got: {ActualThumbprint}", 
+                                        trustedCert.Thumbprint, cert.Thumbprint);
+                                    return false;
                                 }
                             }
                             
@@ -213,9 +211,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     }
                     catch (Exception ex)
                     {
-                        // Log the exception details to help diagnose certificate loading issues
-                        logger.LogError($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
-                        // If we can't load the certificate, fail validation
+                        logger.LogError(ex, "Certificate loading failed from path: {CertificatePath}", settings.CertificatePath);
                         return false;
                     }
                 }
@@ -229,12 +225,6 @@ namespace Cosmos.DataTransfer.CosmosExtension
         {
             var extension = Path.GetExtension(certificatePath).ToLowerInvariant();
             return extension == ".pfx" || extension == ".p12";
-        }
-
-        private static bool ValidateCertificateBySubjectAndIssuer(X509Certificate2 cert, X509Certificate2 trustedCert)
-        {
-            return cert.Subject.Equals(trustedCert.Subject, StringComparison.OrdinalIgnoreCase) 
-                && cert.Issuer.Equals(trustedCert.Issuer, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
