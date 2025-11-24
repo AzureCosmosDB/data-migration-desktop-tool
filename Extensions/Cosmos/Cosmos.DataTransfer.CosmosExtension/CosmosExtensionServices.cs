@@ -222,21 +222,21 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     catch (CryptographicException ex)
                     {
                         // Log the exception details to help diagnose certificate loading issues
-                        Console.Error.WriteLine($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
+                        logger.LogError(ex, "Certificate loading failed");
                         // If we can't load the certificate, fail validation
                         return false;
                     }
                     catch (IOException ex)
                     {
                         // Log the exception details to help diagnose certificate loading issues
-                        Console.Error.WriteLine($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
+                        logger.LogError(ex, "Certificate loading failed");
                         // If we can't load the certificate, fail validation
                         return false;
                     }
                     catch (UnauthorizedAccessException ex)
                     {
                         // Log the exception details to help diagnose certificate loading issues
-                        Console.Error.WriteLine($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
+                        logger.LogError(ex, "Certificate loading failed");
                         // If we can't load the certificate, fail validation
                         return false;
                     }
