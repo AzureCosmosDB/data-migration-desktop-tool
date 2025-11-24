@@ -207,11 +207,25 @@ namespace Cosmos.DataTransfer.CosmosExtension
                             }
                             
                             return thumbprintMatch;
-                        }
-                    }
-                    catch (Exception ex)
+                    catch (CryptographicException ex)
                     {
-                        logger.LogError(ex, "Certificate loading failed from path: {CertificatePath}", settings.CertificatePath);
+                        // Log the exception details to help diagnose certificate loading issues
+                        Console.Error.WriteLine($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
+                        // If we can't load the certificate, fail validation
+                        return false;
+                    }
+                    catch (IOException ex)
+                    {
+                        // Log the exception details to help diagnose certificate loading issues
+                        Console.Error.WriteLine($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
+                        // If we can't load the certificate, fail validation
+                        return false;
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        // Log the exception details to help diagnose certificate loading issues
+                        Console.Error.WriteLine($"Certificate loading failed: {ex.Message}\n{ex.StackTrace}");
+                        // If we can't load the certificate, fail validation
                         return false;
                     }
                 }
