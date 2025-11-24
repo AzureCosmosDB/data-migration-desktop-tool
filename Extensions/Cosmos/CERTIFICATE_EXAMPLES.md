@@ -178,7 +178,7 @@ Migrating from staging to production with different PFX certificates:
 
 3. **Certificate file formats supported**
    - `.cer` (binary or base64 encoded)
-   - `.crt` (binary or base64 encoded)  
+   - `.crt` (binary or base64 encoded)
    - `.pem` (base64 encoded)
    - `.pfx` (PKCS#12, with or without password)
    - `.p12` (PKCS#12, with or without password)
