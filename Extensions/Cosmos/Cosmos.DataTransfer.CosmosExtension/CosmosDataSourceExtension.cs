@@ -18,7 +18,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var settings = config.Get<CosmosSourceSettings>();
             settings.Validate();
 
-            var client = CosmosExtensionServices.CreateClient(settings!, DisplayName);
+            var client = CosmosExtensionServices.CreateClient(settings!, DisplayName, logger);
 
             Container container;
             

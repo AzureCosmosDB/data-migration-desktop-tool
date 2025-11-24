@@ -150,7 +150,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     try
                     {
                         bool isPfxCertificate = IsPfxCertificate(settings.CertificatePath);
-                        
+
                         // Load certificate based on type and password availability
                         using (X509Certificate2 trustedCert = isPfxCertificate
                             ? (string.IsNullOrEmpty(settings.CertificatePassword)
@@ -160,7 +160,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         {
                             // Compare certificate thumbprints (most reliable method)
                             bool thumbprintMatch = cert.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase);
-                            
+
                             if (!thumbprintMatch)
                             {
                                 // For PFX certificates, also check if the server cert was issued by our trusted cert
@@ -174,17 +174,17 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                             certChain.ChainPolicy.ExtraStore.Add(trustedCert);
                                             certChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                                             certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                                            
+
                                             bool chainIsValid = certChain.Build(cert);
                                             bool issuedByTrustedCert = chainIsValid && certChain.ChainElements
                                                 .Cast<X509ChainElement>()
                                                 .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
-                                            
+
                                             if (!issuedByTrustedCert)
                                             {
                                                 logger.LogWarning("Certificate chain validation failed. Server certificate was not issued by the trusted CA certificate.");
                                             }
-                                            
+
                                             return issuedByTrustedCert;
                                         }
                                     }
@@ -212,13 +212,15 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                 else
                                 {
                                     // For standard certificates, thumbprint must match exactly
-                                    logger.LogWarning("Certificate thumbprint mismatch. Expected: {ExpectedThumbprint}, Got: {ActualThumbprint}", 
+                                    logger.LogWarning("Certificate thumbprint mismatch. Expected: {ExpectedThumbprint}, Got: {ActualThumbprint}",
                                         trustedCert.Thumbprint, cert.Thumbprint);
                                     return false;
                                 }
                             }
-                            
+
                             return thumbprintMatch;
+                        }
+                    }
                     catch (CryptographicException ex)
                     {
                         // Log the exception details to help diagnose certificate loading issues
