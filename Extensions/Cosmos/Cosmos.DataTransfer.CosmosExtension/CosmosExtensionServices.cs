@@ -132,6 +132,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     return true;
                 }
 
+                if (cert == null)
+                {
+                    logger.LogError("Server certificate is null during SSL validation.");
+                    return false;
+                }
+
                 // If a certificate path is specified
                 if (!string.IsNullOrEmpty(settings.CertificatePath))
                 {
