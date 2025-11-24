@@ -138,6 +138,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     return false;
                 }
 
+                if (cert.NotAfter < DateTime.UtcNow || cert.NotBefore > DateTime.UtcNow)
+                {
+                    logger.LogError("Certificate expired or not yet valid. Valid from {NotBefore} to {NotAfter}", cert.NotBefore, cert.NotAfter);
+                    return false;
+                }
+
                 // If a certificate path is specified
                 if (!string.IsNullOrEmpty(settings.CertificatePath))
                 {
