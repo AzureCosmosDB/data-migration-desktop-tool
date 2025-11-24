@@ -219,6 +219,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                             }
                             
                             return thumbprintMatch;
+                        }
                     catch (CryptographicException ex)
                     {
                         // Log the exception details to help diagnose certificate loading issues
