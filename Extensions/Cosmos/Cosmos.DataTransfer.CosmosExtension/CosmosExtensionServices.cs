@@ -123,7 +123,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         /// <summary>
         /// Creates a custom SSL certificate validation callback that bypasses all certificate checks.
-        /// This is intended solely for use with the Cosmos DB vNext emulator in development environments.
+        /// This is intended solely for use with development environments.
         /// </summary>
         /// <param name="logger">Logger for diagnostic information</param>
         /// <returns>A callback function that always accepts server certificates</returns>

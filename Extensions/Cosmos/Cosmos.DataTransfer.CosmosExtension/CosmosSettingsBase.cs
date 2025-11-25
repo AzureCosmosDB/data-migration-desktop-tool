@@ -26,7 +26,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         /// <summary>
         /// Disables SSL certificate validation for the Cosmos DB connection.
-        /// This is intended for use with the Cosmos DB vNext emulator or local development environments.
+        /// This is intended for use with local development environments.
         /// WARNING: Never use this option in production as it disables critical security checks.
         /// </summary>
         public bool DisableSslValidation { get; set; } = false;
