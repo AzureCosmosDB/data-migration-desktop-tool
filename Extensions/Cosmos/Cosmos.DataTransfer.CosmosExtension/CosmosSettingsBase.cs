@@ -64,6 +64,10 @@ namespace Cosmos.DataTransfer.CosmosExtension
             {
                 yield return new ValidationResult($"CertificatePath file does not exist: {CertificatePath}", new[] { nameof(CertificatePath) });
             }
+            if (!string.IsNullOrEmpty(CertificatePassword) && string.IsNullOrEmpty(CertificatePath))
+            {
+                yield return new ValidationResult("CertificatePassword is specified but CertificatePath is missing", new[] { nameof(CertificatePassword) });
+            }
         }
     }
 }
