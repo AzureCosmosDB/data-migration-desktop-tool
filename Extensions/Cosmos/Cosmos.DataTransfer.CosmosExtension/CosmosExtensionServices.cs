@@ -141,8 +141,138 @@ namespace Cosmos.DataTransfer.CosmosExtension
         {
             return (cert, chain, errors) =>
             {
+<<<<<<< HEAD
                 logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development or Cosmos DB emulator scenarios. Never use in production.");
                 return true;
+=======
+                // If SSL validation is disabled (development/emulator only)
+                if (settings.DisableSslValidation)
+                {
+                    logger.LogWarning("SSL validation is disabled. This should only be used for development/emulator scenarios.");
+                    return true;
+                }
+
+                if (cert == null)
+                {
+                    logger.LogError("Server certificate is null during SSL validation.");
+                    return false;
+                }
+
+                if (cert.NotAfter < DateTime.UtcNow || cert.NotBefore > DateTime.UtcNow)
+                {
+                    logger.LogError("Certificate expired or not yet valid. Valid from {NotBefore} to {NotAfter}", cert.NotBefore, cert.NotAfter);
+                    return false;
+                }
+
+                // If a certificate path is specified
+                if (!string.IsNullOrEmpty(settings.CertificatePath))
+                {
+                    try
+                    {
+                        bool isPfxCertificate = IsPfxCertificate(settings.CertificatePath);
+
+                        // Load certificate based on type and password availability
+                        using (X509Certificate2 trustedCert = isPfxCertificate
+                            ? (string.IsNullOrEmpty(settings.CertificatePassword)
+                                ? new X509Certificate2(settings.CertificatePath)
+                                : new X509Certificate2(settings.CertificatePath, settings.CertificatePassword))
+                            : new X509Certificate2(settings.CertificatePath))
+                        {
+                            // Compare certificate thumbprints (most reliable method)
+                            bool thumbprintMatch = cert.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase);
+
+                            if (!thumbprintMatch)
+                            {
+                                // For PFX certificates, also check if the server cert was issued by our trusted cert
+                                // This handles cases where the PFX is a CA certificate
+                                if (isPfxCertificate)
+                                {
+                                    try
+                                    {
+                                        using (var certChain = new X509Chain())
+                                        {
+                                            certChain.ChainPolicy.ExtraStore.Add(trustedCert);
+                                            certChain.ChainPolicy.RevocationMode = disableRevocationCheck
+                                                ? X509RevocationMode.NoCheck
+                                                : X509RevocationMode.Online;
+                                            certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+
+                                            if (disableRevocationCheck)
+                                            {
+                                                logger.LogWarning("Certificate revocation checking is disabled. This may allow revoked certificates to be accepted.");
+                                            }
+                                            bool chainIsValid = certChain.Build(cert);
+                                            bool issuedByTrustedCert = chainIsValid && certChain.ChainElements
+                                                .Cast<X509ChainElement>()
+                                                .Any(element => element.Certificate.Thumbprint.Equals(trustedCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
+
+                                            if (!issuedByTrustedCert)
+                                            {
+                                                logger.LogWarning("Certificate chain validation failed. Server certificate was not issued by the trusted CA certificate.");
+                                            }
+
+                                            return issuedByTrustedCert;
+                                        }
+                                    }
+                                    catch (ArgumentException ex)
+                                    {
+                                        logger.LogError(ex, "Certificate chain validation failed - Invalid certificate");
+                                        return false;
+                                    }
+                                    catch (CryptographicException ex)
+                                    {
+                                        logger.LogError(ex, "Certificate chain validation failed - Certificate unreadable");
+                                        return false;
+                                    }
+                                    catch (InvalidOperationException ex)
+                                    {
+                                        logger.LogError(ex, "Certificate chain validation failed - Invalid chain state");
+                                        return false;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        logger.LogError(ex, "Certificate chain validation failed - Unexpected error");
+                                        return false;
+                                    }
+                                }
+                                else
+                                {
+                                    // For standard certificates, thumbprint must match exactly
+                                    logger.LogWarning("Certificate thumbprint mismatch. Expected: {ExpectedThumbprint}, Got: {ActualThumbprint}",
+                                        trustedCert.Thumbprint, cert.Thumbprint);
+                                    return false;
+                                }
+                            }
+
+                            return thumbprintMatch;
+                        }
+                    }
+                    catch (CryptographicException ex)
+                    {
+                        // Log the exception details to help diagnose certificate loading issues
+                        logger.LogError(ex, "Certificate loading failed");
+                        // If we can't load the certificate, fail validation
+                        return false;
+                    }
+                    catch (IOException ex)
+                    {
+                        // Log the exception details to help diagnose certificate loading issues
+                        logger.LogError(ex, "Certificate loading failed");
+                        // If we can't load the certificate, fail validation
+                        return false;
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        // Log the exception details to help diagnose certificate loading issues
+                        logger.LogError(ex, "Certificate loading failed");
+                        // If we can't load the certificate, fail validation
+                        return false;
+                    }
+                }
+
+                // Default validation - accept only if no SSL policy errors
+                return errors == SslPolicyErrors.None;
+>>>>>>> a95d075dd63628145e0dd08abe8ddf4fa0045104
             };
         }
     }
