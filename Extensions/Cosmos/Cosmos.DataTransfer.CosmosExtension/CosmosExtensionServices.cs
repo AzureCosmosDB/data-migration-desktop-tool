@@ -172,9 +172,15 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                         using (var certChain = new X509Chain())
                                         {
                                             certChain.ChainPolicy.ExtraStore.Add(trustedCert);
-                                            certChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                                            certChain.ChainPolicy.RevocationMode = disableRevocationCheck
+                                                ? X509RevocationMode.NoCheck
+                                                : X509RevocationMode.Online;
                                             certChain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
 
+                                            if (disableRevocationCheck)
+                                            {
+                                                logger.LogWarning("Certificate revocation checking is disabled. This may allow revoked certificates to be accepted.");
+                                            }
                                             bool chainIsValid = certChain.Build(cert);
                                             bool issuedByTrustedCert = chainIsValid && certChain.ChainElements
                                                 .Cast<X509ChainElement>()
