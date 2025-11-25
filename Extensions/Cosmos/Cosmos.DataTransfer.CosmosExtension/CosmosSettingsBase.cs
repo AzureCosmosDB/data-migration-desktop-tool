@@ -25,24 +25,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public bool LimitToEndpoint { get; set; } = false;
 
         /// <summary>
-        /// Path to a certificate file for SSL validation and client authentication.
-        /// Supports multiple formats:
-        /// - .cer, .crt, .pem files for basic SSL validation
-        /// - .pfx, .p12 files for client authentication (enterprise scenarios)
-        /// For PFX/P12 files, use CertificatePassword if the file is password-protected.
-        /// </summary>
-        public string? CertificatePath { get; set; }
-
-        /// <summary>
-        /// Password for PFX/P12 certificate files when they are password-protected.
-        /// Only used when CertificatePath points to a .pfx or .p12 file.
-        /// WARNING: Store this securely and avoid hardcoding in configuration files.
-        /// </summary>
-        public string? CertificatePassword { get; set; }
-
-        /// <summary>
-        /// Disable SSL certificate validation.
-        /// WARNING: Only use this for development with the emulator. Never use in production.
+        /// Disables SSL certificate validation for the Cosmos DB connection.
+        /// This is intended for use with the Cosmos DB vNext emulator or local development environments.
+        /// WARNING: Never use this option in production as it disables critical security checks.
         /// </summary>
         public bool DisableSslValidation { get; set; } = false;
 
@@ -59,10 +44,6 @@ namespace Cosmos.DataTransfer.CosmosExtension
             if (!UseRbacAuth && InitClientEncryption)
             {
                 yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth is true", new[] { nameof(InitClientEncryption) });
-            }
-            if (!string.IsNullOrEmpty(CertificatePath) && !File.Exists(CertificatePath))
-            {
-                yield return new ValidationResult($"CertificatePath file does not exist: {CertificatePath}", new[] { nameof(CertificatePath) });
             }
         }
     }

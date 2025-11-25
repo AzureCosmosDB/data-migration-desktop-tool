@@ -70,41 +70,6 @@ For emulator development with SSL validation disabled:
 }
 ```
 
-For custom certificate validation:
-
-```json
-{
-    "ConnectionString": "AccountEndpoint=https://my-custom-cosmos.domain.com:8081/;AccountKey=...",
-    "Database":"myDb",
-    "Container":"myContainer",
-    "CertificatePath": "C:\\certs\\cosmos-custom.cer"
-}
-```
-
-For enterprise PFX certificate with password:
-
-```json
-{
-    "ConnectionString": "AccountEndpoint=https://enterprise-cosmos.company.com:8081/;AccountKey=...",
-    "Database":"EnterpriseDB",
-    "Container":"SecureContainer",
-    "CertificatePath": "C:\\enterprise-certs\\cosmos-client.pfx",
-    "CertificatePassword": "SecureP@ssw0rd!"
-}
-```
-
-For enterprise PFX certificate without password:
-
-```json
-{
-    "UseRbacAuth": true,
-    "AccountEndpoint": "https://enterprise-cosmos.company.com:443/",
-    "Database":"EnterpriseDB",
-    "Container":"SecureContainer",
-    "CertificatePath": "C:\\enterprise-certs\\cosmos-client.p12"
-}
-```
-
 ### Sink Settings
 
 #### **Partition Key Settings**
@@ -146,13 +111,8 @@ For enterprise PFX certificate without password:
 
 #### **SSL/Certificate Settings**
 
-- **`CertificatePath`**: Optional. Path to a certificate file for SSL validation and client authentication. Supports multiple formats:
-  - `.cer`, `.crt`, `.pem` files for basic SSL validation
-  - `.pfx`, `.p12` files for client authentication (enterprise scenarios)
-  For PFX/P12 files, use `CertificatePassword` if the file is password-protected.
-- **`CertificatePassword`**: Optional. Password for PFX/P12 certificate files when they are password-protected. Only used when `CertificatePath` points to a `.pfx` or `.p12` file. ⚠️ Store securely and avoid hardcoding in configuration files.
-- **`DisableSslValidation`**: Optional, defaults to `false`. Disables SSL certificate validation entirely.
-  - **⚠️ WARNING**: Only use this for development with the emulator. Never use in production environments as it makes connections vulnerable to man-in-the-middle attacks.
+- **`DisableSslValidation`**: Optional, defaults to `false`. Disables SSL certificate validation for development/emulator scenarios.
+  - **⚠️ WARNING**: Only use this for development purposes. Never use in production environments as it disables critical security checks and makes connections vulnerable to man-in-the-middle attacks.
 
 #### **Serverless Account**
 
@@ -189,4 +149,3 @@ For enterprise PFX certificate without password:
     "InitClientEncryption": false,
     "LimitToEndpoint": false
 }
-```
