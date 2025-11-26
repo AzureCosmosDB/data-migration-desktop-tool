@@ -16,7 +16,12 @@ Source and sink settings also both require parameters to specify the data locati
 - `Database`
 - `Container`
 
-Source supports an optional `IncludeMetadataFields` parameter (`false` by default) to enable inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`. An optional PartitionKeyValue setting allows for filtering to a single partition. The optional Query setting allows further filtering using a Cosmos SQL statement. An optional `WebProxy` parameter (`null` by default) enables connections through a proxy. When using an authenticated proxy, set `UseDefaultProxyCredentials` to `true` (defaults to `false`) to include default credentials in the proxy request.
+Source supports the following optional parameters:
+- `IncludeMetadataFields` (`false` by default) - Enables inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`.
+- `PartitionKeyValue` - Allows for filtering to a single partition.
+- `Query` - Allows further filtering using a Cosmos SQL statement.
+- `WebProxy` (`null` by default) - Enables connections through a proxy.
+- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the proxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`.
 
 ### Always Encrypted
 
