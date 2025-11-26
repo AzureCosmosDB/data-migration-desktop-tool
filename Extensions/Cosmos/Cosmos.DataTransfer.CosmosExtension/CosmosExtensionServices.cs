@@ -1,17 +1,13 @@
-﻿using Azure.Identity;
-using Cosmos.DataTransfer.Interfaces;
+﻿using Azure.Core;
+using Azure.Identity;
+using Azure.Security.KeyVault.Keys.Cryptography;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Encryption;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
-using System.Reflection;
-using Azure.Core;
-using System.Text.RegularExpressions;
-using Microsoft.Azure.Cosmos.Encryption;
-using Azure.Security.KeyVault.Keys.Cryptography;
 using System.Net;
-using System.Net.Security;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -43,10 +39,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 clientOptions.WebProxy = new WebProxy(settings.WebProxy);
             }
 
-            // Configure custom certificate validation for emulator scenarios
+            // Disable SSL certificate validation for emulator scenarios
             if (settings.DisableSslValidation)
             {
-                clientOptions.ServerCertificateCustomValidationCallback = CreateCertificateValidationCallback(logger);
+                clientOptions.ServerCertificateCustomValidationCallback = (cert, chain, errors) =>
+                {
+                    logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development or Cosmos DB emulator scenarios. Never use in production.");
+                    return true;
+                };
             }
             
             CosmosClient? cosmosClient;
@@ -119,31 +119,6 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 logger.LogError(ex, "Failed to connect to CosmosDB. Please check your connection settings and try again.");
                 throw new InvalidOperationException("Failed to create CosmosClient");
             }
-        }
-
-        /// <summary>
-        /// Creates a custom SSL certificate validation callback that bypasses all certificate checks.
-        /// This is intended solely for use with development environments.
-        /// </summary>
-        /// <param name="logger">Logger for diagnostic information</param>
-        /// <returns>A callback function that always accepts server certificates</returns>
-        /// <remarks>
-        /// WARNING: This callback disables all SSL/TLS security checks including:
-        /// - Certificate chain validation
-        /// - Certificate revocation checking  
-        /// - Trusted CA verification
-        /// - Hostname verification
-        /// - Certificate expiration checking
-        /// 
-        /// Never use this in production environments as it makes connections vulnerable to man-in-the-middle attacks.
-        /// </remarks>
-        private static Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> CreateCertificateValidationCallback(ILogger logger)
-        {
-            return (cert, chain, errors) =>
-            {
-                logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development or Cosmos DB emulator scenarios. Never use in production.");
-                return true;
-            };
         }
     }
 }
