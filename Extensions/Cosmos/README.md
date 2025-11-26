@@ -16,7 +16,7 @@ Source and sink settings also both require parameters to specify the data locati
 - `Database`
 - `Container`
 
-Source supports an optional `IncludeMetadataFields` parameter (`false` by default) to enable inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`. An optional PartitionKeyValue setting allows for filtering to a single partition. The optional Query setting allows further filtering using a Cosmos SQL statement. An optional `WebProxy` parameter (`null` by default) enables connections through a proxy.
+Source supports an optional `IncludeMetadataFields` parameter (`false` by default) to enable inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`. An optional PartitionKeyValue setting allows for filtering to a single partition. The optional Query setting allows further filtering using a Cosmos SQL statement. An optional `WebProxy` parameter (`null` by default) enables connections through a proxy. When using an authenticated proxy, set `UseDefaultProxyCredentials` to `true` (defaults to `false`) to include default credentials in the proxy request.
 
 ### Always Encrypted
 
@@ -36,7 +36,8 @@ The extension will also automatically handle the encryption keys and encryption 
     "IncludeMetadataFields": false,
     "PartitionKeyValue":"123",
     "Query":"SELECT * FROM c WHERE c.category='event'",
-    "WebProxy":"http://yourproxy.server.com/"
+    "WebProxy":"http://yourproxy.server.com/",
+    "UseDefaultProxyCredentials": true
 }
 ```
 
@@ -52,8 +53,9 @@ Or with RBAC:
     "IncludeMetadataFields": false,
     "PartitionKeyValue":"123",
     "Query":"SELECT * FROM c WHERE c.category='event'",
-    "InitClientEncryption": false
-    "WebProxy":"http://yourproxy.server.com/"
+    "InitClientEncryption": false,
+    "WebProxy":"http://yourproxy.server.com/",
+    "UseDefaultProxyCredentials": true
 }
 ```
 
@@ -84,6 +86,9 @@ Or with RBAC:
 - **`ConnectionMode`**: Controls how the client connects to the Cosmos DB service. Options:
   - `Gateway` (default)
   - `Direct`
+
+- **`WebProxy`**: Optional. Specifies the proxy server URL to use for connections (e.g., `http://yourproxy.server.com/`).
+- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the proxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`.
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
   write and read regions, and use them when the configured application region is not available. 

@@ -12,6 +12,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? Container { get; set; }
         public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Gateway;
         public string? WebProxy { get; set; }
+        public bool UseDefaultProxyCredentials { get; set; } = false;
         public bool UseRbacAuth { get; set; }
         public string? AccountEndpoint { get; set; }
         public bool EnableInteractiveCredentials { get; set; }

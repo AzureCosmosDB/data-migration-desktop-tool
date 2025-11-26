@@ -60,4 +60,31 @@ public class CosmosSourceSettingsTests
 
         settings.Validate();
     }
+
+    [TestMethod]
+    public void UseDefaultProxyCredentials_DefaultsToFalse()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+        };
+
+        Assert.IsFalse(settings.UseDefaultProxyCredentials);
+    }
+
+    [TestMethod]
+    public void UseDefaultProxyCredentials_CanBeSetToTrue()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+            UseDefaultProxyCredentials = true,
+        };
+
+        Assert.IsTrue(settings.UseDefaultProxyCredentials);
+    }
 }

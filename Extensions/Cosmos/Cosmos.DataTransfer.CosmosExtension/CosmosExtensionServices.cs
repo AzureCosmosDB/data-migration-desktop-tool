@@ -37,7 +37,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
             };
 
             if (!string.IsNullOrEmpty(settings.WebProxy)){
-                clientOptions.WebProxy = new WebProxy(settings.WebProxy);
+                var webProxy = new WebProxy(settings.WebProxy);
+                if (settings.UseDefaultProxyCredentials)
+                {
+                    webProxy.UseDefaultCredentials = true;
+                }
+                clientOptions.WebProxy = webProxy;
             }
             
             CosmosClient? cosmosClient;
