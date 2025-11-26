@@ -59,7 +59,7 @@ Or with RBAC:
 
 #### Certificate Configuration Examples
 
-For emulator development with SSL validation disabled:
+For development purposes with SSL validation disabled:
 
 ```json
 {
