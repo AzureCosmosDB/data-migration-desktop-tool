@@ -21,7 +21,7 @@ Source supports the following optional parameters:
 - `PartitionKeyValue` - Allows for filtering to a single partition.
 - `Query` - Allows further filtering using a Cosmos SQL statement.
 - `WebProxy` (`null` by default) - Enables connections through a proxy.
-- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the proxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`.
+- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the proxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
 
 ### Always Encrypted
 
@@ -93,7 +93,7 @@ Or with RBAC:
   - `Direct`
 
 - **`WebProxy`**: Optional. Specifies the proxy server URL to use for connections (e.g., `http://yourproxy.server.com/`).
-- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the proxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`.
+- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the proxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
   write and read regions, and use them when the configured application region is not available. 
