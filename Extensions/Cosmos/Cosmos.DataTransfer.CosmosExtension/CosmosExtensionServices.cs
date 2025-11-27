@@ -42,11 +42,8 @@ namespace Cosmos.DataTransfer.CosmosExtension
             // Disable SSL certificate validation for emulator scenarios
             if (settings.DisableSslValidation)
             {
-                clientOptions.ServerCertificateCustomValidationCallback = (cert, chain, errors) =>
-                {
-                    logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development or Cosmos DB emulator scenarios. Never use in production.");
-                    return true;
-                };
+                logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development or Cosmos DB emulator scenarios. Never use in production.");
+                clientOptions.ServerCertificateCustomValidationCallback = (cert, chain, errors) => true;
             }
             
             CosmosClient? cosmosClient;
