@@ -9,11 +9,24 @@ using System.Text.RegularExpressions;
 using Microsoft.Azure.Cosmos.Encryption;
 using Azure.Security.KeyVault.Keys.Cryptography;
 using System.Net;
+using System.Net.Http;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
     public static class CosmosExtensionServices
     {
+        // Static HttpClient with default credentials for reuse across connections
+        // This avoids connection exhaustion and properly handles credentials
+        private static readonly Lazy<HttpClient> _httpClientWithDefaultCredentials = new Lazy<HttpClient>(() =>
+        {
+            var handler = new HttpClientHandler
+            {
+                Credentials = CredentialCache.DefaultNetworkCredentials,
+                PreAuthenticate = true
+            };
+            return new HttpClient(handler);
+        });
+
         public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, string? sourceDisplayName = null)
         {
             string userAgentString = CreateUserAgentString(displayName, sourceDisplayName);
@@ -43,6 +56,13 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     webProxy.UseDefaultCredentials = true;
                 }
                 clientOptions.WebProxy = webProxy;
+            }
+
+            // When using default credentials, also configure the HttpClient with credentials
+            // This ensures authenticated proxy support for the underlying HTTP connections
+            if (settings.UseDefaultProxyCredentials)
+            {
+                clientOptions.HttpClientFactory = () => _httpClientWithDefaultCredentials.Value;
             }
             
             CosmosClient? cosmosClient;
