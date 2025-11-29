@@ -87,4 +87,58 @@ public class CosmosSourceSettingsTests
 
         Assert.IsTrue(settings.UseDefaultProxyCredentials);
     }
+
+    [TestMethod]
+    public void UseDefaultCredentials_DefaultsToFalse()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+        };
+
+        Assert.IsFalse(settings.UseDefaultCredentials);
+    }
+
+    [TestMethod]
+    public void UseDefaultCredentials_CanBeSetToTrue()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+            UseDefaultCredentials = true,
+        };
+
+        Assert.IsTrue(settings.UseDefaultCredentials);
+    }
+
+    [TestMethod]
+    public void PreAuthenticate_DefaultsToFalse()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+        };
+
+        Assert.IsFalse(settings.PreAuthenticate);
+    }
+
+    [TestMethod]
+    public void PreAuthenticate_CanBeSetToTrue()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+            PreAuthenticate = true,
+        };
+
+        Assert.IsTrue(settings.PreAuthenticate);
+    }
 }

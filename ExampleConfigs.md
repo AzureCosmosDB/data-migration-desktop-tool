@@ -219,7 +219,9 @@
         "PartitionKeyPath": "/id",
         "WriteMode": "Insert",
         "WebProxy": "http://yourproxy.server.com/",
-        "UseDefaultProxyCredentials": true
+        "UseDefaultProxyCredentials": true,
+        "UseDefaultCredentials": true,
+        "PreAuthenticate": true
     }
 }
 ```

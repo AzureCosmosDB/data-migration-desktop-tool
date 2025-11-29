@@ -15,9 +15,19 @@ namespace Cosmos.DataTransfer.CosmosExtension
 {
     public static class CosmosExtensionServices
     {
-        // Static HttpClient with default credentials for reuse across connections
+        // Static HttpClient instances with different configurations for reuse across connections
         // This avoids connection exhaustion and properly handles credentials
         private static readonly Lazy<HttpClient> _httpClientWithDefaultCredentials = new Lazy<HttpClient>(() =>
+        {
+            var handler = new HttpClientHandler
+            {
+                Credentials = CredentialCache.DefaultNetworkCredentials,
+                PreAuthenticate = false
+            };
+            return new HttpClient(handler);
+        });
+
+        private static readonly Lazy<HttpClient> _httpClientWithDefaultCredentialsAndPreAuth = new Lazy<HttpClient>(() =>
         {
             var handler = new HttpClientHandler
             {
@@ -58,11 +68,13 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 clientOptions.WebProxy = webProxy;
             }
 
-            // When using default credentials, also configure the HttpClient with credentials
-            // This ensures authenticated proxy support for the underlying HTTP connections
-            if (settings.UseDefaultProxyCredentials)
+            // Configure the HttpClient with default credentials if requested
+            // This enables authenticated proxy support for the underlying HTTP connections
+            if (settings.UseDefaultCredentials)
             {
-                clientOptions.HttpClientFactory = () => _httpClientWithDefaultCredentials.Value;
+                clientOptions.HttpClientFactory = settings.PreAuthenticate
+                    ? () => _httpClientWithDefaultCredentialsAndPreAuth.Value
+                    : () => _httpClientWithDefaultCredentials.Value;
             }
             
             CosmosClient? cosmosClient;

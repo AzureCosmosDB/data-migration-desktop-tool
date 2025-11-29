@@ -21,7 +21,9 @@ Source supports the following optional parameters:
 - `PartitionKeyValue` - Allows for filtering to a single partition.
 - `Query` - Allows further filtering using a Cosmos SQL statement.
 - `WebProxy` (`null` by default) - Enables connections through a proxy.
-- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in both the WebProxy and the underlying HttpClient connection to CosmosDB. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
+- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
+- `UseDefaultCredentials` (`false` by default) - When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
+- `PreAuthenticate` (`false` by default) - When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 
 ### Always Encrypted
 
@@ -42,7 +44,9 @@ The extension will also automatically handle the encryption keys and encryption 
     "PartitionKeyValue":"123",
     "Query":"SELECT * FROM c WHERE c.category='event'",
     "WebProxy":"http://yourproxy.server.com/",
-    "UseDefaultProxyCredentials": true
+    "UseDefaultProxyCredentials": true,
+    "UseDefaultCredentials": true,
+    "PreAuthenticate": true
 }
 ```
 
@@ -60,7 +64,9 @@ Or with RBAC:
     "Query":"SELECT * FROM c WHERE c.category='event'",
     "InitClientEncryption": false,
     "WebProxy":"http://yourproxy.server.com/",
-    "UseDefaultProxyCredentials": true
+    "UseDefaultProxyCredentials": true,
+    "UseDefaultCredentials": true,
+    "PreAuthenticate": true
 }
 ```
 
@@ -93,7 +99,9 @@ Or with RBAC:
   - `Direct`
 
 - **`WebProxy`**: Optional. Specifies the proxy server URL to use for connections (e.g., `http://yourproxy.server.com/`).
-- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in both the WebProxy and the underlying HttpClient connection to CosmosDB. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
+- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
+- **`UseDefaultCredentials`**: Optional, defaults to `false`. When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
+- **`PreAuthenticate`**: Optional, defaults to `false`. When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
   write and read regions, and use them when the configured application region is not available. 
