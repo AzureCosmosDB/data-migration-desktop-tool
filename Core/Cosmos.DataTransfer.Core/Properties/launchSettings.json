@@ -1,8 +1,7 @@
 {
   "profiles": {
     "Cosmos.DataTransfer.Core": {
-      "commandName": "Project",
-      "commandLineArgs": ""
+      "commandName": "Project"
     },
     "JSON->Cosmos": {
       "commandName": "Project",
@@ -34,7 +33,7 @@
     },
     "SettingsCommand": {
       "commandName": "Project",
-      "commandLineArgs": "settings --sink"
+      "commandLineArgs": "--source json --sink cosmos-nosql --settings=\"C:\\temp\\datamigration.json\""
     }
   }
 }

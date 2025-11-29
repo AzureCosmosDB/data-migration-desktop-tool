@@ -6,10 +6,43 @@ The Cosmos data transfer extension provides source and sink capabilities for rea
 
 ## Settings
 
+
+### Main Settings
+
+| Setting                | Description                                                                                       | Default   |
+|------------------------|---------------------------------------------------------------------------------------------------|-----------|
+| ConnectionString       | Cosmos DB connection string (AccountEndpoint + AccountKey)                                         |           |
+| UseRbacAuth            | Use Role Based Access Control for authentication                                                   | false     |
+| AccountEndpoint        | Cosmos DB account endpoint (required for RBAC)                                                     |           |
+| EnableInteractiveCredentials | Prompt for Azure login if default credentials are unavailable                                 | false     |
+| Database               | Cosmos DB database name                                                                           |           |
+| Container              | Cosmos DB container name                                                                          |           |
+| WebProxy               | Proxy server URL for Cosmos DB connections                                                        |           |
+| InitClientEncryption   | Enable Always Encrypted feature                                                                   | false     |
+| LimitToEndpoint        | Restrict client to endpoint (see CosmosClientOptions.LimitToEndpoint)                             | false     |
+| DisableSslValidation   | Disable SSL certificate validation (for local dev only; not for production)                       | false     |
+| AllowBulkExecution     | Enable bulk execution for optimized performance. <br>**Warning:** May affect consistency and error handling. | false     |
+
 Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of two ways:
 
 - Using a `ConnectionString` that includes an AccountEndpoint and AccountKey
 - Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available. See ([migrate-passwordless](https://learn.microsoft.com/azure/cosmos-db/nosql/migrate-passwordless?tabs=sign-in-azure-cli%2Cdotnet%2Cazure-portal-create%2Cazure-portal-associate%2Capp-service-identity) for how to configure Cosmos DB for passwordless access.
+
+
+### Bulk Execution
+
+The extension supports bulk execution for Cosmos DB operations. When the `AllowBulkExecution` setting is set to `true`, operations such as bulk inserts and updates are optimized for performance. Use with caution, as bulk execution may affect consistency and error handling. Default is `false`.
+
+Example:
+
+```json
+{
+    "ConnectionString": "AccountEndpoint=https://...",
+    "Database": "myDb",
+    "Container": "myContainer",
+    "AllowBulkExecution": true
+}
+```
 
 Source and sink settings also both require parameters to specify the data location within a Cosmos DB account:
 

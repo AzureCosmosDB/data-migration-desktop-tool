@@ -37,6 +37,7 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             Assert.AreEqual(0, validationResults.Count, "Settings should validate with DisableSslValidation=false");
         }
 
+
         private class TestableCosmosSettings : CosmosSettingsBase
         {
         }
