@@ -90,7 +90,7 @@ Or with RBAC:
 }
 ```
 
-#### Certificate Configuration Examples
+#### Disable SSL Validation Configuration Example
 
 For development purposes with SSL validation disabled:
 
