@@ -64,6 +64,8 @@ public class DataItemJsonConverterTests
         yield return new object[] { false, "\"x\":false" };
         yield return new object[] { new DateTime(2025, 10, 15, 16, 45, 12, 666, DateTimeKind.Unspecified), "\"x\":\"2025-10-15T16:45:12.6660000\"" };
         yield return new object[] { new DateTime(2025, 10, 15, 16, 45, 12, 666, DateTimeKind.Utc), "\"x\":\"2025-10-15T16:45:12.6660000Z\"" };
+        yield return new object[] { new DateTimeOffset(2025, 10, 15, 16, 45, 12, 666, TimeSpan.Zero), "\"x\":\"2025-10-15T16:45:12.6660000+00:00\"" };
+        yield return new object[] { new DateTimeOffset(2025, 10, 15, 16, 45, 12, 666, TimeSpan.FromHours(5)), "\"x\":\"2025-10-15T16:45:12.6660000+05:00\"" };
         yield return new object[] { 'a', "\"x\":\"a\"" };
         yield return new object[] { "Greetings human    ", "\"x\":\"Greetings human    \"" };
         // yield return new object[] { true, "\"x\":true" };

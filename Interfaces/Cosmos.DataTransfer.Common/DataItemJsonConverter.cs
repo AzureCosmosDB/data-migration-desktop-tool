@@ -139,7 +139,11 @@ public static class DataItemJsonConverter
                     }
                     else if (arrayItem is DateTime date)
                     {
-                        writer.WriteStringValue(date.ToString("O"));
+                        writer.WriteStringValue(GetAsUnescaped(date.ToString("O")));
+                    }
+                    else if (arrayItem is DateTimeOffset dateOffset)
+                    {
+                        writer.WriteStringValue(GetAsUnescaped(dateOffset.ToString("O")));
                     }
                     else if (arrayItem is null)
                     {
@@ -178,7 +182,11 @@ public static class DataItemJsonConverter
             }
             else if (fieldValue is DateTime date)
             {
-                writer.WriteString(propertyName, date.ToString("O"));
+                writer.WriteString(propertyName, GetAsUnescaped(date.ToString("O")));
+            }
+            else if (fieldValue is DateTimeOffset dateOffset)
+            {
+                writer.WriteString(propertyName, GetAsUnescaped(dateOffset.ToString("O")));
             }
             else
             {
