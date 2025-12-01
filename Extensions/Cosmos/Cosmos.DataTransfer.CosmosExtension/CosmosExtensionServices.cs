@@ -9,11 +9,34 @@ using System.Text.RegularExpressions;
 using Microsoft.Azure.Cosmos.Encryption;
 using Azure.Security.KeyVault.Keys.Cryptography;
 using System.Net;
+using System.Net.Http;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
     public static class CosmosExtensionServices
     {
+        // Static HttpClient instances with different configurations for reuse across connections
+        // This avoids connection exhaustion and properly handles credentials
+        private static readonly Lazy<HttpClient> _httpClientWithDefaultCredentials = new Lazy<HttpClient>(() =>
+        {
+            var handler = new HttpClientHandler
+            {
+                Credentials = CredentialCache.DefaultNetworkCredentials,
+                PreAuthenticate = false
+            };
+            return new HttpClient(handler);
+        });
+
+        private static readonly Lazy<HttpClient> _httpClientWithDefaultCredentialsAndPreAuth = new Lazy<HttpClient>(() =>
+        {
+            var handler = new HttpClientHandler
+            {
+                Credentials = CredentialCache.DefaultNetworkCredentials,
+                PreAuthenticate = true
+            };
+            return new HttpClient(handler);
+        });
+
         public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, string? sourceDisplayName = null)
         {
             string userAgentString = CreateUserAgentString(displayName, sourceDisplayName);
@@ -37,7 +60,21 @@ namespace Cosmos.DataTransfer.CosmosExtension
             };
 
             if (!string.IsNullOrEmpty(settings.WebProxy)){
-                clientOptions.WebProxy = new WebProxy(settings.WebProxy);
+                var webProxy = new WebProxy(settings.WebProxy);
+                if (settings.UseDefaultProxyCredentials)
+                {
+                    webProxy.UseDefaultCredentials = true;
+                }
+                clientOptions.WebProxy = webProxy;
+            }
+
+            // Configure the HttpClient with default credentials if requested
+            // This enables authenticated proxy support for the underlying HTTP connections
+            if (settings.UseDefaultCredentials)
+            {
+                clientOptions.HttpClientFactory = settings.PreAuthenticate
+                    ? () => _httpClientWithDefaultCredentialsAndPreAuth.Value
+                    : () => _httpClientWithDefaultCredentials.Value;
             }
             
             CosmosClient? cosmosClient;
