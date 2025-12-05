@@ -1,12 +1,80 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
 using System.Dynamic;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 
 namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
 {
     [TestClass]
     public class CosmosDataSinkExtensionTests
     {
+        [TestMethod]
+        public void CreateItemStream_WithDateString_PreservesFormat()
+        {
+            // Arrange - Simulate data read from source with ISO-8601 date string
+            var sourceSettings = RawJsonCosmosSerializer.GetDefaultSettings();
+            var sourceJson = "{\"id\": \"1\", \"event_time\": \"2023-12-19T00:00:00.000Z\"}";
+            var serializer = JsonSerializer.Create(sourceSettings);
+            using var reader = new JsonTextReader(new StringReader(sourceJson));
+            var sourceDict = serializer.Deserialize<Dictionary<string, object?>>(reader)!;
+            
+            // Act - Create data item and build expando object (simulating the pipeline)
+            var dataItem = new CosmosDictionaryDataItem(sourceDict);
+            var expando = dataItem.BuildDynamicObjectTree()!;
+            
+            // Serialize using the same settings that CreateItemStream uses
+            var json = JsonConvert.SerializeObject(expando, RawJsonCosmosSerializer.GetDefaultSettings());
+            
+            // Assert - The date string format should be preserved
+            Assert.IsTrue(json.Contains("\"2023-12-19T00:00:00.000Z\""), 
+                $"Date format should be preserved. Actual JSON: {json}");
+        }
+
+        [TestMethod]
+        public void CreateItemStream_WithNestedDateString_PreservesFormat()
+        {
+            // Arrange - Simulate data with nested date strings
+            var sourceSettings = RawJsonCosmosSerializer.GetDefaultSettings();
+            var sourceJson = "{\"id\": \"1\", \"data\": {\"created\": \"2023-12-19T00:00:00.000Z\", \"modified\": \"2023-12-20T12:30:45.123Z\"}}";
+            var serializer = JsonSerializer.Create(sourceSettings);
+            using var reader = new JsonTextReader(new StringReader(sourceJson));
+            var sourceDict = serializer.Deserialize<Dictionary<string, object?>>(reader)!;
+            
+            // Act
+            var dataItem = new CosmosDictionaryDataItem(sourceDict);
+            var expando = dataItem.BuildDynamicObjectTree()!;
+            var json = JsonConvert.SerializeObject(expando, RawJsonCosmosSerializer.GetDefaultSettings());
+            
+            // Assert
+            Assert.IsTrue(json.Contains("\"2023-12-19T00:00:00.000Z\""), 
+                $"Created date format should be preserved. Actual JSON: {json}");
+            Assert.IsTrue(json.Contains("\"2023-12-20T12:30:45.123Z\""), 
+                $"Modified date format should be preserved. Actual JSON: {json}");
+        }
+
+        [TestMethod]
+        public void CreateItemStream_WithDateStringArray_PreservesFormat()
+        {
+            // Arrange - Simulate data with date strings in array
+            var sourceSettings = RawJsonCosmosSerializer.GetDefaultSettings();
+            var sourceJson = "{\"id\": \"1\", \"timestamps\": [\"2023-12-19T00:00:00.000Z\", \"2023-12-20T00:00:00.000Z\"]}";
+            var serializer = JsonSerializer.Create(sourceSettings);
+            using var reader = new JsonTextReader(new StringReader(sourceJson));
+            var sourceDict = serializer.Deserialize<Dictionary<string, object?>>(reader)!;
+            
+            // Act
+            var dataItem = new CosmosDictionaryDataItem(sourceDict);
+            var expando = dataItem.BuildDynamicObjectTree()!;
+            var json = JsonConvert.SerializeObject(expando, RawJsonCosmosSerializer.GetDefaultSettings());
+            
+            // Assert
+            Assert.IsTrue(json.Contains("\"2023-12-19T00:00:00.000Z\""), 
+                $"First date format should be preserved. Actual JSON: {json}");
+            Assert.IsTrue(json.Contains("\"2023-12-20T00:00:00.000Z\""), 
+                $"Second date format should be preserved. Actual JSON: {json}");
+        }
+
         [TestMethod]
         public void BuildDynamicObjectTree_WithNestedArrays_WorksCorrectly()
         {

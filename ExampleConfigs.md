@@ -202,3 +202,26 @@
   ]
 }
 ```
+
+## JSON to Cosmos-NoSQL (Using Authenticated Proxy)
+
+```json
+{
+    "Source": "json",
+    "Sink": "cosmos-nosql",
+    "SourceSettings": {
+        "FilePath": "c:\\data\\sales-data.json"
+    },
+    "SinkSettings": {
+        "ConnectionString": "AccountEndpoint=https://...",
+        "Database": "myDb",
+        "Container": "myContainer",
+        "PartitionKeyPath": "/id",
+        "WriteMode": "Insert",
+        "WebProxy": "http://yourproxy.server.com/",
+        "UseDefaultProxyCredentials": true,
+        "UseDefaultCredentials": true,
+        "PreAuthenticate": true
+    }
+}
+```

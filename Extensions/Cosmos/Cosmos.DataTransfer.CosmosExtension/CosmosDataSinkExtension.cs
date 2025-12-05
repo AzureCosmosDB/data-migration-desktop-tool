@@ -280,7 +280,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         private static MemoryStream CreateItemStream(ExpandoObject item)
         {
-            var json = JsonConvert.SerializeObject(item);
+            var json = JsonConvert.SerializeObject(item, RawJsonCosmosSerializer.GetDefaultSettings());
             return new MemoryStream(Encoding.UTF8.GetBytes(json));
         }
 
