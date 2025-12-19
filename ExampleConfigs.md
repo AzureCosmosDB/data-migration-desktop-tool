@@ -4,6 +4,8 @@
 
 The tool supports simultaneous connections to two different Cosmos DB accounts, allowing you to migrate data directly from one account to another.
 
+### Using Connection Strings
+
 ```json
 {
     "Source": "Cosmos-nosql",
@@ -23,6 +25,32 @@ The tool supports simultaneous connections to two different Cosmos DB accounts, 
         "WriteMode": "UpsertStream",
         "CreatedContainerMaxThroughput": 10000,
         "UseAutoscaleForCreatedContainer": true
+    }
+}
+```
+
+### Using RBAC Authentication (Passwordless)
+
+```json
+{
+    "Source": "Cosmos-nosql",
+    "Sink": "Cosmos-nosql",
+    "SourceSettings": {
+        "UseRbacAuth": true,
+        "AccountEndpoint": "https://source-account.documents.azure.com:443/",
+        "EnableInteractiveCredentials": true,
+        "Database": "sourceDatabase",
+        "Container": "sourceContainer",
+        "IncludeMetadataFields": false
+    },
+    "SinkSettings": {
+        "UseRbacAuth": true,
+        "AccountEndpoint": "https://destination-account.documents.azure.com:443/",
+        "EnableInteractiveCredentials": true,
+        "Database": "destinationDatabase",
+        "Container": "destinationContainer",
+        "PartitionKeyPath": "/id",
+        "WriteMode": "UpsertStream"
     }
 }
 ```
