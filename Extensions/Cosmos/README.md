@@ -4,6 +4,23 @@ The Cosmos data transfer extension provides source and sink capabilities for rea
 
 > **Note**: When specifying the JSON extension as the Source or Sink property in configuration, utilize the name **Cosmos-nosql**.
 
+## Multi-Account Support
+
+The tool supports simultaneous connections to two different Cosmos DB accounts, enabling direct account-to-account data migration. Each source and sink connection creates its own independent CosmosClient instance with separate configurations.
+
+**Key capabilities:**
+- Connect to different Cosmos DB accounts simultaneously for source and sink
+- Each connection can use different authentication methods (connection string or RBAC)
+- Independent configuration for connection mode, proxy settings, and client options
+- Both connections can use the same or different Cosmos DB accounts
+
+**Example use cases:**
+- Migrate data between production and development accounts
+- Copy data between regions by connecting to different regional accounts  
+- Transfer data between accounts with different authentication requirements
+
+See the [Cosmos-to-Cosmos configuration example](../../ExampleConfigs.md#cosmos-nosql-to-cosmos-nosql-different-accounts) for details.
+
 ## Settings
 
 Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of two ways:

@@ -1,5 +1,34 @@
 # Example `migrationsettings.json` Files
 
+## Cosmos-NoSQL to Cosmos-NoSQL (Different Accounts)
+
+The tool supports simultaneous connections to two different Cosmos DB accounts, allowing you to migrate data directly from one account to another.
+
+```json
+{
+    "Source": "Cosmos-nosql",
+    "Sink": "Cosmos-nosql",
+    "SourceSettings": {
+        "ConnectionString": "AccountEndpoint=https://source-account.documents.azure.com:443/;AccountKey=<source-key>;",
+        "Database": "sourceDatabase",
+        "Container": "sourceContainer",
+        "IncludeMetadataFields": false
+    },
+    "SinkSettings": {
+        "ConnectionString": "AccountEndpoint=https://destination-account.documents.azure.com:443/;AccountKey=<destination-key>;",
+        "Database": "destinationDatabase",
+        "Container": "destinationContainer",
+        "PartitionKeyPath": "/id",
+        "RecreateContainer": false,
+        "WriteMode": "UpsertStream",
+        "CreatedContainerMaxThroughput": 10000,
+        "UseAutoscaleForCreatedContainer": true
+    }
+}
+```
+
+> **Note**: The tool creates separate CosmosClient instances for the source and sink, allowing you to connect to different Cosmos DB accounts simultaneously. Each connection can have its own configuration including connection mode, proxy settings, and authentication method (connection string or RBAC).
+
 ## JSON to Cosmos-NoSQL
 
 ```json
