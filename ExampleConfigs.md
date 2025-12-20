@@ -1,5 +1,41 @@
 # Example `migrationsettings.json` Files
 
+## Multiple Cosmos-NoSQL Sinks (Different Accounts)
+
+The tool supports writing to multiple different Cosmos DB accounts simultaneously using the `Operations` feature. This allows you to replicate data from one source to multiple destination accounts in a single execution.
+
+```json
+{
+    "Source": "JSON",
+    "Sink": "Cosmos-nosql",
+    "SourceSettings": {
+        "FilePath": "C:\\data\\sample-data.json"
+    },
+    "SinkSettings": {
+        "PartitionKeyPath": "/id",
+        "WriteMode": "UpsertStream"
+    },
+    "Operations": [
+        {
+            "SinkSettings": {
+                "ConnectionString": "AccountEndpoint=https://account1.documents.azure.com:443/;AccountKey=<key1>;",
+                "Database": "db1",
+                "Container": "container1"
+            }
+        },
+        {
+            "SinkSettings": {
+                "ConnectionString": "AccountEndpoint=https://account2.documents.azure.com:443/;AccountKey=<key2>;",
+                "Database": "db2",
+                "Container": "container2"
+            }
+        }
+    ]
+}
+```
+
+> **Note**: The tool creates separate CosmosClient instances for each operation's sink, allowing you to write to multiple different Cosmos DB accounts simultaneously. Each sink connection can have its own configuration including connection mode, proxy settings, and authentication method (connection string or RBAC).
+
 ## Cosmos-NoSQL to Cosmos-NoSQL (Different Accounts)
 
 The tool supports simultaneous connections to two different Cosmos DB accounts, allowing you to migrate data directly from one account to another.
