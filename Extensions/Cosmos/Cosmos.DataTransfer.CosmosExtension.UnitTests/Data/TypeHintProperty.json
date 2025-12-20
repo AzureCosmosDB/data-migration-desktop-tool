@@ -1,0 +1,9 @@
+{
+  "id": "1",
+  "name": "Dog",
+  "myFavouritePet": {
+    "$type": "MyProject.Pets.Dog, MyProject",
+    "Name": "Foo",
+    "OtherName": "OtherFoo"
+  }
+}

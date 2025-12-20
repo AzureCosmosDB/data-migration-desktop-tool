@@ -5,6 +5,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Encryption;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -40,22 +41,38 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             logger.LogInformation("Reading from {Database}.{Container}", settings.Database, settings.Container);
-            using FeedIterator<Dictionary<string, object?>> feedIterator = GetFeedIterator<Dictionary<string, object?>>(settings, container, requestOptions);
+            using FeedIterator<JObject> feedIterator = GetFeedIterator<JObject>(settings, container, requestOptions);
             while (feedIterator.HasMoreResults)
             {
-                foreach (var item in await feedIterator.ReadNextAsync(cancellationToken))
+                foreach (var jObject in await feedIterator.ReadNextAsync(cancellationToken))
                 {
+                    // Manually convert JObject to Dictionary to preserve all properties including $type
+                    // Using ToObject<Dictionary> would filter out metadata properties
+                    var dict = jObject.Properties().ToDictionary(
+                        p => p.Name,
+                        p => ConvertJTokenValue(p.Value));
+
                     if (!settings.IncludeMetadataFields)
                     {
-                        var corePropertiesOnly = new Dictionary<string, object?>(item.Where(kvp => !kvp.Key.StartsWith("_")));
+                        var corePropertiesOnly = new Dictionary<string, object?>(dict.Where(kvp => !kvp.Key.StartsWith("_")));
                         yield return new CosmosDictionaryDataItem(corePropertiesOnly);
                     }
                     else
                     {
-                        yield return new CosmosDictionaryDataItem(item);
+                        yield return new CosmosDictionaryDataItem(dict);
                     }
                 }
             }
+        }
+
+        private static object? ConvertJTokenValue(JToken token)
+        {
+            return token.Type switch
+            {
+                JTokenType.Object => token, // Keep as JObject, will be converted by CosmosDictionaryDataItem.GetChildObject
+                JTokenType.Array => token, // Keep as JArray, will be converted by CosmosDictionaryDataItem.GetChildObject
+                _ => ((JValue)token).Value // For primitives, extract the value
+            };
         }
 
         private static FeedIterator<T> GetFeedIterator<T>(CosmosSourceSettings settings, Container container, QueryRequestOptions requestOptions)

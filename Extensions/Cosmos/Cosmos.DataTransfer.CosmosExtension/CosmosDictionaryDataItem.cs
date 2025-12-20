@@ -32,13 +32,29 @@ namespace Cosmos.DataTransfer.CosmosExtension
         {
             if (value is JObject element)
             {
-                return new CosmosDictionaryDataItem(element.ToObject<IDictionary<string, object?>>(JsonSerializer.Create(RawJsonCosmosSerializer.GetDefaultSettings()))
-                    .ToDictionary(k => k.Key, v => v.Value));
+                // Manually convert JObject properties to dictionary to preserve all properties including $type
+                // Using ToObject<Dictionary> would filter out metadata properties like $type
+                var dict = element.Properties().ToDictionary(
+                    p => p.Name, 
+                    p => {
+                        if (p.Value is JObject || p.Value is JArray)
+                        {
+                            return (object?)p.Value; // Keep as JToken, will be recursively converted
+                        }
+                        // For primitive values, use the Value property directly
+                        return ((JValue)p.Value).Value;
+                    });
+                return new CosmosDictionaryDataItem(dict);
             }
             if (value is JArray array)
             {
-                return array.ToObject<List<object?>>(JsonSerializer.Create(RawJsonCosmosSerializer.GetDefaultSettings()))
-                    .Select(GetChildObject).ToList();
+                return array.Select(item => {
+                    if (item is JObject || item is JArray)
+                    {
+                        return GetChildObject(item);
+                    }
+                    return ((JValue)item).Value;
+                }).ToList();
             }
 
             return value;
