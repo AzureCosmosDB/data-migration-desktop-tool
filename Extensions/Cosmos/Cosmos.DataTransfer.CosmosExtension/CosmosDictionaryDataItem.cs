@@ -59,10 +59,8 @@ namespace Cosmos.DataTransfer.CosmosExtension
         {
             if (value is JObject element)
             {
-                // Manually convert JObject properties to dictionary to preserve all properties including $type
-                var dict = element.Properties().ToDictionary(
-                    p => p.Name,
-                    p => ConvertJTokenValue(p.Value));
+                // Use the public utility method for consistency
+                var dict = JObjectToDictionary(element);
                 return new CosmosDictionaryDataItem(dict);
             }
             if (value is JArray array)
