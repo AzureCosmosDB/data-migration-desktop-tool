@@ -96,13 +96,8 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
 
             var json = JObject.Parse(await File.ReadAllTextAsync(fileIn));
 
-            // Manually convert JObject to Dictionary to preserve all properties including $type
-            var dict = json.Properties().ToDictionary(
-                p => p.Name,
-                p => p.Value.Type == JTokenType.Object || p.Value.Type == JTokenType.Array 
-                    ? (object?)p.Value // Keep as JObject/JArray
-                    : ((JValue)p.Value).Value); // Extract primitive value
-
+            // Use shared utility to convert JObject to Dictionary while preserving $type properties
+            var dict = CosmosDictionaryDataItem.JObjectToDictionary(json);
             var item = new CosmosDictionaryDataItem(dict);
 
             var fields = item.GetFieldNames().ToList();

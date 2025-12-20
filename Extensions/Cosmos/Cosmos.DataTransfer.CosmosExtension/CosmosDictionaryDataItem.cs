@@ -13,6 +13,33 @@ namespace Cosmos.DataTransfer.CosmosExtension
             Items = items;
         }
 
+        /// <summary>
+        /// Converts a JObject to a Dictionary while preserving all properties including metadata properties like $type.
+        /// </summary>
+        /// <remarks>
+        /// Using ToObject&lt;Dictionary&gt; would filter out metadata properties because Newtonsoft.Json
+        /// treats properties like $type, $id, and $ref as special metadata even when TypeNameHandling is None.
+        /// </remarks>
+        public static IDictionary<string, object?> JObjectToDictionary(JObject jObject)
+        {
+            return jObject.Properties().ToDictionary(
+                p => p.Name,
+                p => ConvertJTokenValue(p.Value));
+        }
+
+        /// <summary>
+        /// Converts a JToken to its appropriate object representation while preserving JObject and JArray types.
+        /// </summary>
+        private static object? ConvertJTokenValue(JToken token)
+        {
+            return token.Type switch
+            {
+                JTokenType.Object => token, // Keep as JObject, will be converted by GetChildObject
+                JTokenType.Array => token, // Keep as JArray, will be converted by GetChildObject
+                _ => ((JValue)token).Value // For primitives, extract the value
+            };
+        }
+
         public IEnumerable<string> GetFieldNames()
         {
             return Items.Keys;
@@ -33,17 +60,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
             if (value is JObject element)
             {
                 // Manually convert JObject properties to dictionary to preserve all properties including $type
-                // Using ToObject<Dictionary> would filter out metadata properties like $type
                 var dict = element.Properties().ToDictionary(
-                    p => p.Name, 
-                    p => {
-                        if (p.Value is JObject || p.Value is JArray)
-                        {
-                            return (object?)p.Value; // Keep as JToken, will be recursively converted
-                        }
-                        // For primitive values, use the Value property directly
-                        return ((JValue)p.Value).Value;
-                    });
+                    p => p.Name,
+                    p => ConvertJTokenValue(p.Value));
                 return new CosmosDictionaryDataItem(dict);
             }
             if (value is JArray array)

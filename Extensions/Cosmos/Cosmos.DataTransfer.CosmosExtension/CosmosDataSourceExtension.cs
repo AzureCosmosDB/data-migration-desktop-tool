@@ -47,10 +47,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 foreach (var jObject in await feedIterator.ReadNextAsync(cancellationToken))
                 {
                     // Manually convert JObject to Dictionary to preserve all properties including $type
-                    // Using ToObject<Dictionary> would filter out metadata properties
-                    var dict = jObject.Properties().ToDictionary(
-                        p => p.Name,
-                        p => ConvertJTokenValue(p.Value));
+                    var dict = CosmosDictionaryDataItem.JObjectToDictionary(jObject);
 
                     if (!settings.IncludeMetadataFields)
                     {
@@ -63,16 +60,6 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     }
                 }
             }
-        }
-
-        private static object? ConvertJTokenValue(JToken token)
-        {
-            return token.Type switch
-            {
-                JTokenType.Object => token, // Keep as JObject, will be converted by CosmosDictionaryDataItem.GetChildObject
-                JTokenType.Array => token, // Keep as JArray, will be converted by CosmosDictionaryDataItem.GetChildObject
-                _ => ((JValue)token).Value // For primitives, extract the value
-            };
         }
 
         private static FeedIterator<T> GetFeedIterator<T>(CosmosSourceSettings settings, Container container, QueryRequestOptions requestOptions)
