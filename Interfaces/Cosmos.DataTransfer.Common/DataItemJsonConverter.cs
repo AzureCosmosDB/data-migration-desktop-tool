@@ -104,6 +104,12 @@ public static class DataItemJsonConverter
             {
                 WriteDataItem(writer, child, includeNullFields, propertyName);
             }
+            else if (fieldValue is IDictionary<string, object?> dict)
+            {
+                // Handle dictionaries (e.g., from MongoDB BsonDocument conversion) as nested objects
+                var dictItem = new DictionaryDataItem(dict);
+                WriteDataItem(writer, dictItem, includeNullFields, propertyName);
+            }
             else if (fieldValue is not string && fieldValue is IEnumerable children)
             {
                 writer.WriteStartArray(propertyName);
@@ -112,6 +118,12 @@ public static class DataItemJsonConverter
                     if (arrayItem is IDataItem arrayChild)
                     {
                         WriteDataItem(writer, arrayChild, includeNullFields);
+                    }
+                    else if (arrayItem is IDictionary<string, object?> arrayDict)
+                    {
+                        // Handle dictionaries (e.g., from MongoDB BsonDocument conversion) as nested objects
+                        var arrayDictItem = new DictionaryDataItem(arrayDict);
+                        WriteDataItem(writer, arrayDictItem, includeNullFields);
                     }
                     else if (TryGetLong(arrayItem, out var longValue))
                     {
