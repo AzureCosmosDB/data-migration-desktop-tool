@@ -42,9 +42,10 @@ jobs:
           AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: 127.0.0.1
         options: >-
           --health-cmd="curl -f -k https://127.0.0.1:8081/_explorer/emulator.pem || exit 1"
-          --health-interval=30s
+          --health-interval=20s
           --health-timeout=10s
-          --health-retries=10
+          --health-retries=20
+          --health-start-period=120s
     steps:
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
@@ -63,7 +64,7 @@ jobs:
       - name: Wait for Cosmos Emulator
         run: |
           echo "Waiting for Cosmos DB Emulator (${{ matrix.emulator_version.name }}) to be ready..."
-          timeout 300 bash -c 'until curl -f -k https://127.0.0.1:8081/_explorer/emulator.pem; do sleep 5; done'
+          timeout 600 bash -c 'until curl -f -k https://127.0.0.1:8081/_explorer/emulator.pem; do sleep 5; done'
           echo "Cosmos DB Emulator is ready!"
           
       - name: Import Cosmos Emulator Certificate
