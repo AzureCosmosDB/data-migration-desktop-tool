@@ -17,12 +17,20 @@ jobs:
           {
             name: "current",
             image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest",
-            allow_failure: false
+            allow_failure: false,
+            protocol: "https",
+            endpoint_port: 8081,
+            explorer_port: 8081,
+            use_https: true
           },
           {
             name: "vnext",
             image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview",
-            allow_failure: true
+            allow_failure: true,
+            protocol: "http",
+            endpoint_port: 8081,
+            explorer_port: 1234,
+            use_https: false
           }
         ]
       fail-fast: false
@@ -32,6 +40,7 @@ jobs:
         image: ${{ matrix.emulator_version.image }}
         ports:
           - 8081:8081
+          - 1234:1234
           - 10251:10251
           - 10252:10252
           - 10253:10253
@@ -41,7 +50,7 @@ jobs:
           AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: false
           AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: 127.0.0.1
         options: >-
-          --health-cmd="curl -f -k https://127.0.0.1:8081/_explorer/emulator.pem || exit 1"
+          --health-cmd="curl -f http://127.0.0.1:8081/ || exit 1"
           --health-interval=20s
           --health-timeout=10s
           --health-retries=20
@@ -64,10 +73,15 @@ jobs:
       - name: Wait for Cosmos Emulator
         run: |
           echo "Waiting for Cosmos DB Emulator (${{ matrix.emulator_version.name }}) to be ready..."
-          timeout 600 bash -c 'until curl -f -k https://127.0.0.1:8081/_explorer/emulator.pem; do sleep 5; done'
+          if [ "${{ matrix.emulator_version.use_https }}" == "true" ]; then
+            timeout 600 bash -c 'until curl -f -k https://127.0.0.1:8081/_explorer/emulator.pem; do sleep 5; done'
+          else
+            timeout 600 bash -c 'until curl -f http://127.0.0.1:8081/; do sleep 5; done'
+          fi
           echo "Cosmos DB Emulator is ready!"
           
       - name: Import Cosmos Emulator Certificate
+        if: matrix.emulator_version.use_https == true
         run: |
           curl -k https://127.0.0.1:8081/_explorer/emulator.pem > ~/emulatorcert.crt
           sudo cp ~/emulatorcert.crt /usr/local/share/ca-certificates/
@@ -78,8 +92,12 @@ jobs:
           echo "Running Cosmos extension unit tests with emulator connection (${{ matrix.emulator_version.name }})..."
           echo "Cosmos_Endpoint: $Cosmos_Endpoint"
           echo "Testing connectivity to emulator..."
-          curl -k -s https://127.0.0.1:8081/_explorer/index.html > /dev/null && echo "Emulator is responding" || echo "Warning: Emulator may not be fully ready"
+          if [ "${{ matrix.emulator_version.use_https }}" == "true" ]; then
+            curl -k -s https://127.0.0.1:8081/_explorer/index.html > /dev/null && echo "Emulator is responding" || echo "Warning: Emulator may not be fully ready"
+          else
+            curl -s http://127.0.0.1:8081/ > /dev/null && echo "Emulator is responding" || echo "Warning: Emulator may not be fully ready"
+          fi
           dotnet test ./Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension.UnitTests/ --no-build --verbosity normal
         env:
-          Cosmos_Endpoint: https://127.0.0.1:8081/
+          Cosmos_Endpoint: ${{ matrix.emulator_version.protocol }}://127.0.0.1:8081/
           Cosmos_Key: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
