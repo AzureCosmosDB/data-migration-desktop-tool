@@ -49,6 +49,7 @@ jobs:
           AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 10
           AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: false
           AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: 127.0.0.1
+        # TCP port check works for both HTTP (vnext) and HTTPS (current) emulators
         options: >-
           --health-cmd="timeout 5 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8081' || exit 1"
           --health-interval=20s
