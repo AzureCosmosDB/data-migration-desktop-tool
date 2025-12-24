@@ -50,7 +50,7 @@ jobs:
           AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: false
           AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: 127.0.0.1
         options: >-
-          --health-cmd="curl -f http://127.0.0.1:8081/ || exit 1"
+          --health-cmd="timeout 5 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8081' || exit 1"
           --health-interval=20s
           --health-timeout=10s
           --health-retries=20
