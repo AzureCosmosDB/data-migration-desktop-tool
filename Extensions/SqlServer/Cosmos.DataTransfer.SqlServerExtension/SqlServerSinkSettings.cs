@@ -65,6 +65,13 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                     }
                 }
             }
+            else if (WriteMode == SqlWriteMode.Insert && DeleteNotMatchedBySource)
+            {
+                // DeleteNotMatchedBySource only works with Upsert mode
+                results.Add(new ValidationResult(
+                    "DeleteNotMatchedBySource can only be used when WriteMode is Upsert.",
+                    new[] { nameof(DeleteNotMatchedBySource) }));
+            }
 
             return results;
         }

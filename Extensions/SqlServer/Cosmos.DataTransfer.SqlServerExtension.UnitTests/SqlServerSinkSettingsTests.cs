@@ -266,4 +266,29 @@ public class SqlServerSinkSettingsTests
         Assert.IsNotNull(settings, "Settings should be deserialized");
         Assert.IsTrue(settings!.DeleteNotMatchedBySource, "DeleteNotMatchedBySource should be true");
     }
+
+    [TestMethod]
+    public void TestSinkSettings_DeleteNotMatchedBySource_WithInsertMode_FailsValidation()
+    {
+        var settings = new SqlServerSinkSettings
+        {
+            ConnectionString = "Server=.;Database=Test;",
+            TableName = "TestTable",
+            WriteMode = SqlWriteMode.Insert,
+            DeleteNotMatchedBySource = true,
+            ColumnMappings = new List<ColumnMapping>
+            {
+                new ColumnMapping { ColumnName = "Id" },
+                new ColumnMapping { ColumnName = "Name" }
+            }
+        };
+
+        var validationResults = settings.Validate(new ValidationContext(settings)).ToList();
+        
+        Assert.IsTrue(validationResults.Any(v => v.MemberNames.Contains(nameof(SqlServerSinkSettings.DeleteNotMatchedBySource))),
+            "Validation should fail when DeleteNotMatchedBySource is true with Insert mode");
+        
+        Assert.IsTrue(validationResults.Any(v => v.ErrorMessage!.Contains("can only be used when WriteMode is Upsert")),
+            "Validation error should mention Upsert mode requirement");
+    }
 }
