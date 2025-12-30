@@ -31,6 +31,15 @@ namespace Cosmos.DataTransfer.SqlServerExtension
         private async Task WriteInsertAsync(IAsyncEnumerable<IDataItem> dataItems, SqlServerSinkSettings settings, ILogger logger, CancellationToken cancellationToken)
         {
             string tableName = settings!.TableName!;
+            
+            // Validate table name to prevent SQL injection
+            ValidateSqlIdentifier(tableName, nameof(settings.TableName));
+            
+            // Validate column names to prevent SQL injection
+            foreach (var column in settings.ColumnMappings)
+            {
+                ValidateSqlIdentifier(column.ColumnName!, nameof(column.ColumnName));
+            }
 
             await using var connection = new SqlConnection(settings.ConnectionString);
             await connection.OpenAsync(cancellationToken);
@@ -118,6 +127,20 @@ namespace Cosmos.DataTransfer.SqlServerExtension
         private async Task WriteUpsertAsync(IAsyncEnumerable<IDataItem> dataItems, SqlServerSinkSettings settings, ILogger logger, CancellationToken cancellationToken)
         {
             string tableName = settings!.TableName!;
+            
+            // Validate table name to prevent SQL injection
+            ValidateSqlIdentifier(tableName, nameof(settings.TableName));
+            
+            // Validate column names to prevent SQL injection
+            foreach (var column in settings.ColumnMappings)
+            {
+                ValidateSqlIdentifier(column.ColumnName!, nameof(column.ColumnName));
+            }
+            foreach (var pkColumn in settings.PrimaryKeyColumns)
+            {
+                ValidateSqlIdentifier(pkColumn, nameof(settings.PrimaryKeyColumns));
+            }
+            
             string stagingTableName = $"#Staging_{Guid.NewGuid():N}";
 
             await using var connection = new SqlConnection(settings.ConnectionString);
@@ -216,6 +239,26 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             {
                 // Clean up staging table (temp tables are automatically dropped on connection close)
                 await connection.CloseAsync();
+            }
+        }
+
+        /// <summary>
+        /// Validates that a SQL identifier contains only allowed characters to prevent SQL injection.
+        /// Allows alphanumeric characters, underscores, dots (for schema.table), and spaces (for quoted identifiers).
+        /// </summary>
+        private static void ValidateSqlIdentifier(string identifier, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(identifier))
+            {
+                throw new ArgumentException("SQL identifier cannot be null or empty.", parameterName);
+            }
+
+            // Allow alphanumeric, underscore, dot (for schema.table), space (for quoted identifiers), and brackets
+            if (!System.Text.RegularExpressions.Regex.IsMatch(identifier, @"^[\w\.\s\[\]]+$"))
+            {
+                throw new ArgumentException(
+                    $"Invalid SQL identifier '{identifier}'. Identifiers can only contain alphanumeric characters, underscores, dots, spaces, and brackets.",
+                    parameterName);
             }
         }
 
