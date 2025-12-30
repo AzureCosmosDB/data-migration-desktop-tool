@@ -4,7 +4,7 @@ using Cosmos.DataTransfer.Interfaces.Manifest;
 
 namespace Cosmos.DataTransfer.SqlServerExtension
 {
-    public class SqlServerSinkSettings : IDataExtensionSettings
+    public class SqlServerSinkSettings : IDataExtensionSettings, IValidatableObject
     {
         [Required]
         [SensitiveValue]
@@ -34,16 +34,29 @@ namespace Cosmos.DataTransfer.SqlServerExtension
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             var results = new List<ValidationResult>();
-            
-            // Standard validation
-            Validator.TryValidateObject(this, validationContext, results, true);
 
             // Custom validation for Upsert mode
-            if (WriteMode == SqlWriteMode.Upsert && (PrimaryKeyColumns == null || PrimaryKeyColumns.Count == 0))
+            if (WriteMode == SqlWriteMode.Upsert)
             {
-                results.Add(new ValidationResult(
-                    "PrimaryKeyColumns must be specified when WriteMode is Upsert.",
-                    new[] { nameof(PrimaryKeyColumns) }));
+                if (PrimaryKeyColumns == null || PrimaryKeyColumns.Count == 0)
+                {
+                    results.Add(new ValidationResult(
+                        "PrimaryKeyColumns must be specified when WriteMode is Upsert.",
+                        new[] { nameof(PrimaryKeyColumns) }));
+                }
+                else
+                {
+                    // Ensure at least one non-key column exists for updates
+                    var allColumns = ColumnMappings.Select(m => m.ColumnName).ToList();
+                    var nonKeyColumns = allColumns.Except(PrimaryKeyColumns).ToList();
+                    
+                    if (nonKeyColumns.Count == 0)
+                    {
+                        results.Add(new ValidationResult(
+                            "At least one non-primary key column must be specified in ColumnMappings for Upsert mode.",
+                            new[] { nameof(ColumnMappings) }));
+                    }
+                }
             }
 
             return results;

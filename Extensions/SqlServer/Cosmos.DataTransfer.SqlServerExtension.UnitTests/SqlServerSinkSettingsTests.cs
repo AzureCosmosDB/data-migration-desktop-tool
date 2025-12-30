@@ -176,4 +176,29 @@ public class SqlServerSinkSettingsTests
         Assert.IsFalse(validationResults.Any(v => v.MemberNames.Contains(nameof(SqlServerSinkSettings.PrimaryKeyColumns))),
             "Validation should pass with composite primary key");
     }
+
+    [TestMethod]
+    public void TestSinkSettings_AllColumnsArePrimaryKeys_FailsValidation()
+    {
+        var settings = new SqlServerSinkSettings
+        {
+            ConnectionString = "Server=.;Database=Test;",
+            TableName = "TestTable",
+            WriteMode = SqlWriteMode.Upsert,
+            PrimaryKeyColumns = new List<string> { "Id", "Name" },
+            ColumnMappings = new List<ColumnMapping>
+            {
+                new ColumnMapping { ColumnName = "Id" },
+                new ColumnMapping { ColumnName = "Name" }
+            }
+        };
+
+        var validationResults = settings.Validate(new ValidationContext(settings)).ToList();
+        
+        Assert.IsTrue(validationResults.Any(v => v.MemberNames.Contains(nameof(SqlServerSinkSettings.ColumnMappings))),
+            "Validation should fail when all columns are primary keys");
+        
+        Assert.IsTrue(validationResults.Any(v => v.ErrorMessage!.Contains("non-primary key column")),
+            "Validation error should mention non-primary key column requirement");
+    }
 }

@@ -34,76 +34,82 @@ namespace Cosmos.DataTransfer.SqlServerExtension
 
             await using var connection = new SqlConnection(settings.ConnectionString);
             await connection.OpenAsync(cancellationToken);
-            await using (var transaction = connection.BeginTransaction())
+            await using var transaction = connection.BeginTransaction();
+            
+            try
             {
-                try
+                using var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.CheckConstraints | SqlBulkCopyOptions.KeepIdentity, transaction);
+                bulkCopy.DestinationTableName = tableName;
+
+                var dataColumns = new Dictionary<ColumnMapping, DataColumn>();
+                foreach (ColumnMapping columnMapping in settings.ColumnMappings)
                 {
-                    using var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.CheckConstraints | SqlBulkCopyOptions.KeepIdentity, transaction);
-                    bulkCopy.DestinationTableName = tableName;
+                    Type type = Type.GetType(columnMapping.DataType ?? "System.String")!;
+                    DataColumn dbColumn = new DataColumn(columnMapping.ColumnName, type);
+                    dataColumns.Add(columnMapping, dbColumn);
+                    bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(dbColumn.ColumnName, dbColumn.ColumnName));
+                }
 
-                    var dataColumns = new Dictionary<ColumnMapping, DataColumn>();
-                    foreach (ColumnMapping columnMapping in settings.ColumnMappings)
+                
+                var dataTable = new DataTable();
+                dataTable.Columns.AddRange(dataColumns.Values.ToArray());
+
+                var batches = dataItems.Buffer(settings.BatchSize);
+                await foreach (var batch in batches.WithCancellation(cancellationToken))
+                {
+                    foreach (var item in batch)
                     {
-                        Type type = Type.GetType(columnMapping.DataType ?? "System.String")!;
-                        DataColumn dbColumn = new DataColumn(columnMapping.ColumnName, type);
-                        dataColumns.Add(columnMapping, dbColumn);
-                        bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(dbColumn.ColumnName, dbColumn.ColumnName));
-                    }
-
-                    
-                    var dataTable = new DataTable();
-                    dataTable.Columns.AddRange(dataColumns.Values.ToArray());
-
-                    var batches = dataItems.Buffer(settings.BatchSize);
-                    await foreach (var batch in batches.WithCancellation(cancellationToken))
-                    {
-                        foreach (var item in batch)
+                        var fieldNames = item.GetFieldNames().ToList();
+                        DataRow row = dataTable.NewRow();
+                        foreach (var columnMapping in dataColumns)
                         {
-                            var fieldNames = item.GetFieldNames().ToList();
-                            DataRow row = dataTable.NewRow();
-                            foreach (var columnMapping in dataColumns)
+                            DataColumn column = columnMapping.Value;
+                            ColumnMapping mapping = columnMapping.Key;
+
+                            string? fieldName = mapping.GetFieldName();
+                            if (fieldName != null)
                             {
-                                DataColumn column = columnMapping.Value;
-                                ColumnMapping mapping = columnMapping.Key;
-
-                                string? fieldName = mapping.GetFieldName();
-                                if (fieldName != null)
+                                object? value = null;
+                                var sourceField = fieldNames.FirstOrDefault(n => n.Equals(fieldName, StringComparison.CurrentCultureIgnoreCase));
+                                if (sourceField != null)
                                 {
-                                    object? value = null;
-                                    var sourceField = fieldNames.FirstOrDefault(n => n.Equals(fieldName, StringComparison.CurrentCultureIgnoreCase));
-                                    if (sourceField != null)
-                                    {
-                                        value = item.GetValue(sourceField);
-                                    }
+                                    value = item.GetValue(sourceField);
+                                }
 
-                                    if (value != null || mapping.AllowNull)
+                                if (value != null || mapping.AllowNull)
+                                {
+                                    if (value is IDataItem child)
                                     {
-                                        if (value is IDataItem child)
-                                        {
-                                            value = child.AsJsonString(false, false);
-                                        }
-                                        row[column.ColumnName] = value;
+                                        value = child.AsJsonString(false, false);
                                     }
-                                    else
-                                    {
-                                        row[column.ColumnName] = mapping.DefaultValue;
-                                    }
+                                    row[column.ColumnName] = value;
+                                }
+                                else
+                                {
+                                    row[column.ColumnName] = mapping.DefaultValue;
                                 }
                             }
-                            dataTable.Rows.Add(row);
                         }
-                        await bulkCopy.WriteToServerAsync(dataTable, cancellationToken);
-                        dataTable.Clear();
+                        dataTable.Rows.Add(row);
                     }
+                    await bulkCopy.WriteToServerAsync(dataTable, cancellationToken);
+                    dataTable.Clear();
+                }
 
-                    await transaction.CommitAsync(cancellationToken);
-                }
-                catch (Exception ex)
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error copying data to table {TableName}", tableName);
+                try
                 {
-                    logger.LogError(ex, "Error copying data to table {TableName}", tableName);
                     await transaction.RollbackAsync(cancellationToken);
-                    throw;
                 }
+                catch (Exception rollbackEx)
+                {
+                    logger.LogError(rollbackEx, "Error rolling back transaction for table {TableName}", tableName);
+                }
+                throw;
             }
 
             await connection.CloseAsync();
@@ -223,23 +229,33 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             var onClause = string.Join(" AND ", 
                 primaryKeys.Select(pk => $"target.[{pk}] = source.[{pk}]"));
 
-            // Build UPDATE SET clause
-            var updateSet = string.Join(", ", 
-                nonKeyColumns.Select(col => $"target.[{col}] = source.[{col}]"));
-
             // Build INSERT columns and values
             var insertColumns = string.Join(", ", allColumns.Select(col => $"[{col}]"));
             var insertValues = string.Join(", ", allColumns.Select(col => $"source.[{col}]"));
 
-            return $@"
+            // Build the MERGE statement
+            var mergeStatement = $@"
                 MERGE {targetTable} AS target
                 USING {stagingTable} AS source
-                ON ({onClause})
+                ON ({onClause})";
+
+            // Only add UPDATE clause if there are non-key columns to update
+            if (nonKeyColumns.Count > 0)
+            {
+                var updateSet = string.Join(", ", 
+                    nonKeyColumns.Select(col => $"target.[{col}] = source.[{col}]"));
+                
+                mergeStatement += $@"
                 WHEN MATCHED THEN
-                    UPDATE SET {updateSet}
+                    UPDATE SET {updateSet}";
+            }
+
+            mergeStatement += $@"
                 WHEN NOT MATCHED BY TARGET THEN
                     INSERT ({insertColumns})
                     VALUES ({insertValues});";
+
+            return mergeStatement;
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()
