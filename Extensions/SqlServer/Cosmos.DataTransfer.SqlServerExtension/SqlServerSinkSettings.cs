@@ -53,14 +53,14 @@ namespace Cosmos.DataTransfer.SqlServerExtension
                 }
                 else
                 {
-                    // Ensure at least one non-key column exists for updates
+                    // Ensure at least one non-key column exists for updates, unless we're only doing DELETE sync
                     var allColumns = ColumnMappings.Select(m => m.ColumnName).ToList();
                     var nonKeyColumns = allColumns.Except(PrimaryKeyColumns).ToList();
                     
-                    if (nonKeyColumns.Count == 0)
+                    if (nonKeyColumns.Count == 0 && !DeleteNotMatchedBySource)
                     {
                         results.Add(new ValidationResult(
-                            "At least one non-primary key column must be specified in ColumnMappings for Upsert mode.",
+                            "At least one non-primary key column must be specified in ColumnMappings for Upsert mode, or set DeleteNotMatchedBySource to true.",
                             new[] { nameof(ColumnMappings) }));
                     }
                 }
