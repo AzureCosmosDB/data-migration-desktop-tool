@@ -103,7 +103,8 @@ When using `Upsert` mode, you must also specify the `PrimaryKeyColumns` paramete
 - All columns in `ColumnMappings` must exist in the target table
 - Primary key columns must be included in `ColumnMappings`
 - The operation syncs the source data with the destination (INSERT when not matched, UPDATE when matched)
-- DELETE operations are not performed - records only in the destination remain unchanged
+- By default, DELETE operations are not performed - records only in the destination remain unchanged
+- To enable full table synchronization including deletions, set `DeleteNotMatchedBySource` to `true` (use with caution as this can result in data loss)
 - Performance may be slower than Insert mode due to the MERGE operation overhead
 
 #### Basic Insert Example
@@ -200,3 +201,41 @@ When using `Upsert` mode, you must also specify the `PrimaryKeyColumns` paramete
     "BatchSize": 500
 }
 ```
+
+#### Full Table Sync with DELETE Example
+
+This example demonstrates full table synchronization where records that exist in the destination but not in the source will be deleted. **Use this with caution as it can result in data loss.**
+
+```json
+{
+    "ConnectionString": "Server=.;Database=InventoryDB;Trusted_Connection=True;",
+    "TableName": "Products",
+    "WriteMode": "Upsert",
+    "PrimaryKeyColumns": ["ProductId"],
+    "DeleteNotMatchedBySource": true,
+    "ColumnMappings": [
+        {
+            "ColumnName": "ProductId",
+            "DataType": "System.Int32"
+        },
+        {
+            "ColumnName": "ProductName"
+        },
+        {
+            "ColumnName": "Price",
+            "DataType": "System.Decimal"
+        },
+        {
+            "ColumnName": "StockQuantity",
+            "DataType": "System.Int32"
+        },
+        {
+            "ColumnName": "LastUpdated",
+            "DataType": "System.DateTime"
+        }
+    ],
+    "BatchSize": 1000
+}
+```
+
+**Warning:** When `DeleteNotMatchedBySource` is set to `true`, any records in the destination table that do not have a matching primary key in the source data will be permanently deleted. Ensure you have proper backups and understand the implications before enabling this option.

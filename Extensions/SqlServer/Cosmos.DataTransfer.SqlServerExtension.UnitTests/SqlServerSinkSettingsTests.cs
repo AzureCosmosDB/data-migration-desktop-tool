@@ -201,4 +201,69 @@ public class SqlServerSinkSettingsTests
         Assert.IsTrue(validationResults.Any(v => v.ErrorMessage!.Contains("non-primary key column")),
             "Validation error should mention non-primary key column requirement");
     }
+
+    [TestMethod]
+    public void TestSinkSettings_DeleteNotMatchedBySource_DefaultsToFalse()
+    {
+        var settings = new SqlServerSinkSettings
+        {
+            ConnectionString = "Server=.;Database=Test;",
+            TableName = "TestTable",
+            WriteMode = SqlWriteMode.Upsert,
+            PrimaryKeyColumns = new List<string> { "Id" },
+            ColumnMappings = new List<ColumnMapping>
+            {
+                new ColumnMapping { ColumnName = "Id" },
+                new ColumnMapping { ColumnName = "Name" }
+            }
+        };
+
+        Assert.IsFalse(settings.DeleteNotMatchedBySource, "DeleteNotMatchedBySource should default to false");
+    }
+
+    [TestMethod]
+    public void TestSinkSettings_DeleteNotMatchedBySource_CanBeSetToTrue()
+    {
+        var settings = new SqlServerSinkSettings
+        {
+            ConnectionString = "Server=.;Database=Test;",
+            TableName = "TestTable",
+            WriteMode = SqlWriteMode.Upsert,
+            PrimaryKeyColumns = new List<string> { "Id" },
+            DeleteNotMatchedBySource = true,
+            ColumnMappings = new List<ColumnMapping>
+            {
+                new ColumnMapping { ColumnName = "Id" },
+                new ColumnMapping { ColumnName = "Name" }
+            }
+        };
+
+        Assert.IsTrue(settings.DeleteNotMatchedBySource, "DeleteNotMatchedBySource should be settable to true");
+    }
+
+    [TestMethod]
+    public void TestSinkSettings_DeleteNotMatchedBySource_DeserializesFromJson()
+    {
+        var json = """
+        {
+            "ConnectionString": "Server=.;Database=Test;",
+            "TableName": "TestTable",
+            "WriteMode": "Upsert",
+            "PrimaryKeyColumns": ["Id"],
+            "DeleteNotMatchedBySource": true,
+            "ColumnMappings": [
+                {"ColumnName": "Id"},
+                {"ColumnName": "Name"}
+            ]
+        }
+        """;
+        
+        var config = new ConfigurationBuilder()
+            .AddJsonStream(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)))
+            .Build();
+        var settings = config.Get<SqlServerSinkSettings>();
+        
+        Assert.IsNotNull(settings, "Settings should be deserialized");
+        Assert.IsTrue(settings!.DeleteNotMatchedBySource, "DeleteNotMatchedBySource should be true");
+    }
 }

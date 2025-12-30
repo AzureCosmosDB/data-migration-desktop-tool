@@ -296,7 +296,17 @@ namespace Cosmos.DataTransfer.SqlServerExtension
             mergeStatement += $@"
                 WHEN NOT MATCHED BY TARGET THEN
                     INSERT ({insertColumns})
-                    VALUES ({insertValues});";
+                    VALUES ({insertValues})";
+
+            // Add DELETE clause if requested for full table synchronization
+            if (settings.DeleteNotMatchedBySource)
+            {
+                mergeStatement += $@"
+                WHEN NOT MATCHED BY SOURCE THEN
+                    DELETE";
+            }
+
+            mergeStatement += ";";
 
             return mergeStatement;
         }

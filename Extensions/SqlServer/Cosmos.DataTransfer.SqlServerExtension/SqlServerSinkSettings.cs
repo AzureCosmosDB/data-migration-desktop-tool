@@ -31,6 +31,13 @@ namespace Cosmos.DataTransfer.SqlServerExtension
         /// </summary>
         public List<string> PrimaryKeyColumns { get; set; } = new List<string>();
 
+        /// <summary>
+        /// When true and WriteMode is Upsert, records in the destination that do not exist in the source will be deleted.
+        /// This enables full table synchronization. Use with caution as this can result in data loss.
+        /// Default is false.
+        /// </summary>
+        public bool DeleteNotMatchedBySource { get; set; } = false;
+
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             var results = new List<ValidationResult>();
