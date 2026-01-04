@@ -77,6 +77,40 @@ You can combine partition key filters with datetime filters for more efficient q
 > - For better query performance, include `PartitionKey` in your filter when possible
 > - Supported datetime operators: `eq` (equal), `ne` (not equal), `gt` (greater than), `ge` (greater than or equal), `lt` (less than), `le` (less than or equal)
 
+#### Troubleshooting Common DateTime Filter Issues
+
+The following table analyzes common mistakes when specifying datetime filters. Each row shows a query that was attempted and identifies the specific issues:
+
+| Query Filter | Missing `datetime` Prefix | Wrong Date Format | Incorrect Encoding | Result |
+|--------------|--------------------------|-------------------|-------------------|---------|
+| `"QueryFilter": "Timestamp ge datetime\u00272023-05-17T03:06:07.691Z\u0027"` | ✅ Correct | ✅ Correct (ISO 8601) | ✅ Correct (`\u0027`) | ✅ Should work* |
+| `"QueryFilter": "Timestamp le datetime\u00272023-05-17T03:06:07.691Z\u0027"` | ✅ Correct | ✅ Correct (ISO 8601) | ✅ Correct (`\u0027`) | ✅ Should work* |
+| `"QueryFilter": "Timestamp eq datetime\u00272023-05-17T03:06:07.691Z\u0027"` | ✅ Correct | ✅ Correct (ISO 8601) | ✅ Correct (`\u0027`) | ✅ Should work* |
+| `"QueryFilter": "Timestamp gt datetime\u00272023-05-17T03:06:07.691Z\u0027"` | ✅ Correct | ✅ Correct (ISO 8601) | ✅ Correct (`\u0027`) | ✅ Should work* |
+| `"QueryFilter": "Timestamp ge datetime '2023-05-17T03:06:07.691Z'"` | ✅ Correct | ✅ Correct (ISO 8601) | ❌ Space before quote, not JSON-escaped | ❌ Invalid syntax |
+| `"QueryFilter": "Timestamp le datetime '2023-05-17T03:06:07.691Z'"` | ✅ Correct | ✅ Correct (ISO 8601) | ❌ Space before quote, not JSON-escaped | ❌ Invalid syntax |
+| `"QueryFilter": "Timestamp gt datetime '2023-05-17T03:06:07.691Z'"` | ✅ Correct | ✅ Correct (ISO 8601) | ❌ Space before quote, not JSON-escaped | ❌ Invalid syntax |
+| `"QueryFilter": "Timestamp eq datetime '2023-05-17T03:06:07.691Z'"` | ✅ Correct | ✅ Correct (ISO 8601) | ❌ Space before quote, not JSON-escaped | ❌ Invalid syntax |
+| `"QueryFilter": "Timestamp ge datetime'\u00272023-05-17T03:06:07.691Z\u0027'"` | ✅ Correct | ✅ Correct (ISO 8601) | ❌ Extra quote at end | ❌ Invalid syntax |
+| `"QueryFilter": "Timestamp eq \u00272023-05-17T03:06:07.691Z\u0027"` | ❌ Missing | ✅ Correct (ISO 8601) | ✅ Correct (`\u0027`) | ❌ No data (invalid) |
+| `"QueryFilter": "Timestamp ge datetime '2023-05-17T03:10:39.058Z\u002B00:00'"` | ✅ Correct | ❌ Invalid timezone format | ❌ Space before quote, mixed encoding | ❌ Transfer fails |
+| `"QueryFilter": "Timestamp ge datetime '2023-05-17T03:10:39.058Z\u002B00'"` | ✅ Correct | ❌ Invalid timezone format | ❌ Space before quote, mixed encoding | ❌ Transfer fails |
+| `"QueryFilter": "Timestamp ge datetime 2023-05-17T03:10:39.058Z\u002B00"` | ✅ Correct | ❌ Invalid timezone format | ❌ No quotes around datetime | ❌ Transfer fails |
+| `"QueryFilter": "Timestamp ge datetime'u00272023-05-17T03:06:07.691Zu0027'"` | ✅ Correct | ✅ Correct (ISO 8601) | ❌ Wrong escape sequence (missing `\`) | ❌ Transfer fails |
+| `"QueryFilter": "Timestamp eq '\u00272023-05-17T03:06:07.691Z\u0027'"` | ❌ Missing | ✅ Correct (ISO 8601) | ❌ Extra quote at end | ❌ Transfer fails |
+
+\* **Note**: The first four queries are syntactically correct. If they returned no data, it may be because:
+- No entities exist with timestamps matching the filter criteria
+- The specific timestamp value doesn't match any entity timestamps (especially with `eq` operator)
+- For exact matches with `eq`, consider using `ge` (greater than or equal) or `le` (less than or equal) operators instead, as table timestamps include high-precision fractional seconds
+
+**Key Takeaways:**
+1. Always use `datetime` prefix before the timestamp value
+2. Always use ISO 8601 format: `YYYY-MM-DDTHH:mm:ss.fffZ` 
+3. Always JSON-escape single quotes as `\u0027` (not literal `'` characters)
+4. No spaces between `datetime` and the opening quote
+5. Timezone should be `Z` for UTC, not `+00:00` or other formats
+
 ### Additional Sink Settings
 
 The AzureTableAPI Sink extension has additional settings that can be configured for writing Table entities.
