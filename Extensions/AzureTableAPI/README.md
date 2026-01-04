@@ -28,6 +28,55 @@ The following setting is supported for the Source:
 
 - `QueryFilter` - This enables you to specify an OData filter to be applied to the data being retrieved by the AzureTableAPI Source. This is used in cases where only a subset of data from the source Table is needed in the migration. Example usage to query a subset of entities from the source table: `PartitionKey eq 'foo'`.
 
+#### Query Filter Examples
+
+The `QueryFilter` setting supports OData filter syntax for querying Azure Table API entities. Below are examples of common filter patterns:
+
+**Basic Filters:**
+```json
+"QueryFilter": "PartitionKey eq 'WI'"
+```
+
+**DateTime Filters:**
+
+When filtering by `Timestamp` or other datetime properties, you must use the `datetime` prefix with ISO 8601 format timestamps. In JSON configuration files, single quotes around the datetime value must be JSON-escaped as `\u0027`:
+
+```json
+"QueryFilter": "Timestamp eq datetime\u00272023-01-12T16:53:31.1714422Z\u0027"
+```
+
+```json
+"QueryFilter": "Timestamp ge datetime\u00272023-05-15T03:30:32.663Z\u0027"
+```
+
+```json
+"QueryFilter": "Timestamp lt datetime\u00272024-12-08T06:06:00.976Z\u0027"
+```
+
+**DateTime Range Filters:**
+
+To filter entities within a date range, combine multiple conditions with `and`:
+
+```json
+"QueryFilter": "Timestamp ge datetime\u00272023-01-01T00:00:00Z\u0027 and Timestamp lt datetime\u00272024-01-01T00:00:00Z\u0027"
+```
+
+**Combined Filters:**
+
+You can combine partition key filters with datetime filters for more efficient queries:
+
+```json
+"QueryFilter": "PartitionKey eq \u0027users\u0027 and Timestamp ge datetime\u00272023-05-15T00:00:00Z\u0027"
+```
+
+> **Important Notes:**
+> - DateTime values must be in ISO 8601 format: `YYYY-MM-DDTHH:mm:ss.fffZ`
+> - The `datetime` prefix is required before the timestamp value
+> - Single quotes around datetime values must be JSON-escaped as `\u0027` in JSON configuration files
+> - The `Z` suffix indicates UTC time
+> - For better query performance, include `PartitionKey` in your filter when possible
+> - Supported datetime operators: `eq` (equal), `ne` (not equal), `gt` (greater than), `ge` (greater than or equal), `lt` (less than), `le` (less than or equal)
+
 ### Additional Sink Settings
 
 The AzureTableAPI Sink extension has additional settings that can be configured for writing Table entities.
@@ -104,5 +153,43 @@ The following are a couple example `settings.json` files for configuring the Azu
   "RowKeyFieldName": "id",
   "WriteMode": "Replace",
   "MaxConcurrentEntityWrites": 5
+}
+```
+
+### Example DateTime Filter Configurations
+
+The following examples demonstrate how to use datetime filters in the `QueryFilter` setting:
+
+**Example 1: Filter entities modified after a specific date**
+
+```json
+{
+  "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=<storage-account-name>;AccountKey=<key>;EndpointSuffix=core.windows.net",
+  "Table": "SourceTable1",
+  "PartitionKeyFieldName": "PartitionKey",
+  "RowKeyFieldName": "RowKey",
+  "QueryFilter": "Timestamp ge datetime\u00272023-05-15T03:30:32.663Z\u0027"
+}
+```
+
+**Example 2: Filter entities within a date range**
+
+```json
+{
+  "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=<storage-account-name>;AccountKey=<key>;EndpointSuffix=core.windows.net",
+  "Table": "SourceTable1",
+  "QueryFilter": "Timestamp ge datetime\u00272023-01-01T00:00:00Z\u0027 and Timestamp lt datetime\u00272024-01-01T00:00:00Z\u0027"
+}
+```
+
+**Example 3: Combine partition key with datetime filter**
+
+```json
+{
+  "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=<storage-account-name>;AccountKey=<key>;EndpointSuffix=core.windows.net",
+  "Table": "SourceTable1",
+  "PartitionKeyFieldName": "State",
+  "RowKeyFieldName": "id",
+  "QueryFilter": "PartitionKey eq \u0027CA\u0027 and Timestamp ge datetime\u00272023-06-01T00:00:00Z\u0027"
 }
 ```
