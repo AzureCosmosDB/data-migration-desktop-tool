@@ -367,6 +367,13 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             return values.ContainsKey(name);
         }
 
+        private static string? InvokeGetPropertyValue(ExpandoObject item, string propertyName)
+        {
+            var method = typeof(CosmosDataSinkExtension).GetMethod("GetPropertyValue",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            return method?.Invoke(null, new object[] { item, propertyName }) as string;
+        }
+
         [TestMethod]
         public void GetPropertyValue_WithSimpleProperty_ReturnsValue()
         {
@@ -376,10 +383,8 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             dict["id"] = "test-id-123";
             dict["name"] = "test-name";
             
-            // Act - Use reflection to call the private GetPropertyValue method
-            var method = typeof(CosmosDataSinkExtension).GetMethod("GetPropertyValue", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            var result = method?.Invoke(null, new object[] { expando, "id" });
+            // Act
+            var result = InvokeGetPropertyValue(expando, "id");
             
             // Assert
             Assert.IsNotNull(result);
@@ -402,10 +407,8 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             
             dict["partitionkeyvalue1"] = nestedExpando;
             
-            // Act - Use reflection to call the private GetPropertyValue method
-            var method = typeof(CosmosDataSinkExtension).GetMethod("GetPropertyValue", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            var result = method?.Invoke(null, new object[] { expando, "partitionkeyvalue1/partitionkeyvalue2" });
+            // Act
+            var result = InvokeGetPropertyValue(expando, "partitionkeyvalue1/partitionkeyvalue2");
             
             // Assert
             Assert.IsNotNull(result);
@@ -435,9 +438,7 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             dict["level1"] = level1;
             
             // Act
-            var method = typeof(CosmosDataSinkExtension).GetMethod("GetPropertyValue", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            var result = method?.Invoke(null, new object[] { expando, "level1/level2/level3/finalValue" });
+            var result = InvokeGetPropertyValue(expando, "level1/level2/level3/finalValue");
             
             // Assert
             Assert.IsNotNull(result);
@@ -459,9 +460,7 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             dict["parent"] = nestedExpando;
             
             // Act
-            var method = typeof(CosmosDataSinkExtension).GetMethod("GetPropertyValue", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            var result = method?.Invoke(null, new object[] { expando, "parent/nonExistentKey" });
+            var result = InvokeGetPropertyValue(expando, "parent/nonExistentKey");
             
             // Assert
             Assert.IsNull(result);
@@ -477,12 +476,32 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             dict["parent"] = null;
             
             // Act
-            var method = typeof(CosmosDataSinkExtension).GetMethod("GetPropertyValue", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            var result = method?.Invoke(null, new object[] { expando, "parent/child" });
+            var result = InvokeGetPropertyValue(expando, "parent/child");
             
             // Assert
             Assert.IsNull(result);
+        }
+
+        [TestMethod]
+        public void GetPropertyValue_WithLeadingSlash_WorksCorrectly()
+        {
+            // Arrange - Test that paths with leading slash work (defensive programming)
+            var expando = new ExpandoObject();
+            var dict = (IDictionary<string, object?>)expando;
+            dict["id"] = "test-id";
+            
+            var nestedExpando = new ExpandoObject();
+            var nestedDict = (IDictionary<string, object?>)nestedExpando;
+            nestedDict["partitionkey"] = "pk-value";
+            
+            dict["parent"] = nestedExpando;
+            
+            // Act - Path with leading slash (though TrimStart is called in actual code)
+            var result = InvokeGetPropertyValue(expando, "/parent/partitionkey");
+            
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual("pk-value", result);
         }
     }
 }
