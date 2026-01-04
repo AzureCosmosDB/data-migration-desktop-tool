@@ -287,8 +287,8 @@ namespace Cosmos.DataTransfer.CosmosExtension
         private static string? GetPropertyValue(ExpandoObject item, string propertyName)
         {
             // Handle nested property paths (e.g., "property1/property2/property3")
-            // Split and remove empty entries to handle paths starting with '/' (e.g., "/property/nested")
-            var pathSegments = propertyName.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            // Note: Calling code uses TrimStart('/') to remove leading slash before calling this method
+            var pathSegments = propertyName.Split('/');
             object? current = item;
             
             foreach (var segment in pathSegments)

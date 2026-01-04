@@ -481,27 +481,5 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             // Assert
             Assert.IsNull(result);
         }
-
-        [TestMethod]
-        public void GetPropertyValue_WithLeadingSlash_WorksCorrectly()
-        {
-            // Arrange - Test that paths with leading slash work (defensive programming)
-            var expando = new ExpandoObject();
-            var dict = (IDictionary<string, object?>)expando;
-            dict["id"] = "test-id";
-            
-            var nestedExpando = new ExpandoObject();
-            var nestedDict = (IDictionary<string, object?>)nestedExpando;
-            nestedDict["partitionkey"] = "pk-value";
-            
-            dict["parent"] = nestedExpando;
-            
-            // Act - Path with leading slash (though TrimStart is called in actual code)
-            var result = InvokeGetPropertyValue(expando, "/parent/partitionkey");
-            
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.AreEqual("pk-value", result);
-        }
     }
 }
