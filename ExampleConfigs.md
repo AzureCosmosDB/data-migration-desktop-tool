@@ -132,6 +132,28 @@
 }
 ```
 
+## AzureTableAPI to JSON (with DateTime Filter)
+
+```json
+{
+    "Source": "AzureTableAPI",
+    "Sink": "JSON",
+    "SourceSettings": {
+        "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=<storage-account-name>;AccountKey=<key>;EndpointSuffix=core.windows.net",
+        "Table": "SourceTable1",
+        "PartitionKeyFieldName": "PartitionKey",
+        "RowKeyFieldName": "RowKey",
+        "QueryFilter": "Timestamp ge datetime\u00272023-05-15T03:30:32.663Z\u0027"
+    },
+    "SinkSettings": {
+        "FilePath": "D:\\output\\filtered-data.json",
+        "Indented": true
+    }
+}
+```
+
+> **Note**: When using DateTime filters in the `QueryFilter` property, single quotes around the datetime value must be JSON-escaped as `\u0027`. The datetime must be in ISO 8601 format with the `datetime` prefix.
+
 ## Cosmos-NoSQL to SqlServer
 
 ```json
