@@ -4,6 +4,28 @@ The Cosmos data transfer extension provides source and sink capabilities for rea
 
 > **Note**: When specifying the JSON extension as the Source or Sink property in configuration, utilize the name **Cosmos-nosql**.
 
+## JSON Metadata Property Preservation
+
+The Cosmos extension preserves all JSON properties during data migration, including properties that start with special characters like `$type`, `$id`, and `$ref`. These properties are commonly used by serialization libraries (such as Newtonsoft.Json) to store type information for polymorphic objects or reference tracking.
+
+**Example**: If your source data contains documents with `$type` properties used for type discrimination:
+
+```json
+{
+  "id": "1",
+  "name": "Dog",
+  "myFavouritePet": {
+    "$type": "MyProject.Pets.Dog, MyProject",
+    "Name": "Foo",
+    "OtherName": "OtherFoo"
+  }
+}
+```
+
+These properties will be preserved exactly as they appear in the source when migrating to the destination. This ensures that applications using type information embedded in JSON properties will continue to work correctly after migration.
+
+> **Note**: Prior to version 3.1.0, properties starting with `$` were filtered out during migration. If you need the old behavior, please use an earlier version of the tool.
+
 ## Settings
 
 Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of two ways:
