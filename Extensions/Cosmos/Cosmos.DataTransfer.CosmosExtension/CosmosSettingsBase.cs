@@ -27,6 +27,26 @@ namespace Cosmos.DataTransfer.CosmosExtension
         /// </summary>
         public bool LimitToEndpoint { get; set; } = false;
 
+        /// <summary>
+        /// Disables SSL certificate validation for the Cosmos DB connection.
+        /// This is intended for use with local development environments.
+        /// WARNING: Never use this option in production as it disables critical security checks.
+        /// </summary>
+        public bool DisableSslValidation { get; set; } = false;
+
+        /// <summary>
+        /// Enables bulk execution for Cosmos DB operations.
+        /// When set to <c>true</c>, operations such as bulk inserts and updates are optimized for performance.
+        /// <para>
+        /// <b>Default:</b> <c>false</c>
+        /// </para>
+        /// <para>
+        /// <b>Warning:</b> Use with caution, as enabling bulk execution may affect consistency and error handling. 
+        /// Review Cosmos DB documentation for bulk operation caveats before enabling in production environments.
+        /// </para>
+        /// </summary>
+        public bool AllowBulkExecution { get; set; } = false;
+
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))

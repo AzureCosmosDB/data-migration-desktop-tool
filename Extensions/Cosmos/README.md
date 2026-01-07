@@ -28,10 +28,43 @@ These properties will be preserved exactly as they appear in the source when mig
 
 ## Settings
 
+
+### Main Settings
+
+| Setting                | Description                                                                                       | Default   |
+|------------------------|---------------------------------------------------------------------------------------------------|-----------|
+| ConnectionString       | Cosmos DB connection string (AccountEndpoint + AccountKey)                                         |           |
+| UseRbacAuth            | Use Role Based Access Control for authentication                                                   | false     |
+| AccountEndpoint        | Cosmos DB account endpoint (required for RBAC)                                                     |           |
+| EnableInteractiveCredentials | Prompt for Azure login if default credentials are unavailable                                 | false     |
+| Database               | Cosmos DB database name                                                                           |           |
+| Container              | Cosmos DB container name                                                                          |           |
+| WebProxy               | Proxy server URL for Cosmos DB connections                                                        |           |
+| InitClientEncryption   | Enable Always Encrypted feature                                                                   | false     |
+| LimitToEndpoint        | Restrict client to endpoint (see CosmosClientOptions.LimitToEndpoint)                             | false     |
+| DisableSslValidation   | Disable SSL certificate validation (for local dev only; not for production)                       | false     |
+| AllowBulkExecution     | Enable bulk execution for optimized performance. <br>**Warning:** May affect consistency and error handling. | false     |
+
 Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of two ways:
 
 - Using a `ConnectionString` that includes an AccountEndpoint and AccountKey
 - Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available. See ([migrate-passwordless](https://learn.microsoft.com/azure/cosmos-db/nosql/migrate-passwordless?tabs=sign-in-azure-cli%2Cdotnet%2Cazure-portal-create%2Cazure-portal-associate%2Capp-service-identity) for how to configure Cosmos DB for passwordless access.
+
+
+### Bulk Execution
+
+The extension supports bulk execution for Cosmos DB operations. When the `AllowBulkExecution` setting is set to `true`, operations such as bulk inserts and updates are optimized for performance. Use with caution, as bulk execution may affect consistency and error handling. Default is `false`.
+
+Example:
+
+```json
+{
+    "ConnectionString": "AccountEndpoint=https://...",
+    "Database": "myDb",
+    "Container": "myContainer",
+    "AllowBulkExecution": true
+}
+```
 
 Source and sink settings also both require parameters to specify the data location within a Cosmos DB account:
 
@@ -49,7 +82,7 @@ Source supports the following optional parameters:
 
 ### Always Encrypted
 
-Source and Sink support Always Encrypted as an optional parameter. When `InitClientEncryption` is set to `true`, the extension will initialize the Cosmos client with the Always Encrypted feature enabled. This allows for the use of encrypted fields in the Cosmos DB container. The extension will automatically decrypt the fields when reading from the source and encrypt the fields when writing to the sink. 
+Source and Sink support Always Encrypted as an optional parameter. When `InitClientEncryption` is set to `true`, the extension will initialize the Cosmos client with the Always Encrypted feature enabled. This allows for the use of encrypted fields in the Cosmos DB container. The extension will automatically decrypt the fields when reading from the source and encrypt the fields when writing to the sink.
 </br>
 The extension will also automatically handle the encryption keys and encryption policy for the client, but it requires `UseRbacAuth` to be set to `true` and the user to have the necessary permissions to access the key vault.
 </br>
@@ -92,22 +125,39 @@ Or with RBAC:
 }
 ```
 
+#### Disable SSL Validation Configuration Example
+
+For development purposes with SSL validation disabled:
+
+```json
+{
+    "ConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDj...",
+    "Database":"myDb",
+    "Container":"myContainer",
+    "DisableSslValidation": true
+}
+```
+
 ### Sink Settings
 
 #### **Partition Key Settings**
+
 - **`PartitionKeyPath`**: Specifies the partition key path when creating the container (e.g., `/id`) if it does not exist.
 - **`PartitionKeyPaths`**: Use this to supply an array of up to 3 paths for hierarchical partition keys.
 
 #### **Database Management**
+
 - **`UseAutoscaleForDatabase`**: Specifies if the database will be created with autoscale enabled or manual. Defaults to `false`. manual.
 
 #### **Container Management**
+
 - **`RecreateContainer`**: Optional, defaults to `false`. Deletes and recreates the container to ensure only newly imported data is present.
 - **`CreatedContainerMaxThroughput`**: Specifies the initial throughput (in RUs) for a newly created container.
 - **`UseAutoscaleForCreatedContainer`**: Enables autoscale for the newly created container.
 - **`UseSharedThroughput`**: Set to `true` to use shared throughput provisioned at the database level.
 
 #### **Batching and Write Behavior**
+
 - **`BatchSize`**: Optional, defaults to `100`. Sets the number of items to accumulate before inserting.
 - **`WriteMode`**: Specifies the type of data write to use. Options:
   - `InsertStream`
@@ -116,6 +166,7 @@ Or with RBAC:
   - `Upsert`
 
 #### **Connection Settings**
+
 - **`ConnectionMode`**: Controls how the client connects to the Cosmos DB service. Options:
   - `Gateway` (default)
   - `Direct`
@@ -126,16 +177,23 @@ Or with RBAC:
 - **`PreAuthenticate`**: Optional, defaults to `false`. When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
-  write and read regions, and use them when the configured application region is not available. 
+  write and read regions, and use them when the configured application region is not available.
   When set to `true`, availability is limited to the endpoint specified.
   - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint?view=azure-dotnet). When using the Cosmos DB Emulator Container for Linux it's been observed
-    setting the value to `true` enables import and export of data.  
+    setting the value to `true` enables import and export of data.
+
+#### **SSL/Certificate Settings**
+
+- **`DisableSslValidation`**: Optional, defaults to `false`. Disables SSL certificate validation for development/emulator scenarios.
+  - **⚠️ WARNING**: Only use this for development purposes. Never use in production environments as it disables critical security checks and makes connections vulnerable to man-in-the-middle attacks.
 
 #### **Serverless Account**
+
 - **`IsServerlessAccount`**: Specifies whether the target account uses Serverless instead of Provisioned throughput, which affects the way containers are created.
   - **Note**: Serverless accounts cannot have shared throughput. See [Azure Cosmos DB serverless account type](https://learn.microsoft.com/azure/cosmos-db/serverless#use-serverless-resources).
 
 #### **Client Behavior**
+
 - **`PreserveMixedCaseIds`**: Optional, defaults to `false`. Writes `id` fields with their original casing while generating a separate lowercased `id` field as required by Cosmos.
 - **`IgnoreNullValues`**: Optional. Excludes fields with null values when writing to Cosmos DB.
 - **`InitClientEncryption`**: Optional, defaults to `false`. Uses client-side encryption with the container. Can only be used with `UseRbacAuth` set to `true`
