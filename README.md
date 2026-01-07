@@ -1,10 +1,10 @@
-# Azure Cosmos DB Desktop Data Migration Tool
+# Azure Cosmos DB Data Migration Tool
 
 To access the archived version of the tool, navigate to the [**Archive branch**](https://github.com/Azure/azure-documentdb-datamigrationtool/tree/archive).
 
 ---
 
-- [Azure Cosmos DB Desktop Data Migration Tool](#azure-cosmos-db-desktop-data-migration-tool)
+- [Azure Cosmos DB Data Migration Tool](#azure-cosmos-db-data-migration-tool)
   - [Overview](#overview)
   - [Extension documentation](#extension-documentation)
   - [Architecture](#architecture)
@@ -120,7 +120,7 @@ Multiple extensions are provided in this repository. Find the documentation for 
 
 ## Architecture
 
-The Azure Cosmos DB Desktop Data Migration Tool is a lightweight executable that leverages the [Managed Extensibility Framework (MEF)](https://docs.microsoft.com/en-us/dotnet/framework/mef/). MEF enables decoupled implementation of the core project and its extensions. The core application is a command-line executable responsible for composing the required extensions at runtime by automatically loading them from the Extensions folder of the application. An Extension is a class library that includes the implementation of a System as a Source and (optionally) Sink for data transfer. The core application project does not contain direct references to any extension implementation. Instead, these projects share a common interface.
+The Azure Cosmos DB Data Migration Tool is a lightweight executable that leverages the [Managed Extensibility Framework (MEF)](https://docs.microsoft.com/en-us/dotnet/framework/mef/). MEF enables decoupled implementation of the core project and its extensions. The core application is a command-line executable responsible for composing the required extensions at runtime by automatically loading them from the Extensions folder of the application. An Extension is a class library that includes the implementation of a System as a Source and (optionally) Sink for data transfer. The core application project does not contain direct references to any extension implementation. Instead, these projects share a common interface.
 
 ![An extensions folder holds multiple extensions implementations.The application loads extensions from the extensions folder and executes functionality based on an interface implementation.](media/application_architecture.png "Application architecture")
 
@@ -150,7 +150,7 @@ git clone https://github.com/AzureCosmosDB/data-migration-desktop-tool.git
 
 ## Tutorial: JSON to Cosmos DB migration
 
-This tutorial outlines how to use the Azure Cosmos DB Desktop Data Migration Tool to move JSON data to Azure Cosmos DB. This tutorial uses the Azure Cosmos DB Emulator.
+This tutorial outlines how to use the Azure Cosmos DB Data Migration Tool to move JSON data to Azure Cosmos DB. This tutorial uses the Azure Cosmos DB Emulator.
 
 ### Tutorial Software prerequisites
 
