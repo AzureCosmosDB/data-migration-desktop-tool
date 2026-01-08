@@ -28,7 +28,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 
             foreach (var collection in collectionNames)
             {
-                await foreach (var item in EnumerateCollectionAsync(context, collection, settings.Query, logger).WithCancellation(cancellationToken))
+                await foreach (var item in EnumerateCollectionAsync(context, collection, settings.Query, settings.BatchSize, logger).WithCancellation(cancellationToken))
                 {
                     yield return item;
                 }
@@ -36,7 +36,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         }
     }
 
-    public async IAsyncEnumerable<IDataItem> EnumerateCollectionAsync(Context context, string collectionName, string? query, ILogger logger)
+    public async IAsyncEnumerable<IDataItem> EnumerateCollectionAsync(Context context, string collectionName, string? query, int? batchSize, ILogger logger)
     {
         logger.LogInformation("Reading collection '{Collection}'", collectionName);
         var collection = context.GetRepository<BsonDocument>(collectionName);
@@ -47,13 +47,12 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         if (!string.IsNullOrWhiteSpace(query))
         {
             logger.LogInformation("Applying query filter to collection '{Collection}': {Query}", collectionName, query);
-            documents = GetQueryDocumentsAsync(collection, query, collectionName, logger);
+            documents = GetQueryDocumentsAsync(collection, query, collectionName, batchSize, logger);
         }
         else
         {
             logger.LogInformation("No query filter specified for collection '{Collection}', reading all documents", collectionName);
-            // Use existing queryable approach when no filter is specified
-            documents = GetAllDocumentsAsync(collection);
+            documents = GetAllDocumentsAsync(collection, batchSize, logger, collectionName);
         }
 
         await foreach (var record in documents)
@@ -68,15 +67,19 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
             logger.LogWarning("No items read from collection '{Collection}'", collectionName);
     }
 
-    private async IAsyncEnumerable<BsonDocument> GetAllDocumentsAsync(IRepository<BsonDocument> collection)
+    private async IAsyncEnumerable<BsonDocument> GetAllDocumentsAsync(IRepository<BsonDocument> collection, int? batchSize, ILogger logger, string collectionName)
     {
-        foreach (var record in await Task.Run(() => collection.AsQueryable()))
+        LogBatchSizeIfSpecified(batchSize, collectionName, logger);
+        
+        // Use FindAsync with empty filter to support BatchSize
+        var emptyFilter = Builders<BsonDocument>.Filter.Empty;
+        await foreach (var record in collection.FindAsync(emptyFilter, batchSize))
         {
             yield return record;
         }
     }
 
-    private async IAsyncEnumerable<BsonDocument> GetQueryDocumentsAsync(IRepository<BsonDocument> collection, string query, string collectionName, ILogger logger)
+    private async IAsyncEnumerable<BsonDocument> GetQueryDocumentsAsync(IRepository<BsonDocument> collection, string query, string collectionName, int? batchSize, ILogger logger)
     {
         // Handle query as either a file path or direct JSON
         string queryJson;
@@ -113,9 +116,19 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 
         var filter = new BsonDocumentFilterDefinition<BsonDocument>(filterDocument);
         
-        await foreach (var record in collection.FindAsync(filter))
+        LogBatchSizeIfSpecified(batchSize, collectionName, logger);
+        
+        await foreach (var record in collection.FindAsync(filter, batchSize))
         {
             yield return record;
+        }
+    }
+
+    private void LogBatchSizeIfSpecified(int? batchSize, string collectionName, ILogger logger)
+    {
+        if (batchSize.HasValue)
+        {
+            logger.LogInformation("Using batch size of {BatchSize} for collection '{Collection}'", batchSize.Value, collectionName);
         }
     }
 

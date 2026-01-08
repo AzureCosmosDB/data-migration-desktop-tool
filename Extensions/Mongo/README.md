@@ -17,7 +17,30 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
     "ConnectionString": "",
     "DatabaseName": "",
     "Collection": "",
-    "Query": ""
+    "Query": "",
+    "BatchSize": 1000
+}
+```
+
+#### BatchSize Parameter
+
+The `BatchSize` parameter controls the number of documents returned per batch when reading from MongoDB. This is particularly useful for:
+- Preventing cursor timeout errors when reading large collections (e.g., collections with 250k+ documents)
+- Managing memory usage during data migration
+- Improving performance in high-latency network environments
+
+**Default Behavior:**
+- If `BatchSize` is not specified, MongoDB's default batch size will be used
+- Recommended value: 1000 for large collections to prevent cursor timeouts
+- Can be adjusted based on document size and network conditions
+
+**Example with BatchSize:**
+```json
+{
+    "ConnectionString": "mongodb://localhost:27017",
+    "DatabaseName": "sales",
+    "Collection": "person",
+    "BatchSize": 1000
 }
 ```
 
