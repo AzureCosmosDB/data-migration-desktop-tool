@@ -69,10 +69,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 
     private async IAsyncEnumerable<BsonDocument> GetAllDocumentsAsync(IRepository<BsonDocument> collection, int? batchSize, ILogger logger, string collectionName)
     {
-        if (batchSize.HasValue)
-        {
-            logger.LogInformation("Using batch size of {BatchSize} for collection '{Collection}'", batchSize.Value, collectionName);
-        }
+        LogBatchSizeIfSpecified(batchSize, collectionName, logger);
         
         // Use FindAsync with empty filter to support BatchSize
         var emptyFilter = Builders<BsonDocument>.Filter.Empty;
@@ -119,14 +116,19 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 
         var filter = new BsonDocumentFilterDefinition<BsonDocument>(filterDocument);
         
-        if (batchSize.HasValue)
-        {
-            logger.LogInformation("Using batch size of {BatchSize} for collection '{Collection}'", batchSize.Value, collectionName);
-        }
+        LogBatchSizeIfSpecified(batchSize, collectionName, logger);
         
         await foreach (var record in collection.FindAsync(filter, batchSize))
         {
             yield return record;
+        }
+    }
+
+    private void LogBatchSizeIfSpecified(int? batchSize, string collectionName, ILogger logger)
+    {
+        if (batchSize.HasValue)
+        {
+            logger.LogInformation("Using batch size of {BatchSize} for collection '{Collection}'", batchSize.Value, collectionName);
         }
     }
 

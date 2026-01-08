@@ -50,6 +50,8 @@ public class MongoRepository<TDocument> : IRepository<TDocument>
     public async IAsyncEnumerable<TDocument> FindAsync(FilterDefinition<TDocument> filter, int? batchSize = null)
     {
         var findOptions = new FindOptions<TDocument, TDocument>();
+        // Only apply batch size if it's provided and positive; invalid values are silently ignored
+        // to maintain backward compatibility and prevent exceptions during data migration
         if (batchSize.HasValue && batchSize.Value > 0)
         {
             findOptions.BatchSize = batchSize.Value;
