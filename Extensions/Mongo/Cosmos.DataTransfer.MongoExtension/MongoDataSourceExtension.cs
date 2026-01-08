@@ -52,8 +52,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         else
         {
             logger.LogInformation("No query filter specified for collection '{Collection}', reading all documents", collectionName);
-            // Use existing queryable approach when no filter is specified
-            documents = GetAllDocumentsAsync(collection);
+            documents = GetAllDocumentsAsync(collection, batchSize, logger, collectionName);
         }
 
         await foreach (var record in documents)
@@ -68,9 +67,16 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
             logger.LogWarning("No items read from collection '{Collection}'", collectionName);
     }
 
-    private async IAsyncEnumerable<BsonDocument> GetAllDocumentsAsync(IRepository<BsonDocument> collection)
+    private async IAsyncEnumerable<BsonDocument> GetAllDocumentsAsync(IRepository<BsonDocument> collection, int? batchSize, ILogger logger, string collectionName)
     {
-        foreach (var record in await Task.Run(() => collection.AsQueryable()))
+        if (batchSize.HasValue)
+        {
+            logger.LogInformation("Using batch size of {BatchSize} for collection '{Collection}'", batchSize.Value, collectionName);
+        }
+        
+        // Use FindAsync with empty filter to support BatchSize
+        var emptyFilter = Builders<BsonDocument>.Filter.Empty;
+        await foreach (var record in collection.FindAsync(emptyFilter, batchSize))
         {
             yield return record;
         }
