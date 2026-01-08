@@ -28,7 +28,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 
             foreach (var collection in collectionNames)
             {
-                await foreach (var item in EnumerateCollectionAsync(context, collection, settings.Query, logger).WithCancellation(cancellationToken))
+                await foreach (var item in EnumerateCollectionAsync(context, collection, settings.Query, settings.BatchSize, logger).WithCancellation(cancellationToken))
                 {
                     yield return item;
                 }
@@ -36,7 +36,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         }
     }
 
-    public async IAsyncEnumerable<IDataItem> EnumerateCollectionAsync(Context context, string collectionName, string? query, ILogger logger)
+    public async IAsyncEnumerable<IDataItem> EnumerateCollectionAsync(Context context, string collectionName, string? query, int? batchSize, ILogger logger)
     {
         logger.LogInformation("Reading collection '{Collection}'", collectionName);
         var collection = context.GetRepository<BsonDocument>(collectionName);
@@ -47,7 +47,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         if (!string.IsNullOrWhiteSpace(query))
         {
             logger.LogInformation("Applying query filter to collection '{Collection}': {Query}", collectionName, query);
-            documents = GetQueryDocumentsAsync(collection, query, collectionName, logger);
+            documents = GetQueryDocumentsAsync(collection, query, collectionName, batchSize, logger);
         }
         else
         {
@@ -76,7 +76,7 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
         }
     }
 
-    private async IAsyncEnumerable<BsonDocument> GetQueryDocumentsAsync(IRepository<BsonDocument> collection, string query, string collectionName, ILogger logger)
+    private async IAsyncEnumerable<BsonDocument> GetQueryDocumentsAsync(IRepository<BsonDocument> collection, string query, string collectionName, int? batchSize, ILogger logger)
     {
         // Handle query as either a file path or direct JSON
         string queryJson;
@@ -113,7 +113,12 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
 
         var filter = new BsonDocumentFilterDefinition<BsonDocument>(filterDocument);
         
-        await foreach (var record in collection.FindAsync(filter))
+        if (batchSize.HasValue)
+        {
+            logger.LogInformation("Using batch size of {BatchSize} for collection '{Collection}'", batchSize.Value, collectionName);
+        }
+        
+        await foreach (var record in collection.FindAsync(filter, batchSize))
         {
             yield return record;
         }
