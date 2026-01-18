@@ -1,4 +1,5 @@
 using Cosmos.DataTransfer.Interfaces;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
@@ -86,6 +87,37 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             Assert.AreEqual(3L, mixedArray.ElementAt(2));
             Assert.AreEqual("four", mixedArray.ElementAt(3));
             Assert.IsInstanceOfType(mixedArray.ElementAt(4), typeof(IDataItem));
+        }
+
+        [TestMethod]
+        public async Task GetFieldNames_WithTypeHintProperty_IncludesTypeField()
+        {
+            const string fileIn = "Data/TypeHintProperty.json";
+
+            var json = JObject.Parse(await File.ReadAllTextAsync(fileIn));
+
+            // Use shared utility to convert JObject to Dictionary while preserving $type properties
+            var dict = CosmosDictionaryDataItem.JObjectToDictionary(json);
+            var item = new CosmosDictionaryDataItem(dict);
+
+            var fields = item.GetFieldNames().ToList();
+
+            Assert.AreEqual(3, fields.Count);
+            CollectionAssert.Contains(fields, "id");
+            CollectionAssert.Contains(fields, "name");
+            CollectionAssert.Contains(fields, "myFavouritePet");
+
+            var child = item.GetValue("myFavouritePet") as IDataItem;
+            Assert.IsNotNull(child);
+            var childFields = child.GetFieldNames().ToList();
+            Assert.AreEqual(3, childFields.Count);
+            CollectionAssert.Contains(childFields, "$type");
+            CollectionAssert.Contains(childFields, "Name");
+            CollectionAssert.Contains(childFields, "OtherName");
+            
+            Assert.AreEqual("MyProject.Pets.Dog, MyProject", child.GetValue("$type"));
+            Assert.AreEqual("Foo", child.GetValue("Name"));
+            Assert.AreEqual("OtherFoo", child.GetValue("OtherName"));
         }
     }
 }

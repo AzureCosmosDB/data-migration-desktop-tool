@@ -8,7 +8,7 @@ namespace Cosmos.DataTransfer.CosmosExtension;
 /// Serializer for Cosmos allowing access to internal JsonSerializer settings.
 /// </summary>
 /// <remarks>
-/// Defaults to disabling metadata handling to allow passthrough of recognized properties like "$type".
+/// Uses default metadata handling to allow passthrough of properties like "$type" as regular JSON properties.
 /// </remarks>
 public class RawJsonCosmosSerializer : CosmosSerializer
 {
@@ -18,7 +18,6 @@ public class RawJsonCosmosSerializer : CosmosSerializer
         new()
         {
             DateParseHandling = DateParseHandling.None,
-            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
             ContractResolver = null,
             MaxDepth = 64,
         };

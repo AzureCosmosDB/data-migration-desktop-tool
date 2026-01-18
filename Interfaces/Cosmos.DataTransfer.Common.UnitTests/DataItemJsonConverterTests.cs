@@ -194,5 +194,81 @@ public class DataItemJsonConverterTests
         var json = DataItemJsonConverter.AsJsonString(obj, false, includeNullFields);
         Assert.AreEqual(expected, json);
     }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void Test_WriteFieldValue_DictionaryAsNestedObject(bool includeNullFields)
+    {
+        // Test that Dictionary<string, object?> is properly serialized as nested object
+        var nestedDict = new Dictionary<string, object?>
+        {
+            { "text", "a message text" },
+            { "type", "text" },
+            { "NULL", null }
+        };
+        
+        var expected = "\"x\":{\"text\":\"a message text\",\"type\":\"text\",\"NULL\":null}";
+        if (!includeNullFields)
+        {
+            expected = expected.Replace(",\"NULL\":null", "");
+        }
+        
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", nestedDict, includeNullFields: includeNullFields);
+        Assert.AreEqual(expected, readFunc(), $"includeNullFields: {includeNullFields}");
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void Test_WriteFieldValue_ArrayOfDictionaries(bool includeNullFields)
+    {
+        // Test array of dictionaries (simulating MongoDB nested array scenario)
+        var arrayOfDicts = new List<Dictionary<string, object?>>
+        {
+            new Dictionary<string, object?>
+            {
+                { "text", "a message text" },
+                { "type", "text" }
+            },
+            new Dictionary<string, object?>
+            {
+                { "text", "another message" },
+                { "type", "text" }
+            }
+        };
+        
+        var expected = "\"x\":[{\"text\":\"a message text\",\"type\":\"text\"},{\"text\":\"another message\",\"type\":\"text\"}]";
+        
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", arrayOfDicts, includeNullFields: includeNullFields);
+        Assert.AreEqual(expected, readFunc(), $"includeNullFields: {includeNullFields}");
+    }
+
+    [TestMethod]
+    public void Test_AsJsonString_CompleteMongoScenario()
+    {
+        // Test complete scenario from the issue: nested _id object and array of content dictionaries
+        var mongoStyleDoc = new DictionaryDataItem(new Dictionary<string, object?>
+        {
+            { "_id", new Dictionary<string, object?> { { "$oid", "some_id" } } },
+            { "thread_id", "thread_id" },
+            { "content", new List<Dictionary<string, object?>>
+                {
+                    new Dictionary<string, object?>
+                    {
+                        { "text", "a message text" },
+                        { "type", "text" }
+                    }
+                }
+            },
+            { "role", "user" }
+        });
+
+        var expected = "{\"_id\":{\"$oid\":\"some_id\"},\"thread_id\":\"thread_id\",\"content\":[{\"text\":\"a message text\",\"type\":\"text\"}],\"role\":\"user\"}";
+        var json = DataItemJsonConverter.AsJsonString(mongoStyleDoc, false, false);
+        Assert.AreEqual(expected, json);
+    }
 }
 

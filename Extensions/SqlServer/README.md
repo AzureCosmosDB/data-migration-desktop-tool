@@ -89,6 +89,26 @@ Sink settings require a `TableName` to define where to insert data and an array 
 
 Sink settings also include an optional `BatchSize` parameter to specify the count of records to accumulate before bulk inserting, default value is 1000.
 
+#### WriteMode
+
+The `WriteMode` parameter specifies how data should be written to the target table:
+
+- `Insert` (default): Inserts new records only using SQL bulk insert. This is the fastest mode but will fail if duplicate keys exist.
+- `Upsert`: Uses SQL MERGE to insert new records or update existing ones based on primary key columns. When records match on the primary key(s), all non-key columns are updated with source values. When records don't match, new records are inserted.
+
+When using `Upsert` mode, you must also specify the `PrimaryKeyColumns` parameter with a list of column names that form the primary key. This can be a single column or a composite key.
+
+**Important Notes on Upsert Mode:**
+- Upsert mode uses a temporary staging table and SQL MERGE statement
+- All columns in `ColumnMappings` must exist in the target table
+- Primary key columns must be included in `ColumnMappings`
+- The operation syncs the source data with the destination (INSERT when not matched, UPDATE when matched)
+- By default, DELETE operations are not performed - records only in the destination remain unchanged
+- To enable full table synchronization including deletions, set `DeleteNotMatchedBySource` to `true` (use with caution as this can result in data loss)
+- Performance may be slower than Insert mode due to the MERGE operation overhead
+
+#### Basic Insert Example
+
 ```json
 {
     "ConnectionString": "",
@@ -110,10 +130,112 @@ Sink settings also include an optional `BatchSize` parameter to specify the coun
         {
             "ColumnName": "IsSet",
             "AllowNull": false,
-            "DefaultValue": false
+            "DefaultValue": false,
             "DataType": "System.Boolean"
         }
     ],
     "BatchSize": 1000
 }
 ```
+
+#### Upsert Example
+
+```json
+{
+    "ConnectionString": "Server=.;Database=PaymentService;Trusted_Connection=True;",
+    "TableName": "AccountTransactions",
+    "WriteMode": "Upsert",
+    "PrimaryKeyColumns": ["Id"],
+    "ColumnMappings": [
+        {
+            "ColumnName": "Id"
+        },
+        {
+            "ColumnName": "AccountNumber"
+        },
+        {
+            "ColumnName": "TransactionDate",
+            "DataType": "System.DateTime"
+        },
+        {
+            "ColumnName": "Amount",
+            "DataType": "System.Decimal"
+        },
+        {
+            "ColumnName": "Status"
+        }
+    ],
+    "BatchSize": 1000
+}
+```
+
+#### Upsert with Composite Key Example
+
+```json
+{
+    "ConnectionString": "Server=.;Database=SalesDB;Trusted_Connection=True;",
+    "TableName": "OrderLineItems",
+    "WriteMode": "Upsert",
+    "PrimaryKeyColumns": ["OrderId", "LineItemId"],
+    "ColumnMappings": [
+        {
+            "ColumnName": "OrderId",
+            "DataType": "System.Int32"
+        },
+        {
+            "ColumnName": "LineItemId",
+            "DataType": "System.Int32"
+        },
+        {
+            "ColumnName": "ProductName"
+        },
+        {
+            "ColumnName": "Quantity",
+            "DataType": "System.Int32"
+        },
+        {
+            "ColumnName": "UnitPrice",
+            "DataType": "System.Decimal"
+        }
+    ],
+    "BatchSize": 500
+}
+```
+
+#### Full Table Sync with DELETE Example
+
+This example demonstrates full table synchronization where records that exist in the destination but not in the source will be deleted. **Use this with caution as it can result in data loss.**
+
+```json
+{
+    "ConnectionString": "Server=.;Database=InventoryDB;Trusted_Connection=True;",
+    "TableName": "Products",
+    "WriteMode": "Upsert",
+    "PrimaryKeyColumns": ["ProductId"],
+    "DeleteNotMatchedBySource": true,
+    "ColumnMappings": [
+        {
+            "ColumnName": "ProductId",
+            "DataType": "System.Int32"
+        },
+        {
+            "ColumnName": "ProductName"
+        },
+        {
+            "ColumnName": "Price",
+            "DataType": "System.Decimal"
+        },
+        {
+            "ColumnName": "StockQuantity",
+            "DataType": "System.Int32"
+        },
+        {
+            "ColumnName": "LastUpdated",
+            "DataType": "System.DateTime"
+        }
+    ],
+    "BatchSize": 1000
+}
+```
+
+**Warning:** When `DeleteNotMatchedBySource` is set to `true`, any records in the destination table that do not have a matching primary key in the source data will be permanently deleted. Ensure you have proper backups and understand the implications before enabling this option.

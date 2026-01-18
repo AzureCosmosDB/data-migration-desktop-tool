@@ -366,5 +366,120 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             var values = (IDictionary<string, object>)obj;
             return values.ContainsKey(name);
         }
+
+        private static string? InvokeGetPropertyValue(ExpandoObject item, string propertyName)
+        {
+            var method = typeof(CosmosDataSinkExtension).GetMethod("GetPropertyValue",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            return method?.Invoke(null, new object[] { item, propertyName }) as string;
+        }
+
+        [TestMethod]
+        public void GetPropertyValue_WithSimpleProperty_ReturnsValue()
+        {
+            // Arrange
+            var expando = new ExpandoObject();
+            var dict = (IDictionary<string, object?>)expando;
+            dict["id"] = "test-id-123";
+            dict["name"] = "test-name";
+            
+            // Act
+            var result = InvokeGetPropertyValue(expando, "id");
+            
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual("test-id-123", result);
+        }
+
+        [TestMethod]
+        public void GetPropertyValue_WithNestedProperty_ReturnsValue()
+        {
+            // Arrange - Create nested structure matching the issue example
+            var expando = new ExpandoObject();
+            var dict = (IDictionary<string, object?>)expando;
+            dict["id"] = "test-id";
+            
+            var nestedExpando = new ExpandoObject();
+            var nestedDict = (IDictionary<string, object?>)nestedExpando;
+            nestedDict["partitionkeyvalue2"] = "guid-value-123";
+            nestedDict["somevalue4"] = "other-guid";
+            nestedDict["UserName"] = "testuser";
+            
+            dict["partitionkeyvalue1"] = nestedExpando;
+            
+            // Act
+            var result = InvokeGetPropertyValue(expando, "partitionkeyvalue1/partitionkeyvalue2");
+            
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual("guid-value-123", result);
+        }
+
+        [TestMethod]
+        public void GetPropertyValue_WithDeeplyNestedProperty_ReturnsValue()
+        {
+            // Arrange - Create deeply nested structure
+            var expando = new ExpandoObject();
+            var dict = (IDictionary<string, object?>)expando;
+            dict["id"] = "test-id";
+            
+            var level1 = new ExpandoObject();
+            var level1Dict = (IDictionary<string, object?>)level1;
+            
+            var level2 = new ExpandoObject();
+            var level2Dict = (IDictionary<string, object?>)level2;
+            
+            var level3 = new ExpandoObject();
+            var level3Dict = (IDictionary<string, object?>)level3;
+            level3Dict["finalValue"] = "deeply-nested-value";
+            
+            level2Dict["level3"] = level3;
+            level1Dict["level2"] = level2;
+            dict["level1"] = level1;
+            
+            // Act
+            var result = InvokeGetPropertyValue(expando, "level1/level2/level3/finalValue");
+            
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual("deeply-nested-value", result);
+        }
+
+        [TestMethod]
+        public void GetPropertyValue_WithMissingNestedProperty_ReturnsNull()
+        {
+            // Arrange
+            var expando = new ExpandoObject();
+            var dict = (IDictionary<string, object?>)expando;
+            dict["id"] = "test-id";
+            
+            var nestedExpando = new ExpandoObject();
+            var nestedDict = (IDictionary<string, object?>)nestedExpando;
+            nestedDict["existingKey"] = "value";
+            
+            dict["parent"] = nestedExpando;
+            
+            // Act
+            var result = InvokeGetPropertyValue(expando, "parent/nonExistentKey");
+            
+            // Assert
+            Assert.IsNull(result);
+        }
+
+        [TestMethod]
+        public void GetPropertyValue_WithNullIntermediateValue_ReturnsNull()
+        {
+            // Arrange
+            var expando = new ExpandoObject();
+            var dict = (IDictionary<string, object?>)expando;
+            dict["id"] = "test-id";
+            dict["parent"] = null;
+            
+            // Act
+            var result = InvokeGetPropertyValue(expando, "parent/child");
+            
+            // Assert
+            Assert.IsNull(result);
+        }
     }
 }

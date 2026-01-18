@@ -38,8 +38,8 @@ public class CosmosMultiAccountSupportTests
         };
 
         // Act - Create clients for two different sink accounts
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", "JSON");
+        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Verify that two distinct client instances are created for different sink accounts
         Assert.IsNotNull(sink1Client, "First sink client should be created");
@@ -80,8 +80,8 @@ public class CosmosMultiAccountSupportTests
         };
 
         // Act - Create clients for two different sink accounts
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", "JSON");
+        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Verify separate instances for different sink accounts
         Assert.IsNotNull(sink1Client);
@@ -117,8 +117,8 @@ public class CosmosMultiAccountSupportTests
         };
 
         // Act - Create clients for two sinks to the same account
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", "JSON");
+        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Even with the same account, separate client instances should be created for multiple sinks
         Assert.IsNotNull(sink1Client);
@@ -155,8 +155,8 @@ public class CosmosMultiAccountSupportTests
         };
 
         // Act - Create clients for two sinks with different proxy settings
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", "JSON");
+        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Verify separate instances for different proxy configurations
         Assert.IsNotNull(sink1Client);
@@ -197,8 +197,8 @@ public class CosmosMultiAccountSupportTests
         var sink2Settings = sink2Config.Get<CosmosSinkSettings>();
 
         // Act - Simulate what multiple sink operations do internally
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings!, "Cosmos-nosql", "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings!, "Cosmos-nosql", "JSON");
+        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings!, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings!, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Verify that multiple sink operations create independent clients
         Assert.IsNotNull(sink1Client, "First sink extension should create a client");

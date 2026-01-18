@@ -1,15 +1,14 @@
-﻿using Azure.Identity;
-using Cosmos.DataTransfer.Interfaces;
+﻿using Azure.Core;
+using Azure.Identity;
+using Azure.Security.KeyVault.Keys.Cryptography;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Encryption;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
-using System.Reflection;
-using Azure.Core;
-using System.Text.RegularExpressions;
-using Microsoft.Azure.Cosmos.Encryption;
-using Azure.Security.KeyVault.Keys.Cryptography;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -37,7 +36,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             return new HttpClient(handler);
         });
 
-        public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, string? sourceDisplayName = null)
+        public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, ILogger logger, string? sourceDisplayName = null)
         {
             string userAgentString = CreateUserAgentString(displayName, sourceDisplayName);
 
@@ -75,6 +74,13 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 clientOptions.HttpClientFactory = settings.PreAuthenticate
                     ? () => _httpClientWithDefaultCredentialsAndPreAuth.Value
                     : () => _httpClientWithDefaultCredentials.Value;
+            }
+
+            // Disable SSL certificate validation for development scenarios
+            if (settings.DisableSslValidation)
+            {
+                logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development scenarios. Never use in production.");
+                clientOptions.ServerCertificateCustomValidationCallback = (cert, chain, errors) => true;
             }
             
             CosmosClient? cosmosClient;

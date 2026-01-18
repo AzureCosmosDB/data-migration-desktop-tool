@@ -139,7 +139,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var settings = config.Get<CosmosSinkSettings>();
             settings.Validate();
 
-            var client = CosmosExtensionServices.CreateClient(settings!, DisplayName, dataSource.DisplayName);
+            var client = CosmosExtensionServices.CreateClient(settings!, DisplayName, logger, dataSource.DisplayName);
 
             Container container;
             if (settings!.UseRbacAuth)
@@ -286,7 +286,31 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         private static string? GetPropertyValue(ExpandoObject item, string propertyName)
         {
-            return ((IDictionary<string, object?>)item)[propertyName]?.ToString();
+            // Handle nested property paths (e.g., "property1/property2/property3")
+            // Note: Calling code uses TrimStart('/') to remove leading slash before calling this method
+            var pathSegments = propertyName.Split('/');
+            object? current = item;
+            
+            foreach (var segment in pathSegments)
+            {
+                if (current == null)
+                {
+                    return null;
+                }
+                
+                if (current is not ExpandoObject expandoObj)
+                {
+                    return null;
+                }
+                
+                var dict = (IDictionary<string, object?>)expandoObj;
+                if (!dict.TryGetValue(segment, out current))
+                {
+                    return null;
+                }
+            }
+            
+            return current?.ToString();
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()
