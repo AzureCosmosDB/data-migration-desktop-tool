@@ -41,7 +41,7 @@ These properties will be preserved exactly as they appear in the source when mig
 | Container              | Cosmos DB container name                                                                          |           |
 | WebProxy               | Proxy server URL for Cosmos DB connections                                                        |           |
 | InitClientEncryption   | Enable Always Encrypted feature                                                                   | false     |
-| LimitToEndpoint        | Restrict client to endpoint (see [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint))                             | false     |
+| LimitToEndpoint        | Restrict client to endpoint. See [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint) | false     |
 | DisableSslValidation   | Disable SSL certificate validation (for local dev only; not for production)                       | false     |
 | AllowBulkExecution     | Enable bulk execution for optimized performance. <br>**Warning:** May affect consistency and error handling. | false     |
 | EnableContentResponseOnWrite | Return only headers and status code (not response body) for write operations to reduce network IO. Applies to sink operations. See [CosmosClientOptions.EnableContentResponseOnWrite Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.enablecontentresponseonwrite) | true      |
@@ -96,7 +96,7 @@ Source supports the following optional parameters:
 - `PartitionKeyValue` - Allows for filtering to a single partition.
 - `Query` - Allows further filtering using a Cosmos SQL statement.
 - `WebProxy` (`null` by default) - Enables connections through a proxy.
-- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials#remarks) ([WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials)).
+- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`. See [WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials).
 - `UseDefaultCredentials` (`false` by default) - When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
 - `PreAuthenticate` (`false` by default) - When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 
@@ -192,14 +192,14 @@ For development purposes with SSL validation disabled:
   - `Direct`
 
 - **`WebProxy`**: Optional. Specifies the proxy server URL to use for connections (e.g., `http://yourproxy.server.com/`).
-- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials#remarks) ([WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials)).
+- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`. See [WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials).
 - **`UseDefaultCredentials`**: Optional, defaults to `false`. When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
 - **`PreAuthenticate`**: Optional, defaults to `false`. When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
   write and read regions, and use them when the configured application region is not available.
   When set to `true`, availability is limited to the endpoint specified.
-  - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint). When using the Cosmos DB Emulator Container for Linux it's been observed
+  - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint). When using the Cosmos DB Emulator Container for Linux it has been observed
     setting the value to `true` enables import and export of data.
 
 #### **SSL/Certificate Settings**
