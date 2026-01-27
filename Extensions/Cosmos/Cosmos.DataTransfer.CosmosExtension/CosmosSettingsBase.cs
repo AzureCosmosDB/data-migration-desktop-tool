@@ -47,6 +47,27 @@ namespace Cosmos.DataTransfer.CosmosExtension
         /// </summary>
         public bool AllowBulkExecution { get; set; } = false;
 
+        /// <summary>
+        /// Gets or sets whether to only return headers and status code in the Cosmos DB response 
+        /// for write item operations like Create, Upsert, Patch and Replace.
+        /// Setting to <c>false</c> will cause the response to have a null resource, 
+        /// reducing networking and CPU load by not sending the resource back over the network 
+        /// and serializing it on the client.
+        /// <para>
+        /// This setting applies to sink (write) operations.
+        /// </para>
+        /// <para>
+        /// <b>Default:</b> <c>true</c>
+        /// </para>
+        /// <para>
+        /// For more information, see 
+        /// <see href="https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.enablecontentresponseonwrite">
+        /// CosmosClientOptions.EnableContentResponseOnWrite Property
+        /// </see>
+        /// </para>
+        /// </summary>
+        public bool EnableContentResponseOnWrite { get; set; } = true;
+
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))
