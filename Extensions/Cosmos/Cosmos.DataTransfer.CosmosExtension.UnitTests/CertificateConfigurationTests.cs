@@ -95,6 +95,58 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             Assert.IsNotNull(client, "CosmosClient should be created");
         }
 
+        [TestMethod]
+        public void CreateClient_WithEnableNetHttpLogging_LogsWarning()
+        {
+            var loggerMock = new Mock<ILogger>();
+            var settings = new TestableCosmosSettings
+            {
+                ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+                Database = "testDb",
+                Container = "testContainer",
+                EnableNetHttpLogging = true
+            };
+
+            var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
+
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains(".NET HTTP diagnostic logging is ENABLED")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+
+            Assert.IsNotNull(client, "CosmosClient should be created");
+        }
+
+        [TestMethod]
+        public void CreateClient_WithoutEnableNetHttpLogging_DoesNotLogHttpWarning()
+        {
+            var loggerMock = new Mock<ILogger>();
+            var settings = new TestableCosmosSettings
+            {
+                ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+                Database = "testDb",
+                Container = "testContainer",
+                EnableNetHttpLogging = false
+            };
+
+            var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
+
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains(".NET HTTP diagnostic logging is ENABLED")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
+
+            Assert.IsNotNull(client, "CosmosClient should be created");
+        }
+
         private class TestableCosmosSettings : CosmosSettingsBase
         {
         }

@@ -44,6 +44,7 @@ These properties will be preserved exactly as they appear in the source when mig
 | LimitToEndpoint        | Restrict client to endpoint (see CosmosClientOptions.LimitToEndpoint)                             | false     |
 | DisableSslValidation   | Disable SSL certificate validation (for local dev only; not for production)                       | false     |
 | AllowBulkExecution     | Enable bulk execution for optimized performance. <br>**Warning:** May affect consistency and error handling. | false     |
+| EnableNetHttpLogging   | Enable .NET HTTP diagnostic events for troubleshooting connectivity issues (Debug log level)       | false     |
 
 Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of two ways:
 
@@ -79,6 +80,7 @@ Source supports the following optional parameters:
 - `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
 - `UseDefaultCredentials` (`false` by default) - When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
 - `PreAuthenticate` (`false` by default) - When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
+- `EnableNetHttpLogging` (`false` by default) - When `true`, enables `.NET` `System.Net.Http` diagnostic events to help investigate connection issues. These events are emitted at Debug level and can include endpoint/request details.
 
 ### Always Encrypted
 
@@ -175,6 +177,7 @@ For development purposes with SSL validation disabled:
 - **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
 - **`UseDefaultCredentials`**: Optional, defaults to `false`. When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
 - **`PreAuthenticate`**: Optional, defaults to `false`. When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
+- **`EnableNetHttpLogging`**: Optional, defaults to `false`. When `true`, enables `.NET` `System.Net.Http` diagnostic events for troubleshooting. Events are logged at Debug level and may include endpoint/request details.
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
   write and read regions, and use them when the configured application region is not available.

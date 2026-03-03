@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Diagnostics.Tracing;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -35,6 +36,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
             };
             return new HttpClient(handler);
         });
+
+        private static readonly object _httpEventListenerLock = new();
+        private static EventListener? _httpEventListener;
 
         public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, ILogger logger, string? sourceDisplayName = null)
         {
@@ -82,6 +86,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development scenarios. Never use in production.");
                 clientOptions.ServerCertificateCustomValidationCallback = (cert, chain, errors) => true;
             }
+
+            if (settings.EnableNetHttpLogging)
+            {
+                logger.LogWarning(".NET HTTP diagnostic logging is ENABLED for Cosmos connection troubleshooting. Logs are emitted at Debug level and may include endpoint/request details.");
+                EnsureHttpEventLoggingEnabled(logger);
+            }
             
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)
@@ -105,6 +115,45 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             return cosmosClient;
+        }
+
+        private static void EnsureHttpEventLoggingEnabled(ILogger logger)
+        {
+            lock (_httpEventListenerLock)
+            {
+                _httpEventListener ??= new NetHttpEventListener(logger);
+            }
+        }
+
+        private sealed class NetHttpEventListener(ILogger logger) : EventListener
+        {
+            private readonly ILogger _logger = logger;
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "System.Net.Http" || eventSource.Name == "System.Net.Security")
+                {
+                    EnableEvents(eventSource, EventLevel.Informational, EventKeywords.All);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (!_logger.IsEnabled(LogLevel.Debug))
+                {
+                    return;
+                }
+
+                var payload = eventData.Payload?.Count > 0
+                    ? string.Join(", ", eventData.Payload!.Select(v => v?.ToString() ?? "null"))
+                    : string.Empty;
+
+                _logger.LogDebug(".NET HTTP event {Source}:{EventName} ({EventId}) {Payload}",
+                    eventData.EventSource.Name,
+                    eventData.EventName ?? "unknown",
+                    eventData.EventId,
+                    payload);
+            }
         }
 
         private static string CreateUserAgentString(string displayName, string? sourceDisplayName)

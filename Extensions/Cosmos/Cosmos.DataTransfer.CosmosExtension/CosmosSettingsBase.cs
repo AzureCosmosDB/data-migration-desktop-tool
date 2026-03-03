@@ -47,6 +47,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
         /// </summary>
         public bool AllowBulkExecution { get; set; } = false;
 
+        /// <summary>
+        /// Enables .NET HTTP diagnostic event logging for troubleshooting connectivity issues.
+        /// Logs are emitted at Debug level and may include endpoint and request details.
+        /// </summary>
+        public bool EnableNetHttpLogging { get; set; } = false;
+
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))
