@@ -144,15 +144,59 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     return;
                 }
 
-                var payload = eventData.Payload?.Count > 0
-                    ? string.Join(", ", eventData.Payload!.Select(v => v?.ToString() ?? "null"))
-                    : string.Empty;
+                if (eventData.EventSource.Name != "System.Net.Http" && eventData.EventSource.Name != "System.Net.Security")
+                {
+                    return;
+                }
+
+                if (string.Equals(eventData.EventName, "EventCounters", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                var payload = FormatPayload(eventData);
 
                 _logger.LogDebug(".NET HTTP event {Source}:{EventName} ({EventId}) {Payload}",
                     eventData.EventSource.Name,
                     eventData.EventName ?? "unknown",
                     eventData.EventId,
                     payload);
+            }
+
+            private static string FormatPayload(EventWrittenEventArgs eventData)
+            {
+                if (eventData.Payload is null || eventData.Payload.Count == 0)
+                {
+                    return string.Empty;
+                }
+
+                return string.Join(", ", eventData.Payload.Select((value, index) =>
+                {
+                    var key = eventData.PayloadNames is not null && index < eventData.PayloadNames.Count
+                        ? eventData.PayloadNames[index]
+                        : $"arg{index}";
+                    return $"{key}={FormatPayloadValue(value)}";
+                }));
+            }
+
+            private static string FormatPayloadValue(object? value)
+            {
+                if (value is null)
+                {
+                    return "null";
+                }
+
+                if (value is string text)
+                {
+                    return text;
+                }
+
+                if (value is IEnumerable<KeyValuePair<string, object>> keyValuePairs)
+                {
+                    return string.Join(";", keyValuePairs.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                }
+
+                return value.ToString() ?? string.Empty;
             }
         }
 
