@@ -52,18 +52,25 @@ class Program
             {
                 builder.ConfigureAppConfiguration((hostContext, cfg) =>
                 {
+                    // Keep explicit .NET precedence order:
+                    // appsettings.json -> appsettings.{Environment}.json (for example appsettings.Development.json)
+                    // -> user secrets (only when Environment == Development)
+                    // -> environment variables -> command line.
+                    // This ensures env vars and CLI args override file-based defaults.
+                    cfg.Sources.Clear();
+
                     var exeFolder = AppContext.BaseDirectory;
-                    var appsettings = Path.Combine(exeFolder, "appsettings.json");
-                    if (File.Exists(appsettings))
+                    cfg.SetBasePath(exeFolder);
+                    cfg.AddJsonFile("appsettings.json", optional: true, reloadOnChange: false);
+                    cfg.AddJsonFile($"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: false);
+
+                    if (hostContext.HostingEnvironment.IsDevelopment())
                     {
-                        cfg.AddJsonFile(appsettings);
+                        cfg.AddUserSecrets<Program>(optional: true);
                     }
-                    var appsettingsEnv = Path.Combine(exeFolder, $"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json");
-                    if (File.Exists(appsettingsEnv))
-                    {
-                        cfg.AddJsonFile(appsettingsEnv);
-                    }
-                    cfg.AddUserSecrets<Program>();
+
+                    cfg.AddEnvironmentVariables();
+                    cfg.AddCommandLine(args);
                 }).ConfigureServices((hostContext, services) =>
                 {
                     services.AddTransient<IExtensionLoader, ExtensionLoader>();

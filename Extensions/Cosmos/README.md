@@ -100,9 +100,12 @@ When connection failures are not verbose enough, enable `EnableNetHttpLogging` a
 Set logging to Debug before running:
 
 - Linux/macOS: `export Logging__LogLevel__Default=Debug`
+- Windows (cmd): `set Logging__LogLevel__Default=Debug`
 - Windows (PowerShell): `$env:Logging__LogLevel__Default = "Debug"`
 
 This emits `System.Net.Http` and `System.Net.Security` events at Debug level, which helps distinguish TLS/certificate failures from transport/proxy/network failures.
+Configuration follows normal .NET precedence, so environment variables override `appsettings.json` values.
+Command-line arguments have highest precedence and override both environment variables and `appsettings.json`.
 
 ### Always Encrypted
 
