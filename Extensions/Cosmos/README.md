@@ -82,6 +82,28 @@ Source supports the following optional parameters:
 - `PreAuthenticate` (`false` by default) - When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 - `EnableNetHttpLogging` (`false` by default) - When `true`, enables `.NET` `System.Net.Http` diagnostic events to help investigate connection issues. These events are emitted at Debug level and can include endpoint/request details.
 
+### Connectivity troubleshooting (.NET HTTP diagnostics)
+
+When connection failures are not verbose enough, enable `EnableNetHttpLogging` and run the tool with `Debug` logging.
+
+```json
+{
+  "SourceSettings": {
+    "ConnectionMode": "Gateway",
+    "LimitToEndpoint": true,
+    "DisableSslValidation": true,
+    "EnableNetHttpLogging": true
+  }
+}
+```
+
+Set logging to Debug before running:
+
+- Linux/macOS: `export Logging__LogLevel__Default=Debug`
+- Windows (PowerShell): `$env:Logging__LogLevel__Default = "Debug"`
+
+This emits `System.Net.Http` and `System.Net.Security` events at Debug level, which helps distinguish TLS/certificate failures from transport/proxy/network failures.
+
 ### Always Encrypted
 
 Source and Sink support Always Encrypted as an optional parameter. When `InitClientEncryption` is set to `true`, the extension will initialize the Cosmos client with the Always Encrypted feature enabled. This allows for the use of encrypted fields in the Cosmos DB container. The extension will automatically decrypt the fields when reading from the source and encrypt the fields when writing to the sink.
