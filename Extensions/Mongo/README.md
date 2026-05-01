@@ -17,8 +17,7 @@ Source and sink settings require both `ConnectionString` and `DatabaseName` para
     "ConnectionString": "",
     "DatabaseName": "",
     "Collection": "",
-    "Query": "",
-    "BatchSize": 1000
+    "Query": ""
 }
 ```
 
@@ -28,6 +27,9 @@ The `BatchSize` parameter controls the number of documents returned per batch wh
 - Preventing cursor timeout errors when reading large collections (e.g., collections with 250k+ documents)
 - Managing memory usage during data migration
 - Improving performance in high-latency network environments
+
+**How it works:**
+`BatchSize` *mitigates* cursor timeouts by keeping the cursor active between fetches (smaller batches reset the cursor's idle timer), but does not completely disable timeouts. The MongoDB `NoCursorTimeout` option would be the actual disable switch, but it is often not honored on Azure Cosmos DB for MongoDB, which is why `BatchSize` is the recommended workaround.
 
 **Default Behavior:**
 - If `BatchSize` is not specified, MongoDB's default batch size will be used

@@ -128,7 +128,14 @@ internal class MongoDataSourceExtension : IDataSourceExtensionWithSettings
     {
         if (batchSize.HasValue)
         {
-            logger.LogInformation("Using batch size of {BatchSize} for collection '{Collection}'", batchSize.Value, collectionName);
+            if (batchSize.Value <= 0)
+            {
+                logger.LogWarning("Ignoring invalid BatchSize {BatchSize} for collection '{Collection}'; must be > 0. Cursor timeout issues may occur on large collections.", batchSize.Value, collectionName);
+            }
+            else
+            {
+                logger.LogInformation("Using batch size of {BatchSize} for collection '{Collection}'", batchSize.Value, collectionName);
+            }
         }
     }
 
