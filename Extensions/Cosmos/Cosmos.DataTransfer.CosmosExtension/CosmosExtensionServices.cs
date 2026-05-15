@@ -104,8 +104,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 TokenCredential tokenCredential = new ClientSecretCredential(
                         settings.TenantId,
                         settings.ClientId,
-                        settings.ClientSecret,
-                        options: new TokenCredentialOptions()
+                        settings.ClientSecret
                     );
 
                 if (settings.InitClientEncryption)
