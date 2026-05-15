@@ -270,5 +270,427 @@ public class DataItemJsonConverterTests
         var json = DataItemJsonConverter.AsJsonString(mongoStyleDoc, false, false);
         Assert.AreEqual(expected, json);
     }
+
+    // ----------------------------------------------------------------------
+    // Multi-dimensional array support (issue #237 / PR #238)
+    // ----------------------------------------------------------------------
+
+    [TestMethod]
+    public void Test_WriteFieldValue_GeoJsonPoint_Coordinates_OneDimensional()
+    {
+        // Regression guard: a flat numeric array must continue to serialize correctly.
+        var coordinates = new object?[] { 5.347494076316281, 52.033503157065155 };
+        var expected = "\"coordinates\":[5.347494076316281,52.033503157065155]";
+
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "coordinates", coordinates, includeNullFields: false);
+        Assert.AreEqual(expected, readFunc());
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_GeoJsonLineString_Coordinates_TwoDimensional()
+    {
+        // GeoJSON LineString coordinates: array of [x, y] pairs.
+        var coordinates = new object?[]
+        {
+            new object?[] { 5.3474399338950604, 52.03355740411766 },
+            new object?[] { 5.347590198744001, 52.033439655450024 }
+        };
+        var expected = "\"coordinates\":[[5.3474399338950604,52.03355740411766],[5.347590198744001,52.033439655450024]]";
+
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "coordinates", coordinates, includeNullFields: false);
+        Assert.AreEqual(expected, readFunc());
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_GeoJsonPolygon_Coordinates_ThreeDimensional()
+    {
+        // GeoJSON Polygon coordinates: array of linear rings, each a list of [x, y] pairs.
+        var coordinates = new object?[]
+        {
+            new object?[]
+            {
+                new object?[] { 5.347432321215393, 52.03355800306437 },
+                new object?[] { 5.347432321215393, 52.03343276598602 },
+                new object?[] { 5.347605671445933, 52.03343276598602 },
+                new object?[] { 5.347605671445933, 52.03355800306437 },
+                new object?[] { 5.347432321215393, 52.03355800306437 }
+            }
+        };
+        var expected = "\"coordinates\":[[" +
+            "[5.347432321215393,52.03355800306437]," +
+            "[5.347432321215393,52.03343276598602]," +
+            "[5.347605671445933,52.03343276598602]," +
+            "[5.347605671445933,52.03355800306437]," +
+            "[5.347432321215393,52.03355800306437]" +
+            "]]";
+
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "coordinates", coordinates, includeNullFields: false);
+        Assert.AreEqual(expected, readFunc());
+    }
+
+    [TestMethod]
+    public void Test_AsJsonString_FullGeoJsonDocument()
+    {
+        // Reproduces the exact failing scenario from issue #237.
+        var doc = new DictionaryDataItem(new Dictionary<string, object?>
+        {
+            { "id", "1" },
+            { "name", "Example" },
+            { "point", new DictionaryDataItem(new Dictionary<string, object?>
+                {
+                    { "type", "Point" },
+                    { "coordinates", new object?[] { 5.347494076316281, 52.033503157065155 } }
+                })
+            },
+            { "polygon", new DictionaryDataItem(new Dictionary<string, object?>
+                {
+                    { "type", "Polygon" },
+                    { "coordinates", new object?[]
+                        {
+                            new object?[]
+                            {
+                                new object?[] { 5.347432321215393, 52.03355800306437 },
+                                new object?[] { 5.347432321215393, 52.03343276598602 },
+                                new object?[] { 5.347605671445933, 52.03343276598602 },
+                                new object?[] { 5.347605671445933, 52.03355800306437 },
+                                new object?[] { 5.347432321215393, 52.03355800306437 }
+                            }
+                        }
+                    }
+                })
+            },
+            { "line", new DictionaryDataItem(new Dictionary<string, object?>
+                {
+                    { "type", "LineString" },
+                    { "coordinates", new object?[]
+                        {
+                            new object?[] { 5.3474399338950604, 52.03355740411766 },
+                            new object?[] { 5.347590198744001, 52.033439655450024 }
+                        }
+                    }
+                })
+            }
+        });
+
+        var json = DataItemJsonConverter.AsJsonString(doc, indented: false, includeNullFields: false);
+
+        // Round-trip back through System.Text.Json to confirm the output is well-formed and
+        // structurally matches the input (depth-3 array survives).
+        using var parsed = JsonDocument.Parse(json);
+        var polygonCoords = parsed.RootElement
+            .GetProperty("polygon")
+            .GetProperty("coordinates");
+        Assert.AreEqual(JsonValueKind.Array, polygonCoords.ValueKind);
+        Assert.AreEqual(1, polygonCoords.GetArrayLength()); // 1 linear ring
+        var ring = polygonCoords[0];
+        Assert.AreEqual(JsonValueKind.Array, ring.ValueKind);
+        Assert.AreEqual(5, ring.GetArrayLength()); // 5 points
+        var firstPoint = ring[0];
+        Assert.AreEqual(JsonValueKind.Array, firstPoint.ValueKind);
+        Assert.AreEqual(2, firstPoint.GetArrayLength());
+        Assert.AreEqual(5.347432321215393, firstPoint[0].GetDouble());
+        Assert.AreEqual(52.03355800306437, firstPoint[1].GetDouble());
+
+        // Critical regression assertion: no more "System.Collections.Generic.List`1[System.Object]".
+        StringAssert.DoesNotMatch(json, new Regex("System\\.Collections"));
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_EmptyNestedArray()
+    {
+        var value = new object?[] { new object?[] { } };
+        var expected = "\"x\":[[]]";
+
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", value, includeNullFields: false);
+        Assert.AreEqual(expected, readFunc());
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_NestedArrayWithNulls()
+    {
+        var value = new object?[]
+        {
+            new object?[] { null, 1L },
+            new object?[] { null }
+        };
+        var expected = "\"x\":[[null,1],[null]]";
+
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", value, includeNullFields: false);
+        Assert.AreEqual(expected, readFunc());
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_NestedArrayMixedScalars()
+    {
+        var value = new object?[]
+        {
+            new object?[] { 1L, "a", true },
+            new object?[] { 2.5, null }
+        };
+        var expected = "\"x\":[[1,\"a\",true],[2.5,null]]";
+
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", value, includeNullFields: false);
+        Assert.AreEqual(expected, readFunc());
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_NestedArrayOfIDataItems()
+    {
+        // Mix nested arrays with IDataItem entries to exercise the array-item dispatcher.
+        var value = new object?[]
+        {
+            new object?[]
+            {
+                new DictionaryDataItem(new Dictionary<string, object?> { { "k", 1L } }),
+                new DictionaryDataItem(new Dictionary<string, object?> { { "k", 2L } })
+            },
+            new object?[]
+            {
+                new DictionaryDataItem(new Dictionary<string, object?> { { "k", 3L } })
+            }
+        };
+        var expected = "\"x\":[[{\"k\":1},{\"k\":2}],[{\"k\":3}]]";
+
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", value, includeNullFields: false);
+        Assert.AreEqual(expected, readFunc());
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_NestedArrayOfDictionaries()
+    {
+        // Array of arrays of Dictionary<string, object?> (BSON-style nested arrays).
+        var value = new object?[]
+        {
+            new object?[]
+            {
+                new Dictionary<string, object?> { { "k", "v1" } },
+                new Dictionary<string, object?> { { "k", "v2" } }
+            }
+        };
+        var expected = "\"x\":[[{\"k\":\"v1\"},{\"k\":\"v2\"}]]";
+
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", value, includeNullFields: false);
+        Assert.AreEqual(expected, readFunc());
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_WideNestedArray_SmokeTest()
+    {
+        // Performance / correctness smoke: 200 inner arrays, each with 10 numbers.
+        const int outerCount = 200;
+        const int innerCount = 10;
+        var value = new object?[outerCount];
+        for (int i = 0; i < outerCount; i++)
+        {
+            var inner = new object?[innerCount];
+            for (int j = 0; j < innerCount; j++)
+            {
+                inner[j] = (long)(i * innerCount + j);
+            }
+            value[i] = inner;
+        }
+
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", value, includeNullFields: false);
+        var actual = readFunc();
+
+        // Validate via round-trip rather than building a giant expected string.
+        using var parsed = JsonDocument.Parse("{" + actual + "}");
+        var arr = parsed.RootElement.GetProperty("x");
+        Assert.AreEqual(outerCount, arr.GetArrayLength());
+        for (int i = 0; i < outerCount; i++)
+        {
+            Assert.AreEqual(innerCount, arr[i].GetArrayLength());
+            Assert.AreEqual((long)(i * innerCount), arr[i][0].GetInt64());
+        }
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_EmptyStringPropertyName_StillEmitsAsField()
+    {
+        // Verifies that the refactor did NOT introduce a sentinel: an empty-string field name
+        // continues to emit a normal "" property — it is not silently swallowed.
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "", 1L, includeNullFields: false);
+        Assert.AreEqual("\"\":1", readFunc());
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_WhitespacePropertyName_StillEmitsAsField()
+    {
+        // Verifies whitespace property names are preserved verbatim (no IsNullOrWhiteSpace sentinel).
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, " ", 1L, includeNullFields: false);
+        Assert.AreEqual("\" \":1", readFunc());
+    }
+
+    [TestMethod]
+    public void Test_RoundTrip_GeoJsonViaDeserializeAndAsJsonString()
+    {
+        // Deserialize the issue-237 source JSON, re-serialize via AsJsonString, and parse the
+        // result. The shape (and key numeric values) must be preserved across the round-trip.
+        const string sourceJson = """
+        {
+          "id": "1",
+          "name": "Example",
+          "polygon": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [5.347432321215393, 52.03355800306437],
+                [5.347432321215393, 52.03343276598602],
+                [5.347605671445933, 52.03343276598602],
+                [5.347605671445933, 52.03355800306437],
+                [5.347432321215393, 52.03355800306437]
+              ]
+            ]
+          }
+        }
+        """;
+
+        var deserialized = DataItemJsonConverter.Deserialize(sourceJson) as Cosmos.DataTransfer.Interfaces.IDataItem;
+        Assert.IsNotNull(deserialized);
+
+        var roundTripped = DataItemJsonConverter.AsJsonString(deserialized, indented: false, includeNullFields: false);
+        using var parsed = JsonDocument.Parse(roundTripped);
+        var ring = parsed.RootElement.GetProperty("polygon").GetProperty("coordinates")[0];
+        Assert.AreEqual(5, ring.GetArrayLength());
+        Assert.AreEqual(5.347432321215393, ring[0][0].GetDouble());
+        Assert.AreEqual(52.03355800306437, ring[0][1].GetDouble());
+        StringAssert.DoesNotMatch(roundTripped, new Regex("System\\.Collections"));
+    }
+
+    // ----------------------------------------------------------------------
+    // Depth-guard tests (stack-safety against pathological / recursive input)
+    // ----------------------------------------------------------------------
+
+    /// <summary>
+    /// Builds an array nested exactly <paramref name="depth"/> levels deep. The innermost array
+    /// contains a single long value. Depth 1 means a single flat array <c>[1]</c>.
+    /// </summary>
+    private static object?[] BuildNestedArray(int depth)
+    {
+        if (depth < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(depth));
+        }
+
+        object?[] current = new object?[] { 1L };
+        for (int i = 1; i < depth; i++)
+        {
+            current = new object?[] { current };
+        }
+        return current;
+    }
+
+    /// <summary>
+    /// Builds a chain of nested <see cref="DictionaryDataItem"/>s exactly <paramref name="levels"/>
+    /// deep. Uses an iterative build to avoid blowing the helper's own stack during test setup.
+    /// </summary>
+    private static DictionaryDataItem BuildNestedDataItem(int levels)
+    {
+        if (levels < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(levels));
+        }
+        var current = new DictionaryDataItem(new Dictionary<string, object?> { { "leaf", 1L } });
+        for (int i = 1; i < levels; i++)
+        {
+            current = new DictionaryDataItem(new Dictionary<string, object?> { { "n", current } });
+        }
+        return current;
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_DeeplyNestedArray_AtMaxDepth_Succeeds()
+    {
+        // Build an array whose nesting matches the limit exactly. Should serialize without throwing.
+        var nested = BuildNestedArray(DataItemJsonConverter.MaxJsonDepth);
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", nested, includeNullFields: false);
+
+        var actual = readFunc();
+        // Sanity: count the opening brackets — should equal MaxJsonDepth.
+        int openBrackets = 0;
+        foreach (var ch in actual)
+        {
+            if (ch == '[')
+            {
+                openBrackets++;
+            }
+        }
+        Assert.AreEqual(DataItemJsonConverter.MaxJsonDepth, openBrackets);
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_DeeplyNestedArray_OverMaxDepth_Throws()
+    {
+        var nested = BuildNestedArray(DataItemJsonConverter.MaxJsonDepth + 1);
+        var (writer, _) = CreateUtf8JsonWriter();
+        var ex = Assert.ThrowsException<InvalidOperationException>(() =>
+            DataItemJsonConverter.WriteFieldValue(writer, "x", nested, includeNullFields: false));
+        StringAssert.Contains(ex.Message, "nesting depth");
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_DeeplyNestedDataItems_OverMaxDepth_Throws()
+    {
+        // Object-nesting variant of the depth-guard test: build a chain of nested
+        // DictionaryDataItems and confirm the same exception fires on overflow.
+        // Going through WriteFieldValue (rather than AsJsonString directly) keeps depth
+        // semantics symmetric with the array-nesting tests above.
+        var oversized = BuildNestedDataItem(DataItemJsonConverter.MaxJsonDepth + 1);
+        var (writer, _) = CreateUtf8JsonWriter();
+        var ex = Assert.ThrowsException<InvalidOperationException>(() =>
+            DataItemJsonConverter.WriteFieldValue(writer, "x", oversized, includeNullFields: false));
+        StringAssert.Contains(ex.Message, "nesting depth");
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_DeeplyNestedDataItems_AtMaxDepth_Succeeds()
+    {
+        // At-the-limit case for object nesting via WriteFieldValue.
+        var sized = BuildNestedDataItem(DataItemJsonConverter.MaxJsonDepth);
+        var (writer, readFunc) = CreateUtf8JsonWriter();
+        DataItemJsonConverter.WriteFieldValue(writer, "x", sized, includeNullFields: false);
+
+        var actual = readFunc();
+        int openBraces = 0;
+        foreach (var ch in actual)
+        {
+            if (ch == '{')
+            {
+                openBraces++;
+            }
+        }
+        Assert.AreEqual(DataItemJsonConverter.MaxJsonDepth, openBraces);
+    }
+
+    [TestMethod]
+    public void Test_WriteFieldValue_MixedObjectAndArrayDepth_OverMaxDepth_Throws()
+    {
+        // Alternate object / array nesting and confirm the depth counter covers both kinds.
+        // Build pairs of (array, object) so each iteration adds 2 levels; overshoot the limit.
+        object? current = 1L;
+        int pairs = (DataItemJsonConverter.MaxJsonDepth / 2) + 2;
+        for (int i = 0; i < pairs; i++)
+        {
+            current = new DictionaryDataItem(new Dictionary<string, object?> { { "n", current } });
+            current = new object?[] { current };
+        }
+
+        var (writer, _) = CreateUtf8JsonWriter();
+        var ex = Assert.ThrowsException<InvalidOperationException>(() =>
+            DataItemJsonConverter.WriteFieldValue(writer, "x", current, includeNullFields: false));
+        StringAssert.Contains(ex.Message, "nesting depth");
+    }
 }
 
