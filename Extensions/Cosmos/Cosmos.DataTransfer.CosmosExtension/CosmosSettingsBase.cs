@@ -65,19 +65,23 @@ namespace Cosmos.DataTransfer.CosmosExtension
             {
                 yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth or UseServicePrincipalAuth is true", new[] { nameof(InitClientEncryption) });
             }
-            if (UseServicePrincipalAuth && string.IsNullOrEmpty(AccountEndpoint))
+            if (UseServicePrincipalAuth && UseRbacAuth)
+            {
+                yield return new ValidationResult("UseRbacAuth and UseServicePrincipalAuth cannot be true at the same time", new[] { nameof(UseRbacAuth), nameof(UseServicePrincipalAuth) });
+            }
+            if (UseServicePrincipalAuth && !UseRbacAuth && string.IsNullOrEmpty(AccountEndpoint))
             {
                 yield return new ValidationResult("AccountEndpoint must be specified when UseServicePrincipalAuth is true", new[] { nameof(AccountEndpoint) });
             }
-            if (UseServicePrincipalAuth && string.IsNullOrEmpty(TenantId))
+            if (UseServicePrincipalAuth && !UseRbacAuth && string.IsNullOrEmpty(TenantId))
             {
                 yield return new ValidationResult("TenantId must be specified when UseServicePrincipalAuth is true", new[] { nameof(TenantId) });
             }
-            if (UseServicePrincipalAuth && string.IsNullOrEmpty(ClientId))
+            if (UseServicePrincipalAuth && !UseRbacAuth && string.IsNullOrEmpty(ClientId))
             {
                 yield return new ValidationResult("ClientId must be specified when UseServicePrincipalAuth is true", new[] { nameof(ClientId) });
             }
-            if (UseServicePrincipalAuth && string.IsNullOrEmpty(ClientSecret))
+            if (UseServicePrincipalAuth && !UseRbacAuth && string.IsNullOrEmpty(ClientSecret))
             {
                 yield return new ValidationResult("ClientSecret must be specified when UseServicePrincipalAuth is true", new[] { nameof(ClientSecret) });
             }
