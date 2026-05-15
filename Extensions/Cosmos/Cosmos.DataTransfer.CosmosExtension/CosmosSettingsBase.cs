@@ -19,7 +19,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? AccountEndpoint { get; set; }
         public bool EnableInteractiveCredentials { get; set; }
         public bool InitClientEncryption { get; set; } = false;
-        
+        public bool UseServicePrincipalAuth { get; set; } = false;
+        public string? TenantId { get; set; }
+        public string? ClientId { get; set; }
+        public string? ClientSecret { get; set; }
+
         /// <summary>
         /// <see cref="CosmosClientOptions.LimitToEndpoint"/>
         /// When running the Azure Cosmos DB emulator in a Linux Container on Windows
@@ -49,17 +53,33 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))
+            if (!UseRbacAuth && !UseServicePrincipalAuth && string.IsNullOrEmpty(ConnectionString))
             {
-                yield return new ValidationResult("ConnectionString must be specified unless UseRbacAuth is true", new[] { nameof(ConnectionString) });
+                yield return new ValidationResult("ConnectionString must be specified unless UseRbacAuth or UseServicePrincipalAuth is true", new[] { nameof(ConnectionString) });
             }
             if (UseRbacAuth && string.IsNullOrEmpty(AccountEndpoint))
             {
                 yield return new ValidationResult("AccountEndpoint must be specified when UseRbacAuth is true", new[] { nameof(AccountEndpoint) });
             }
-            if (!UseRbacAuth && InitClientEncryption)
+            if (!UseRbacAuth && !UseServicePrincipalAuth && InitClientEncryption)
             {
-                yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth is true", new[] { nameof(InitClientEncryption) });
+                yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth or UseServicePrincipalAuth is true", new[] { nameof(InitClientEncryption) });
+            }
+            if (UseServicePrincipalAuth && string.IsNullOrEmpty(AccountEndpoint))
+            {
+                yield return new ValidationResult("AccountEndpoint must be specified when UseServicePrincipalAuth is true", new[] { nameof(AccountEndpoint) });
+            }
+            if (UseServicePrincipalAuth && string.IsNullOrEmpty(TenantId))
+            {
+                yield return new ValidationResult("TenantId must be specified when UseServicePrincipalAuth is true", new[] { nameof(TenantId) });
+            }
+            if (UseServicePrincipalAuth && string.IsNullOrEmpty(ClientId))
+            {
+                yield return new ValidationResult("ClientId must be specified when UseServicePrincipalAuth is true", new[] { nameof(ClientId) });
+            }
+            if (UseServicePrincipalAuth && string.IsNullOrEmpty(ClientSecret))
+            {
+                yield return new ValidationResult("ClientSecret must be specified when UseServicePrincipalAuth is true", new[] { nameof(ClientSecret) });
             }
         }
     }

@@ -40,7 +40,26 @@ public class CosmosSinkSettingsTests
 
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.AccountEndpoint))));
     }
-    
+
+    [TestMethod]
+    public void GetValidationErrors_WithServicePrincipalAuthAndNoConnectionInfo_ReturnsError()
+    {
+        var settings = new CosmosSinkSettings
+        {
+            UseServicePrincipalAuth = true,
+            Database = "db",
+            Container = "container",
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
+
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.AccountEndpoint))));
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.TenantId))));
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.ClientId))));
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.ClientSecret))));
+    }
+
     [TestMethod]
     public void Validate_WithConnectionString_Succeeds()
     {

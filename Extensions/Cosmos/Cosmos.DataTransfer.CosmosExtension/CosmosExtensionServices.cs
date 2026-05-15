@@ -99,6 +99,16 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
                 }
             }
+            else if (settings.UseServicePrincipalAuth)
+            {
+                TokenCredential tokenCredential = new ClientSecretCredential(
+                        settings.TenantId,
+                        settings.ClientId,
+                        settings.ClientSecret,
+                        options: new TokenCredentialOptions()
+                    );
+                cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
+            }
             else
             {
                 cosmosClient = new CosmosClient(settings.ConnectionString, clientOptions);
