@@ -61,6 +61,24 @@ public class CosmosSinkSettingsTests
     }
 
     [TestMethod]
+    public void GetValidationErrors_WithServicePrincipalAuthAndConnectionInfo_ReturnsNoErrors()
+    {
+        var settings = new CosmosSinkSettings
+        {
+            UseServicePrincipalAuth = true,
+            AccountEndpoint = "https://localhost:8081/",
+            TenantId = "tenant-id",
+            ClientId = "client-id",
+            ClientSecret = "client-secret",
+            Database = "db",
+            Container = "container",
+        };
+        var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
+        Assert.IsFalse(validationErrors.Any());
+    }
+
+    [TestMethod]
     public void Validate_WithConnectionString_Succeeds()
     {
         var settings = new CosmosSinkSettings
