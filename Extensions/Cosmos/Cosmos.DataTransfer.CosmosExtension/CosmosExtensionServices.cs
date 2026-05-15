@@ -102,9 +102,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
             else if (settings.UseServicePrincipalAuth)
             {
                 TokenCredential tokenCredential = new ClientSecretCredential(
-                        settings.TenantId,
-                        settings.ClientId,
-                        settings.ClientSecret
+                        settings.TenantId!,
+                        settings.ClientId!,
+                        settings.ClientSecret!
                     );
 
                 if (settings.InitClientEncryption)
