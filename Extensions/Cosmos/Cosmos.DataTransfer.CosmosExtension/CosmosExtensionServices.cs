@@ -107,7 +107,17 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         settings.ClientSecret,
                         options: new TokenCredentialOptions()
                     );
-                cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
+
+                if (settings.InitClientEncryption)
+                {
+                    var keyResolver = new KeyResolver(tokenCredential);
+                    cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions)
+                        .WithEncryption(keyResolver, KeyEncryptionKeyResolverName.AzureKeyVault);
+                }
+                else
+                {
+                    cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
+                }
             }
             else
             {
