@@ -10,6 +10,8 @@ Source and sink settings both require a `ConnectionString` parameter.
 
 If surfacing data as JSON, the `JsonFields` parameter can be used to specify which fields should be treated as JSON strings. This is useful for building nested sets of data that should be handled as a nested object downstream.
 
+> **Note**: Nested objects written into a SQL column as a JSON string go through the shared JSON serializer and are subject to a **maximum combined object + array nesting depth of 64**. Sources exceeding this limit will fail with an `InvalidOperationException`. See the [JSON extension notes](../Json/README.md#notes) for details.
+
 ### Source
 
 Source settings also require either a `QueryText` or `FilePath` parameter with the SQL statement that defines the data to select.

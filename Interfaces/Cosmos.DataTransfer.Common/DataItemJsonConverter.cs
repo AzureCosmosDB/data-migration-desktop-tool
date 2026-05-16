@@ -10,6 +10,14 @@ namespace Cosmos.DataTransfer.Common;
 public static class DataItemJsonConverter
 {
     /// <summary>
+    /// Maximum supported nesting depth (objects + arrays combined) when serializing an <see cref="IDataItem"/>
+    /// to JSON. Exists to provide a deterministic <see cref="InvalidOperationException"/> for pathological
+    /// or recursive input rather than letting the CLR stack-overflow the host process. Real-world documents
+    /// (including GeoJSON polygons / multi-polygons) are well under this limit.
+    /// </summary>
+    internal const int MaxJsonDepth = 64;
+
+    /// <summary>
     /// Returns either and array of Arrays or IDataItem objects or a single IDataItem object from the JSON string.
     /// This method is used to deserialize JSON strings into IDataItem objects or arrays of IDataItems so that
     /// they can be used in the Cosmos.DataTransfer.Interfaces.IDataItem interface.
@@ -70,6 +78,13 @@ public static class DataItemJsonConverter
 
     public static void WriteDataItem(Utf8JsonWriter writer, IDataItem item, bool includeNullFields, JsonEncodedText? objectName = null)
     {
+        WriteDataItem(writer, item, includeNullFields, objectName, depth: 0);
+    }
+
+    private static void WriteDataItem(Utf8JsonWriter writer, IDataItem item, bool includeNullFields, JsonEncodedText? objectName, int depth)
+    {
+        EnsureDepth(depth);
+
         if (objectName != null)
         {
             writer.WriteStartObject(objectName.Value);
@@ -82,7 +97,7 @@ public static class DataItemJsonConverter
         foreach (string fieldName in item.GetFieldNames())
         {
             var fieldValue = item.GetValue(fieldName);
-            WriteFieldValue(writer, fieldName, fieldValue, includeNullFields);
+            WriteFieldValue(writer, fieldName, fieldValue, includeNullFields, depth);
         }
 
         writer.WriteEndObject();
@@ -90,6 +105,13 @@ public static class DataItemJsonConverter
 
     internal static void WriteFieldValue(Utf8JsonWriter writer, string fieldName, object? fieldValue, bool includeNullFields)
     {
+        WriteFieldValue(writer, fieldName, fieldValue, includeNullFields, depth: 0);
+    }
+
+    private static void WriteFieldValue(Utf8JsonWriter writer, string fieldName, object? fieldValue, bool includeNullFields, int depth)
+    {
+        EnsureDepth(depth);
+
         var propertyName = GetAsUnescaped(fieldName);
         if (fieldValue == null)
         {
@@ -102,70 +124,18 @@ public static class DataItemJsonConverter
         {
             if (fieldValue is IDataItem child)
             {
-                WriteDataItem(writer, child, includeNullFields, propertyName);
+                WriteDataItem(writer, child, includeNullFields, propertyName, depth + 1);
             }
             else if (fieldValue is IDictionary<string, object?> dict)
             {
                 // Handle dictionaries (e.g., from MongoDB BsonDocument conversion) as nested objects
                 var dictItem = new DictionaryDataItem(dict);
-                WriteDataItem(writer, dictItem, includeNullFields, propertyName);
+                WriteDataItem(writer, dictItem, includeNullFields, propertyName, depth + 1);
             }
             else if (fieldValue is not string && fieldValue is IEnumerable children)
             {
                 writer.WriteStartArray(propertyName);
-                foreach (object? arrayItem in children)
-                {
-                    if (arrayItem is IDataItem arrayChild)
-                    {
-                        WriteDataItem(writer, arrayChild, includeNullFields);
-                    }
-                    else if (arrayItem is IDictionary<string, object?> arrayDict)
-                    {
-                        // Handle dictionaries (e.g., from MongoDB BsonDocument conversion) as nested objects
-                        var arrayDictItem = new DictionaryDataItem(arrayDict);
-                        WriteDataItem(writer, arrayDictItem, includeNullFields);
-                    }
-                    else if (TryGetLong(arrayItem, out var longValue))
-                    {
-                        writer.WriteNumberValue(longValue);
-                    }
-                    else if (TryGetULong(arrayItem, out var ulongValue))
-                    {
-                        writer.WriteNumberValue(ulongValue);
-                    }
-                    else if (TryGetInteger(arrayItem, out var intValue))
-                    {
-                        writer.WriteNumberValue(intValue);
-                    }
-                    else if (TryGetUInteger(arrayItem, out var uintValue))
-                    {
-                        writer.WriteNumberValue(uintValue);
-                    }
-                    else if (TryGetNumber(arrayItem, out var number))
-                    {
-                        writer.WriteNumberValue(number);
-                    }
-                    else if (arrayItem is bool boolean)
-                    {
-                        writer.WriteBooleanValue(boolean);
-                    }
-                    else if (arrayItem is DateTime date)
-                    {
-                        writer.WriteStringValue(GetAsUnescaped(date.ToString("O")));
-                    }
-                    else if (arrayItem is DateTimeOffset dateOffset)
-                    {
-                        writer.WriteStringValue(GetAsUnescaped(dateOffset.ToString("O")));
-                    }
-                    else if (arrayItem is null)
-                    {
-                        writer.WriteNullValue();
-                    }
-                    else
-                    {
-                        writer.WriteStringValue(GetAsUnescaped(arrayItem.ToString()!));
-                    }
-                }
+                WriteArrayItems(writer, children, includeNullFields, depth + 1);
                 writer.WriteEndArray();
             }
             else if (TryGetLong(fieldValue, out var longValue))
@@ -204,6 +174,102 @@ public static class DataItemJsonConverter
             {
                 writer.WriteString(propertyName, GetAsUnescaped(fieldValue.ToString()!));
             }
+        }
+    }
+
+    /// <summary>
+    /// Writes the contents of an <see cref="IEnumerable"/> into the current JSON array. The caller is
+    /// responsible for writing the surrounding <c>StartArray</c>/<c>EndArray</c> tokens (or for opening
+    /// a nested unnamed array via <see cref="WriteNestedArray"/>). Each item is dispatched through
+    /// <see cref="WriteArrayItemValue"/> so nested arrays recurse without re-entering <see cref="WriteFieldValue"/>
+    /// with a sentinel field name.
+    /// </summary>
+    private static void WriteArrayItems(Utf8JsonWriter writer, IEnumerable items, bool includeNullFields, int depth)
+    {
+        EnsureDepth(depth);
+
+        foreach (object? arrayItem in items)
+        {
+            WriteArrayItemValue(writer, arrayItem, includeNullFields, depth);
+        }
+    }
+
+    /// <summary>
+    /// Writes a single item inside an open JSON array. Type-detection order matches the (named) field path
+    /// in <see cref="WriteFieldValue"/>; the trailing <see cref="IEnumerable"/> branch handles multi-dimensional
+    /// arrays (e.g., GeoJSON polygon coordinates) by opening an unnamed nested array and recursing.
+    /// </summary>
+    private static void WriteArrayItemValue(Utf8JsonWriter writer, object? arrayItem, bool includeNullFields, int depth)
+    {
+        if (arrayItem is IDataItem arrayChild)
+        {
+            WriteDataItem(writer, arrayChild, includeNullFields, objectName: null, depth + 1);
+        }
+        else if (arrayItem is IDictionary<string, object?> arrayDict)
+        {
+            // Handle dictionaries (e.g., from MongoDB BsonDocument conversion) as nested objects
+            var arrayDictItem = new DictionaryDataItem(arrayDict);
+            WriteDataItem(writer, arrayDictItem, includeNullFields, objectName: null, depth + 1);
+        }
+        else if (TryGetLong(arrayItem, out var longValue))
+        {
+            writer.WriteNumberValue(longValue);
+        }
+        else if (TryGetULong(arrayItem, out var ulongValue))
+        {
+            writer.WriteNumberValue(ulongValue);
+        }
+        else if (TryGetInteger(arrayItem, out var intValue))
+        {
+            writer.WriteNumberValue(intValue);
+        }
+        else if (TryGetUInteger(arrayItem, out var uintValue))
+        {
+            writer.WriteNumberValue(uintValue);
+        }
+        else if (TryGetNumber(arrayItem, out var number))
+        {
+            writer.WriteNumberValue(number);
+        }
+        else if (arrayItem is bool boolean)
+        {
+            writer.WriteBooleanValue(boolean);
+        }
+        else if (arrayItem is DateTime date)
+        {
+            writer.WriteStringValue(GetAsUnescaped(date.ToString("O")));
+        }
+        else if (arrayItem is DateTimeOffset dateOffset)
+        {
+            writer.WriteStringValue(GetAsUnescaped(dateOffset.ToString("O")));
+        }
+        else if (arrayItem is null)
+        {
+            writer.WriteNullValue();
+        }
+        // Multi-dimensional array support (e.g., GeoJSON polygon coordinates).
+        // Note: this predicate is intentionally broad to remain backward-compatible with the
+        // outer field-write path. It comes after the IDataItem and IDictionary<string, object?>
+        // checks above so those structured types are not accidentally treated as untyped arrays.
+        else if (arrayItem is not string && arrayItem is IEnumerable nestedChildren)
+        {
+            writer.WriteStartArray();
+            WriteArrayItems(writer, nestedChildren, includeNullFields, depth + 1);
+            writer.WriteEndArray();
+        }
+        else
+        {
+            writer.WriteStringValue(GetAsUnescaped(arrayItem.ToString()!));
+        }
+    }
+
+    private static void EnsureDepth(int depth)
+    {
+        if (depth > MaxJsonDepth)
+        {
+            throw new InvalidOperationException(
+                $"JSON serialization exceeded maximum nesting depth of {MaxJsonDepth}. " +
+                "The source document appears to be excessively or recursively nested.");
         }
     }
 
