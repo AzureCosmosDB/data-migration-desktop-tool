@@ -47,9 +47,15 @@ public class MongoRepository<TDocument> : IRepository<TDocument>
         return collection.AsQueryable();
     }
 
-    public async IAsyncEnumerable<TDocument> FindAsync(FilterDefinition<TDocument> filter)
+    public async IAsyncEnumerable<TDocument> FindAsync(FilterDefinition<TDocument> filter, int? batchSize = null)
     {
-        using var cursor = await collection.FindAsync(filter);
+        var findOptions = new FindOptions<TDocument, TDocument>();
+        if (batchSize.HasValue && batchSize.Value > 0)
+        {
+            findOptions.BatchSize = batchSize.Value;
+        }
+        
+        using var cursor = await collection.FindAsync(filter, findOptions);
         while (await cursor.MoveNextAsync())
         {
             foreach (var document in cursor.Current)
