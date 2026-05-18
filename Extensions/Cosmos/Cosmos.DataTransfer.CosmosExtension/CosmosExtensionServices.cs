@@ -52,8 +52,8 @@ namespace Cosmos.DataTransfer.CosmosExtension
             {
                 ConnectionMode = settings.ConnectionMode,
                 ApplicationName = userAgentString,
-                AllowBulkExecution = true,
-                EnableContentResponseOnWrite = false,
+                AllowBulkExecution = settings.AllowBulkExecution,
+                EnableContentResponseOnWrite = settings.EnableContentResponseOnWrite,
                 Serializer = cosmosSerializer,
                 LimitToEndpoint = settings.LimitToEndpoint,
             };
