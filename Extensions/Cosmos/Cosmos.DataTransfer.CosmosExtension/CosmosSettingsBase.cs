@@ -19,10 +19,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? AccountEndpoint { get; set; }
         public bool EnableInteractiveCredentials { get; set; }
         public bool InitClientEncryption { get; set; } = false;
-        public bool UseServicePrincipalAuth { get; set; } = false;
+
         public string? TenantId { get; set; }
         public string? ClientId { get; set; }
+
         public string? ClientSecret { get; set; }
+
+        public string? ClientCertificatePath { get; set; }
+        public string? ClientCertificatePassword { get; set; }
 
         /// <summary>
         /// <see cref="CosmosClientOptions.LimitToEndpoint"/>
@@ -53,37 +57,27 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            if (!UseRbacAuth && !UseServicePrincipalAuth && string.IsNullOrEmpty(ConnectionString))
+            if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))
             {
-                yield return new ValidationResult("ConnectionString must be specified unless UseRbacAuth or UseServicePrincipalAuth is true", new[] { nameof(ConnectionString) });
+                yield return new ValidationResult("ConnectionString must be specified unless UseRbacAuth is true", new[] { nameof(ConnectionString) });
             }
             if (UseRbacAuth && string.IsNullOrEmpty(AccountEndpoint))
             {
                 yield return new ValidationResult("AccountEndpoint must be specified when UseRbacAuth is true", new[] { nameof(AccountEndpoint) });
             }
-            if (!UseRbacAuth && !UseServicePrincipalAuth && InitClientEncryption)
+            if (!UseRbacAuth && InitClientEncryption)
             {
-                yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth or UseServicePrincipalAuth is true", new[] { nameof(InitClientEncryption) });
+                yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth is true", new[] { nameof(InitClientEncryption) });
             }
-            if (UseServicePrincipalAuth && UseRbacAuth)
+            var servicePrincipalAttributes = new[] { TenantId, ClientId };
+            var notAllAttributesFound = servicePrincipalAttributes.Any(attr => string.IsNullOrEmpty(attr)) && !servicePrincipalAttributes.All(attr => string.IsNullOrEmpty(attr));
+            if (UseRbacAuth && notAllAttributesFound)
             {
-                yield return new ValidationResult("UseRbacAuth and UseServicePrincipalAuth cannot be true at the same time", new[] { nameof(UseRbacAuth), nameof(UseServicePrincipalAuth) });
+                yield return new ValidationResult("Both TenantId and ClientId must be specified when UseRbacAuth is used with service principal", [nameof(TenantId), nameof(ClientId)]);
             }
-            if (UseServicePrincipalAuth && !UseRbacAuth && string.IsNullOrEmpty(AccountEndpoint))
+            if (UseRbacAuth && !servicePrincipalAttributes.Any(attr => string.IsNullOrEmpty(attr)) && new[] { ClientSecret, ClientCertificatePath }.All(s => string.IsNullOrEmpty(s)))
             {
-                yield return new ValidationResult("AccountEndpoint must be specified when UseServicePrincipalAuth is true", new[] { nameof(AccountEndpoint) });
-            }
-            if (UseServicePrincipalAuth && !UseRbacAuth && string.IsNullOrEmpty(TenantId))
-            {
-                yield return new ValidationResult("TenantId must be specified when UseServicePrincipalAuth is true", new[] { nameof(TenantId) });
-            }
-            if (UseServicePrincipalAuth && !UseRbacAuth && string.IsNullOrEmpty(ClientId))
-            {
-                yield return new ValidationResult("ClientId must be specified when UseServicePrincipalAuth is true", new[] { nameof(ClientId) });
-            }
-            if (UseServicePrincipalAuth && !UseRbacAuth && string.IsNullOrEmpty(ClientSecret))
-            {
-                yield return new ValidationResult("ClientSecret must be specified when UseServicePrincipalAuth is true", new[] { nameof(ClientSecret) });
+                yield return new ValidationResult("Either ClientSecret or ClientCertificatePath must be specified when UseRbacAuth is used with service principal", [nameof(ClientSecret), nameof(ClientCertificatePath)]);
             }
         }
     }

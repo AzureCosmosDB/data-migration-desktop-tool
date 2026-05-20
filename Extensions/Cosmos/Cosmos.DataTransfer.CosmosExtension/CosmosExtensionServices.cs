@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 
 namespace Cosmos.DataTransfer.CosmosExtension
@@ -58,7 +59,8 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 LimitToEndpoint = settings.LimitToEndpoint,
             };
 
-            if (!string.IsNullOrEmpty(settings.WebProxy)){
+            if (!string.IsNullOrEmpty(settings.WebProxy))
+            {
                 var webProxy = new WebProxy(settings.WebProxy);
                 if (settings.UseDefaultProxyCredentials)
                 {
@@ -82,41 +84,39 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development scenarios. Never use in production.");
                 clientOptions.ServerCertificateCustomValidationCallback = (cert, chain, errors) => true;
             }
-            
+
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)
             {
-                TokenCredential tokenCredential = new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
+                TokenCredential? tokenCredential = null;
+                var servicePrincipalFound = !string.IsNullOrEmpty(settings.TenantId) && !string.IsNullOrEmpty(settings.ClientId);
+                if (servicePrincipalFound)
+                {
+                    if (!string.IsNullOrEmpty(settings.ClientSecret))
+                    {
+                        tokenCredential = new ClientSecretCredential(settings.TenantId, settings.ClientId, settings.ClientSecret);
+                    }
+                    else if (!string.IsNullOrEmpty(settings.ClientCertificatePath))
+                    {
+                        if (!string.IsNullOrEmpty(settings.ClientCertificatePassword))
+                        {
+                            var certificate = new X509Certificate2(settings.ClientCertificatePath, settings.ClientCertificatePassword);
 
-                if(settings.InitClientEncryption)
-                {
-                    var keyResolver = new KeyResolver(tokenCredential);
-                    cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions)
-                        .WithEncryption(keyResolver, KeyEncryptionKeyResolverName.AzureKeyVault);
+                            tokenCredential = new ClientCertificateCredential(settings.TenantId, settings.ClientId, certificate);
+                        }
+                        else
+                        {
+                            tokenCredential = new ClientCertificateCredential(settings.TenantId, settings.ClientId, settings.ClientCertificatePath);
+                        }
+                    }
                 }
-                else
-                {
-                    cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
-                }
-            }
-            else if (settings.UseServicePrincipalAuth)
-            {
-                TokenCredential tokenCredential = new ClientSecretCredential(
-                        settings.TenantId!,
-                        settings.ClientId!,
-                        settings.ClientSecret!
-                    );
 
-                if (settings.InitClientEncryption)
-                {
-                    var keyResolver = new KeyResolver(tokenCredential);
-                    cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions)
-                        .WithEncryption(keyResolver, KeyEncryptionKeyResolverName.AzureKeyVault);
-                }
-                else
-                {
-                    cosmosClient = new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
-                }
+                tokenCredential ??= new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
+
+                cosmosClient = settings.InitClientEncryption
+                    ? new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions)
+                          .WithEncryption(new KeyResolver(tokenCredential), KeyEncryptionKeyResolverName.AzureKeyVault)
+                    : new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
             }
             else
             {
