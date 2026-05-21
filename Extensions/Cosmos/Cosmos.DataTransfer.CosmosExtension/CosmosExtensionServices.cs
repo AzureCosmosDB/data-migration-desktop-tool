@@ -94,8 +94,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 {
                     if (!string.IsNullOrEmpty(settings.ClientSecret))
                     {
-                        logger.LogWarning("ClientSecret is configured in settings. Ensure this configuration file is not committed to source control. " +
-                           "Consider injecting via environment variables, command-line args (--{Section}:ClientSecret=...), or User Secrets instead.",
+                        logger.LogWarning("ClientSecret is configured in settings. Ensure this configuration file is not committed to source control. Consider injecting via environment variables, command-line args (--{Section}:ClientSecret=...), or User Secrets instead.",
                            settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings");
                         tokenCredential = new ClientSecretCredential(settings.TenantId, settings.ClientId, settings.ClientSecret);
                     }
@@ -104,7 +103,10 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         if (!string.IsNullOrEmpty(settings.ClientCertificatePassword))
                         {
                             // TODO: switch to X509CertificateLoader when targeting .NET 9+
-                            var certificate = new X509Certificate2(settings.ClientCertificatePath, settings.ClientCertificatePassword);
+                            var certificate = new X509Certificate2(
+                                settings.ClientCertificatePath,
+                                settings.ClientCertificatePassword,
+                                X509KeyStorageFlags.EphemeralKeySet);
 
                             tokenCredential = new ClientCertificateCredential(settings.TenantId, settings.ClientId, certificate);
                         }
