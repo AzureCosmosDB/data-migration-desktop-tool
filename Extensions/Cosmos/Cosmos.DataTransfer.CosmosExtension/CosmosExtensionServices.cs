@@ -94,8 +94,8 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 {
                     if (!string.IsNullOrEmpty(settings.ClientSecret))
                     {
-                        logger.LogWarning("ClientSecret is configured in settings. Ensure this configuration file is not committed to source control. Consider injecting via environment variables, command-line args (--{Section}:ClientSecret=...), or User Secrets instead.",
-                           settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings");
+                        var section = settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings";
+                        logger.LogWarning("ClientSecret is configured in settings. Ensure this configuration file is not committed to source control. Consider injecting via environment variables, command-line args (--{section}:ClientSecret=...), or User Secrets instead.", section);
                         tokenCredential = new ClientSecretCredential(settings.TenantId, settings.ClientId, settings.ClientSecret);
                     }
                     else if (!string.IsNullOrEmpty(settings.ClientCertificatePath))
