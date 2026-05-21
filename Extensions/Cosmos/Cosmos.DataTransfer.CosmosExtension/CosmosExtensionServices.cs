@@ -89,17 +89,21 @@ namespace Cosmos.DataTransfer.CosmosExtension
             if (settings.UseRbacAuth)
             {
                 TokenCredential? tokenCredential = null;
-                var servicePrincipalFound = !string.IsNullOrEmpty(settings.TenantId) && !string.IsNullOrEmpty(settings.ClientId);
-                if (servicePrincipalFound)
+
+                if (!string.IsNullOrEmpty(settings.TenantId) && !string.IsNullOrEmpty(settings.ClientId))
                 {
                     if (!string.IsNullOrEmpty(settings.ClientSecret))
                     {
+                        logger.LogWarning("ClientSecret is configured in settings. Ensure this configuration file is not committed to source control. " +
+                           "Consider injecting via environment variables, command-line args (--{Section}:ClientSecret=...), or User Secrets instead.",
+                           settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings");
                         tokenCredential = new ClientSecretCredential(settings.TenantId, settings.ClientId, settings.ClientSecret);
                     }
                     else if (!string.IsNullOrEmpty(settings.ClientCertificatePath))
                     {
                         if (!string.IsNullOrEmpty(settings.ClientCertificatePassword))
                         {
+                            // TODO: switch to X509CertificateLoader when targeting .NET 9+
                             var certificate = new X509Certificate2(settings.ClientCertificatePath, settings.ClientCertificatePassword);
 
                             tokenCredential = new ClientCertificateCredential(settings.TenantId, settings.ClientId, certificate);
