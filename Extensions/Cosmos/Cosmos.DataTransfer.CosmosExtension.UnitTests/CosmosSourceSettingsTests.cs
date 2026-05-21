@@ -16,7 +16,7 @@ public class CosmosSourceSettingsTests
 
         var validationErrors = settings.GetValidationErrors();
 
-        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.ConnectionString))));
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.ConnectionString))));
     }
 
     [TestMethod]
@@ -31,13 +31,13 @@ public class CosmosSourceSettingsTests
 
         var validationErrors = settings.GetValidationErrors();
 
-        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.AccountEndpoint))));
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.AccountEndpoint))));
     }
 
     [TestMethod]
     public void GetValidationErrors_WithRbacAuthAndIncompleteServicePrincipalInfo_ReturnsErrors()
     {
-        var settings = new CosmosSinkSettings
+        var settings = new CosmosSourceSettings
         {
             UseRbacAuth = true,
             Database = "db",
@@ -48,13 +48,13 @@ public class CosmosSourceSettingsTests
 
         var validationErrors = settings.GetValidationErrors();
         
-        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.TenantId)) && v.Contains(nameof(CosmosSinkSettings.ClientId))));
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.TenantId)) && v.Contains(nameof(CosmosSourceSettings.ClientId))));
     }
 
     [TestMethod]
     public void GetValidationErrors_WithRbacAuthAndServicePrincipalButNoSecretOrCertificateInfo_ReturnsErrors()
     {
-        var settings = new CosmosSinkSettings
+        var settings = new CosmosSourceSettings
         {
             UseRbacAuth = true,
             Database = "db",
@@ -66,13 +66,13 @@ public class CosmosSourceSettingsTests
 
         var validationErrors = settings.GetValidationErrors();
         
-        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.ClientSecret)) && v.Contains(nameof(CosmosSinkSettings.ClientCertificatePath))));
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.ClientSecret)) && v.Contains(nameof(CosmosSourceSettings.ClientCertificatePath))));
     }
 
     [TestMethod]
     public void GetValidationErrors_WithRbacAuthAndServicePrincipalClientSecretInfo_ReturnsNoErrors()
     {
-        var settings = new CosmosSinkSettings
+        var settings = new CosmosSourceSettings
         {
             UseRbacAuth = true,
             Database = "db",
@@ -90,7 +90,7 @@ public class CosmosSourceSettingsTests
     [TestMethod]
     public void GetValidationErrors_WithRbacAuthAndServicePrincipalClientCertificateInfo_ReturnsNoErrors()
     {
-        var settings = new CosmosSinkSettings
+        var settings = new CosmosSourceSettings
         {
             UseRbacAuth = true,
             Database = "db",
