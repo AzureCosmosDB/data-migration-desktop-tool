@@ -89,6 +89,16 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 yield return new ValidationResult("Specify either ClientSecret or ClientCertificatePath, not both.",
                     [nameof(ClientSecret), nameof(ClientCertificatePath)]);
             }
+            if (UseRbacAuth && servicePrincipalSet && !clientCertificateSet && !string.IsNullOrEmpty(ClientCertificatePassword))
+            {
+                yield return new ValidationResult("ClientCertificatePassword can only be set when ClientCertificatePath is set.",
+                    [nameof(ClientCertificatePassword), nameof(ClientCertificatePath)]);
+            }
+            if (UseRbacAuth && !servicePrincipalSet && (clientSecretSet || clientCertificateSet))
+            {
+                yield return new ValidationResult("ClientSecret or ClientCertificatePath cannot be set without TenantId/ClientId.",
+                    [nameof(TenantId), nameof(ClientId)]);
+            }
             if (!UseRbacAuth && (tenantIdSet || clientIdSet || clientSecretSet || clientCertificateSet))
             {
                 yield return new ValidationResult("Service principal settings require UseRbacAuth to be set to true.", [nameof(UseRbacAuth)]);

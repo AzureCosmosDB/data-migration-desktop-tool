@@ -90,6 +90,43 @@ public class CosmosSourceSettingsTests
     }
 
     [TestMethod]
+    public void GetValidationErrors_WithRbacAuthAndServicePrincipalAndPasswordButNoCertificate_ReturnsErrors()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            UseRbacAuth = true,
+            Database = "db",
+            Container = "container",
+            AccountEndpoint = "https://example.documents.azure.com:443/",
+            TenantId = "tenant-id",
+            ClientId = "client-id",
+            ClientCertificatePassword = "client-secret-password",
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.ClientCertificatePassword)) && v.Contains(nameof(CosmosSourceSettings.ClientCertificatePath))));
+    }
+
+    [TestMethod]
+    public void GetValidationErrors_WithRbacAuthAndSecretOrCertificateButNoServicePrincipal_ReturnsErrors()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            UseRbacAuth = true,
+            Database = "db",
+            Container = "container",
+            AccountEndpoint = "https://example.documents.azure.com:443/",
+            ClientSecret = "client-secret",
+            ClientCertificatePath = "./certs/cert.pfx",
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.TenantId)) && v.Contains(nameof(CosmosSourceSettings.ClientId))));
+    }
+
+    [TestMethod]
     public void GetValidationErrors_WithNoRbacAuthButHasServicePrincipal_ReturnsError()
     {
         var settings = new CosmosSourceSettings

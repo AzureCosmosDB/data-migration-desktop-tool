@@ -97,6 +97,43 @@ public class CosmosSinkSettingsTests
     }
 
     [TestMethod]
+    public void GetValidationErrors_WithRbacAuthAndServicePrincipalAndPasswordButNoCertificate_ReturnsErrors()
+    {
+        var settings = new CosmosSinkSettings
+        {
+            UseRbacAuth = true,
+            Database = "db",
+            Container = "container",
+            AccountEndpoint = "https://example.documents.azure.com:443/",
+            TenantId = "tenant-id",
+            ClientId = "client-id",
+            ClientCertificatePassword = "client-secret-password",
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.ClientCertificatePassword)) && v.Contains(nameof(CosmosSinkSettings.ClientCertificatePath))));
+    }
+
+    [TestMethod]
+    public void GetValidationErrors_WithRbacAuthAndSecretOrCertificateButNoServicePrincipal_ReturnsErrors()
+    {
+        var settings = new CosmosSinkSettings
+        {
+            UseRbacAuth = true,
+            Database = "db",
+            Container = "container",
+            AccountEndpoint = "https://example.documents.azure.com:443/",
+            ClientSecret = "client-secret",
+            ClientCertificatePath = "./certs/cert.pfx",
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.TenantId)) && v.Contains(nameof(CosmosSinkSettings.ClientId))));
+    }
+
+    [TestMethod]
     public void GetValidationErrors_WithNoRbacAuthButHasServicePrincipal_ReturnsError()
     {
         var settings = new CosmosSinkSettings
