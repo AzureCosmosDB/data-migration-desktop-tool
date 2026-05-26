@@ -55,6 +55,7 @@ public class CosmosSinkSettingsTests
 
         var validationErrors = settings.GetValidationErrors();
         LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.TenantId)) && v.Contains(nameof(CosmosSinkSettings.ClientId))));
     }
 
@@ -73,6 +74,7 @@ public class CosmosSinkSettingsTests
 
         var validationErrors = settings.GetValidationErrors();
         LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.ClientSecret)) && v.Contains(nameof(CosmosSinkSettings.ClientCertificatePath))));
     }
 
@@ -93,6 +95,7 @@ public class CosmosSinkSettingsTests
 
         var validationErrors = settings.GetValidationErrors();
         LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.ClientSecret)) && v.Contains(nameof(CosmosSinkSettings.ClientCertificatePath))));
     }
 
@@ -112,6 +115,7 @@ public class CosmosSinkSettingsTests
 
         var validationErrors = settings.GetValidationErrors();
         LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.ClientCertificatePassword)) && v.Contains(nameof(CosmosSinkSettings.ClientCertificatePath))));
     }
 
@@ -130,6 +134,7 @@ public class CosmosSinkSettingsTests
 
         var validationErrors = settings.GetValidationErrors();
         LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSinkSettings.TenantId)) && v.Contains(nameof(CosmosSinkSettings.ClientId))));
     }
 
@@ -164,8 +169,10 @@ public class CosmosSinkSettingsTests
             ClientId = "client-id",
             ClientSecret = "client-secret",
         };
+
         var validationErrors = settings.GetValidationErrors();
         LogErrors(validationErrors);
+
         Assert.IsFalse(validationErrors.Any());
     }
 
@@ -182,11 +189,13 @@ public class CosmosSinkSettingsTests
             ClientId = "client-id",
             ClientCertificatePath = "./certs/cert.pfx",
         };
+
         var validationErrors = settings.GetValidationErrors();
         LogErrors(validationErrors);
+
         Assert.IsFalse(validationErrors.Any());
     }
-
+    
     [TestMethod]
     public void Validate_WithConnectionString_Succeeds()
     {

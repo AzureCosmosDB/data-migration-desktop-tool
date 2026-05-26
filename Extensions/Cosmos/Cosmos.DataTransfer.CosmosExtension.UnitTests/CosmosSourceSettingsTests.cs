@@ -5,6 +5,11 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 [TestClass]
 public class CosmosSourceSettingsTests
 {
+    private static void LogErrors(IEnumerable<string?> errors)
+    {
+        foreach (var error in errors) Console.WriteLine($"Validation Error: {error}");
+    }
+
     [TestMethod]
     public void GetValidationErrors_WithNoConnection_ReturnsError()
     {
@@ -15,6 +20,7 @@ public class CosmosSourceSettingsTests
         };
 
         var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
 
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.ConnectionString))));
     }
@@ -30,6 +36,7 @@ public class CosmosSourceSettingsTests
         };
 
         var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
 
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.AccountEndpoint))));
     }
@@ -47,7 +54,8 @@ public class CosmosSourceSettingsTests
         };
 
         var validationErrors = settings.GetValidationErrors();
-        
+        LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.TenantId)) && v.Contains(nameof(CosmosSourceSettings.ClientId))));
     }
 
@@ -65,7 +73,8 @@ public class CosmosSourceSettingsTests
         };
 
         var validationErrors = settings.GetValidationErrors();
-        
+        LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.ClientSecret)) && v.Contains(nameof(CosmosSourceSettings.ClientCertificatePath))));
     }
 
@@ -85,7 +94,8 @@ public class CosmosSourceSettingsTests
         };
 
         var validationErrors = settings.GetValidationErrors();
-        
+        LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.ClientSecret)) && v.Contains(nameof(CosmosSourceSettings.ClientCertificatePath))));
     }
 
@@ -104,7 +114,8 @@ public class CosmosSourceSettingsTests
         };
 
         var validationErrors = settings.GetValidationErrors();
-        
+        LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.ClientCertificatePassword)) && v.Contains(nameof(CosmosSourceSettings.ClientCertificatePath))));
     }
 
@@ -122,7 +133,8 @@ public class CosmosSourceSettingsTests
         };
 
         var validationErrors = settings.GetValidationErrors();
-        
+        LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.TenantId)) && v.Contains(nameof(CosmosSourceSettings.ClientId))));
     }
 
@@ -139,7 +151,8 @@ public class CosmosSourceSettingsTests
         };
 
         var validationErrors = settings.GetValidationErrors();
-        
+        LogErrors(validationErrors);
+
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.UseRbacAuth))));
     }
 
@@ -156,8 +169,10 @@ public class CosmosSourceSettingsTests
             ClientId = "client-id",
             ClientSecret = "client-secret",
         };
+
         var validationErrors = settings.GetValidationErrors();
-        
+        LogErrors(validationErrors);
+
         Assert.IsFalse(validationErrors.Any());
     }
 
@@ -174,11 +189,13 @@ public class CosmosSourceSettingsTests
             ClientId = "client-id",
             ClientCertificatePath = "./certs/cert.pfx",
         };
+
         var validationErrors = settings.GetValidationErrors();
-        
+        LogErrors(validationErrors);
+
         Assert.IsFalse(validationErrors.Any());
     }
-
+    
     [TestMethod]
     public void Validate_WithConnectionString_Succeeds()
     {

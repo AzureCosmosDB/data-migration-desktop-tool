@@ -5,16 +5,24 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Encryption;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
     public static class CosmosExtensionServices
     {
+        internal enum TokenCredentialSelection
+        {
+            DefaultAzureCredential,
+            ClientSecretCredential,
+            ClientCertificateCredential,
+        }
+
         // Static HttpClient instances with different configurations for reuse across connections
         // This avoids connection exhaustion and properly handles credentials
         private static readonly Lazy<HttpClient> _httpClientWithDefaultCredentials = new Lazy<HttpClient>(() =>
@@ -36,6 +44,71 @@ namespace Cosmos.DataTransfer.CosmosExtension
             };
             return new HttpClient(handler);
         });
+
+        // NOTE: Kept as a separate helper so auth-path behavior can be tested directly.
+        internal static TokenCredentialSelection GetTokenCredentialSelection(CosmosSettingsBase settings)
+        {
+            if (!string.IsNullOrEmpty(settings.TenantId) && !string.IsNullOrEmpty(settings.ClientId))
+            {
+                if (!string.IsNullOrEmpty(settings.ClientSecret))
+                {
+                    return TokenCredentialSelection.ClientSecretCredential;
+                }
+
+                if (!string.IsNullOrEmpty(settings.ClientCertificatePath))
+                {
+                    return TokenCredentialSelection.ClientCertificateCredential;
+                }
+            }
+
+            return TokenCredentialSelection.DefaultAzureCredential;
+        }
+
+        // NOTE: Added explicit exception wrapping to surface actionable auth configuration failures.
+        internal static TokenCredential CreateRbacTokenCredential(CosmosSettingsBase settings, ILogger logger)
+        {
+            try
+            {
+                var selection = GetTokenCredentialSelection(settings);
+                switch (selection)
+                {
+                    case TokenCredentialSelection.ClientSecretCredential:
+                    {
+                        var section = settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings";
+                        logger.LogWarning(
+                            "ClientSecret is configured in settings. Ensure this configuration file is not committed to source control. Consider injecting via environment variables, command-line args (--{Section}:ClientSecret=...), or User Secrets instead.",
+                            section);
+                        return new ClientSecretCredential(settings.TenantId!, settings.ClientId!, settings.ClientSecret!);
+                    }
+
+                    case TokenCredentialSelection.ClientCertificateCredential:
+                        // NOTE: We intentionally use Azure.Identity's certificate-path overload so
+                        // credential/material lifetime is owned by the SDK and not manually tracked in this process.
+                        if (!File.Exists(settings.ClientCertificatePath))
+                        {
+                            throw new FileNotFoundException(
+                                "Client certificate file was not found.",
+                                settings.ClientCertificatePath);
+                        }
+
+                        return new ClientCertificateCredential(settings.TenantId!, settings.ClientId!, settings.ClientCertificatePath!);
+
+                    default:
+                        return new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
+                }
+            }
+            catch (Exception ex) when (
+                ex is CryptographicException ||
+                ex is IOException ||
+                ex is UnauthorizedAccessException ||
+                ex is ArgumentException)
+            {
+                var section = settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings";
+                throw new InvalidOperationException(
+                    $"Failed to configure RBAC credentials from {section}. Validate TenantId/ClientId and service principal secret/certificate settings.",
+                    ex);
+            }
+        }
 
         public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, ILogger logger, string? sourceDisplayName = null)
         {
@@ -84,44 +157,15 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development scenarios. Never use in production.");
                 clientOptions.ServerCertificateCustomValidationCallback = (cert, chain, errors) => true;
             }
-
+            
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)
             {
-                TokenCredential? tokenCredential = null;
-
-                if (!string.IsNullOrEmpty(settings.TenantId) && !string.IsNullOrEmpty(settings.ClientId))
-                {
-                    if (!string.IsNullOrEmpty(settings.ClientSecret))
-                    {
-                        var section = settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings";
-                        logger.LogWarning("ClientSecret is configured in settings. Ensure this configuration file is not committed to source control. Consider injecting via environment variables, command-line args (--{section}:ClientSecret=...), or User Secrets instead.", section);
-                        tokenCredential = new ClientSecretCredential(settings.TenantId, settings.ClientId, settings.ClientSecret);
-                    }
-                    else if (!string.IsNullOrEmpty(settings.ClientCertificatePath))
-                    {
-                        if (!string.IsNullOrEmpty(settings.ClientCertificatePassword))
-                        {
-                            // TODO: switch to X509CertificateLoader when targeting .NET 9+
-                            var certificate = new X509Certificate2(
-                                settings.ClientCertificatePath,
-                                settings.ClientCertificatePassword,
-                                X509KeyStorageFlags.EphemeralKeySet);
-
-                            tokenCredential = new ClientCertificateCredential(settings.TenantId, settings.ClientId, certificate);
-                        }
-                        else
-                        {
-                            tokenCredential = new ClientCertificateCredential(settings.TenantId, settings.ClientId, settings.ClientCertificatePath);
-                        }
-                    }
-                }
-
-                tokenCredential ??= new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
+                var tokenCredential = CreateRbacTokenCredential(settings, logger);
 
                 cosmosClient = settings.InitClientEncryption
                     ? new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions)
-                          .WithEncryption(new KeyResolver(tokenCredential), KeyEncryptionKeyResolverName.AzureKeyVault)
+                        .WithEncryption(new KeyResolver(tokenCredential), KeyEncryptionKeyResolverName.AzureKeyVault)
                     : new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions);
             }
             else
