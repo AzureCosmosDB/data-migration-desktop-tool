@@ -42,6 +42,24 @@ public class CosmosSourceSettingsTests
     }
 
     [TestMethod]
+    public void GetValidationErrors_WithRbacAuthAndConnectionString_ReturnsError()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            UseRbacAuth = true,
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=key",
+            AccountEndpoint = "https://example.documents.azure.com:443/",
+            Database = "db",
+            Container = "container",
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
+
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.UseRbacAuth)) && v.Contains(nameof(CosmosSourceSettings.ConnectionString))));
+    }
+
+    [TestMethod]
     public void GetValidationErrors_WithRbacAuthAndIncompleteServicePrincipalInfo_ReturnsErrors()
     {
         var settings = new CosmosSourceSettings
@@ -136,6 +154,27 @@ public class CosmosSourceSettingsTests
         LogErrors(validationErrors);
 
         Assert.AreEqual(1, validationErrors.Count(v => v.Contains(nameof(CosmosSourceSettings.TenantId)) && v.Contains(nameof(CosmosSourceSettings.ClientId))));
+    }
+
+    [TestMethod]
+    public void GetValidationErrors_WithRbacAuthAndWhitespaceTenantOrClient_ReturnsErrors()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            UseRbacAuth = true,
+            Database = "db",
+            Container = "container",
+            AccountEndpoint = "https://example.documents.azure.com:443/",
+            TenantId = "   ",
+            ClientId = "client-id",
+            ClientSecret = "client-secret",
+        };
+
+        var validationErrors = settings.GetValidationErrors();
+        LogErrors(validationErrors);
+
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains("Both TenantId and ClientId must be specified when UseRbacAuth is used with service principal")));
+        Assert.AreEqual(1, validationErrors.Count(v => v.Contains("ClientSecret, ClientCertificatePath, or ClientCertificatePassword cannot be set without TenantId/ClientId.")));
     }
 
     [TestMethod]

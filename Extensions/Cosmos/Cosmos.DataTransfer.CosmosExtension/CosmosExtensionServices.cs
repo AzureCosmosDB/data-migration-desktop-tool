@@ -10,6 +10,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 
 namespace Cosmos.DataTransfer.CosmosExtension
@@ -82,16 +83,21 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     }
 
                     case TokenCredentialSelection.ClientCertificateCredential:
-                        // NOTE: We intentionally use Azure.Identity's certificate-path overload so
-                        // credential/material lifetime is owned by the SDK and not manually tracked in this process.
                         if (!File.Exists(settings.ClientCertificatePath))
                         {
                             throw new FileNotFoundException(
                                 "Client certificate file was not found.",
                                 settings.ClientCertificatePath);
                         }
+                        var certificatePassword = string.IsNullOrWhiteSpace(settings.ClientCertificatePassword)
+                            ? null
+                            : settings.ClientCertificatePassword;
+                        var certificate = new X509Certificate2(
+                            settings.ClientCertificatePath!,
+                            certificatePassword,
+                            X509KeyStorageFlags.EphemeralKeySet);
 
-                        return new ClientCertificateCredential(settings.TenantId!, settings.ClientId!, settings.ClientCertificatePath!);
+                        return new ClientCertificateCredential(settings.TenantId!, settings.ClientId!, certificate);
 
                     default:
                         return new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
