@@ -19,6 +19,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? AccountEndpoint { get; set; }
         public bool EnableInteractiveCredentials { get; set; }
         public bool InitClientEncryption { get; set; } = false;
+        public string? TenantId { get; set; }
+        public string? ClientId { get; set; }
+        public string? ClientSecret { get; set; }
+        public string? ClientCertificatePath { get; set; }
+        public string? ClientCertificatePassword { get; set; }
         
         /// <summary>
         /// <see cref="CosmosClientOptions.LimitToEndpoint"/>
@@ -49,17 +54,87 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))
+            if (!UseRbacAuth && string.IsNullOrWhiteSpace(ConnectionString))
             {
                 yield return new ValidationResult("ConnectionString must be specified unless UseRbacAuth is true", new[] { nameof(ConnectionString) });
             }
-            if (UseRbacAuth && string.IsNullOrEmpty(AccountEndpoint))
+            if (UseRbacAuth && string.IsNullOrWhiteSpace(AccountEndpoint))
             {
                 yield return new ValidationResult("AccountEndpoint must be specified when UseRbacAuth is true", new[] { nameof(AccountEndpoint) });
+            }
+            if (UseRbacAuth && !string.IsNullOrWhiteSpace(ConnectionString))
+            {
+                yield return new ValidationResult(
+                    "ConnectionString must not be set when UseRbacAuth is true.",
+                    new[] { nameof(UseRbacAuth), nameof(ConnectionString) });
             }
             if (!UseRbacAuth && InitClientEncryption)
             {
                 yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth is true", new[] { nameof(InitClientEncryption) });
+            }
+
+            var tenantIdSet = !string.IsNullOrWhiteSpace(TenantId);
+            var clientIdSet = !string.IsNullOrWhiteSpace(ClientId);
+            var servicePrincipalSet = tenantIdSet && clientIdSet;
+            var clientSecretSet = !string.IsNullOrWhiteSpace(ClientSecret);
+            var clientCertificateSet = !string.IsNullOrWhiteSpace(ClientCertificatePath);
+            var clientCertificatePasswordSet = !string.IsNullOrWhiteSpace(ClientCertificatePassword);
+
+            if (UseRbacAuth && tenantIdSet != clientIdSet)
+            {
+                yield return new ValidationResult(
+                    "Both TenantId and ClientId must be specified when UseRbacAuth is used with service principal",
+                    new[] { nameof(TenantId), nameof(ClientId) });
+            }
+
+            if (UseRbacAuth && servicePrincipalSet && !clientSecretSet && !clientCertificateSet)
+            {
+                yield return new ValidationResult(
+                    "Either ClientSecret or ClientCertificatePath must be specified when UseRbacAuth is used with service principal",
+                    new[] { nameof(ClientSecret), nameof(ClientCertificatePath) });
+            }
+
+            if (UseRbacAuth && servicePrincipalSet && clientSecretSet && clientCertificateSet)
+            {
+                yield return new ValidationResult(
+                    "Specify either ClientSecret or ClientCertificatePath, not both.",
+                    new[] { nameof(ClientSecret), nameof(ClientCertificatePath) });
+            }
+
+            if (UseRbacAuth && servicePrincipalSet && !clientCertificateSet && clientCertificatePasswordSet)
+            {
+                yield return new ValidationResult(
+                    "ClientCertificatePassword can only be set when ClientCertificatePath is set.",
+                    new[] { nameof(ClientCertificatePassword), nameof(ClientCertificatePath) });
+            }
+
+            if (UseRbacAuth && !servicePrincipalSet && (clientSecretSet || clientCertificateSet || clientCertificatePasswordSet))
+            {
+                yield return new ValidationResult(
+                    "ClientSecret, ClientCertificatePath, or ClientCertificatePassword cannot be set without TenantId/ClientId.",
+                    new[]
+                    {
+                        nameof(TenantId),
+                        nameof(ClientId),
+                        nameof(ClientSecret),
+                        nameof(ClientCertificatePath),
+                        nameof(ClientCertificatePassword)
+                    });
+            }
+
+            if (!UseRbacAuth && (tenantIdSet || clientIdSet || clientSecretSet || clientCertificateSet || clientCertificatePasswordSet))
+            {
+                yield return new ValidationResult(
+                    "Service principal settings require UseRbacAuth to be set to true.",
+                    new[]
+                    {
+                        nameof(UseRbacAuth),
+                        nameof(TenantId),
+                        nameof(ClientId),
+                        nameof(ClientSecret),
+                        nameof(ClientCertificatePath),
+                        nameof(ClientCertificatePassword)
+                    });
             }
         }
     }
