@@ -49,14 +49,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
         // NOTE: Kept as a separate helper so auth-path behavior can be tested directly.
         internal static TokenCredentialSelection GetTokenCredentialSelection(CosmosSettingsBase settings)
         {
-            if (!string.IsNullOrEmpty(settings.TenantId) && !string.IsNullOrEmpty(settings.ClientId))
+            if (!string.IsNullOrWhiteSpace(settings.TenantId) && !string.IsNullOrWhiteSpace(settings.ClientId))
             {
-                if (!string.IsNullOrEmpty(settings.ClientSecret))
+                if (!string.IsNullOrWhiteSpace(settings.ClientSecret))
                 {
                     return TokenCredentialSelection.ClientSecretCredential;
                 }
 
-                if (!string.IsNullOrEmpty(settings.ClientCertificatePath))
+                if (!string.IsNullOrWhiteSpace(settings.ClientCertificatePath))
                 {
                     return TokenCredentialSelection.ClientCertificateCredential;
                 }
@@ -132,7 +132,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             {
                 ConnectionMode = settings.ConnectionMode,
                 ApplicationName = userAgentString,
-                AllowBulkExecution = true,
+                AllowBulkExecution = settings.AllowBulkExecution,
                 EnableContentResponseOnWrite = false,
                 Serializer = cosmosSerializer,
                 LimitToEndpoint = settings.LimitToEndpoint,

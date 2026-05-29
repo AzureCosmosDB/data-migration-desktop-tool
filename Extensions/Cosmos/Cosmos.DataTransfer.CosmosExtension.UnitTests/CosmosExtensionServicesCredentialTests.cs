@@ -45,6 +45,25 @@ public class CosmosExtensionServicesCredentialTests
     }
 
     [TestMethod]
+    public void GetTokenCredentialSelection_WithWhitespaceServicePrincipalInfo_ReturnsDefaultCredential()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            UseRbacAuth = true,
+            AccountEndpoint = "https://localhost:8081/",
+            Database = "db",
+            Container = "container",
+            TenantId = " ",
+            ClientId = " ",
+            ClientSecret = "client-secret",
+        };
+
+        var selection = CosmosExtensionServices.GetTokenCredentialSelection(settings);
+
+        Assert.AreEqual(CosmosExtensionServices.TokenCredentialSelection.DefaultAzureCredential, selection);
+    }
+
+    [TestMethod]
     public void GetTokenCredentialSelection_WithTenantClientAndCertificatePath_ReturnsClientCertificateCredential()
     {
         var settings = new CosmosSourceSettings
