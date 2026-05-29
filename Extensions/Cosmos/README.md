@@ -38,7 +38,7 @@ These properties will be preserved exactly as they appear in the source when mig
 - `ClientId`: Service principal app/client ID for explicit service principal auth (RBAC mode).
 - `ClientSecret`: Service principal client secret for explicit service principal auth (RBAC mode).
 - `ClientCertificatePath`: Path to a PFX/PKCS#12 service principal certificate file that contains a private key for explicit service principal auth (RBAC mode).
-- `ClientCertificatePassword`: Optional password for the service principal certificate.
+- `ClientCertificatePassword`: Optional password for the service principal certificate (RBAC mode).
 - `Database`: Cosmos DB database name.
 - `Container`: Cosmos DB container name.
 - `WebProxy`: Proxy server URL for Cosmos DB connections.
