@@ -68,6 +68,8 @@ namespace Cosmos.DataTransfer.CosmosExtension
         // NOTE: Added explicit exception wrapping to surface actionable auth configuration failures.
         internal static TokenCredential CreateRbacTokenCredential(CosmosSettingsBase settings, ILogger logger)
         {
+            var section = settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings";
+
             try
             {
                 var selection = GetTokenCredentialSelection(settings);
@@ -75,7 +77,6 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 {
                     case TokenCredentialSelection.ClientSecretCredential:
                     {
-                        var section = settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings";
                         logger.LogWarning(
                             "ClientSecret is configured in settings. Ensure this configuration file is not committed to source control. Consider injecting via environment variables, command-line args (--{Section}:ClientSecret=...), or User Secrets instead.",
                             section);
@@ -92,10 +93,23 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         var certificatePassword = string.IsNullOrWhiteSpace(settings.ClientCertificatePassword)
                             ? null
                             : settings.ClientCertificatePassword;
+
+                        if (certificatePassword is not null)
+                        {
+                            logger.LogWarning(
+                                "ClientCertificatePassword is configured in settings. Ensure this configuration file is not committed to source control. Consider injecting via environment variables, command-line args (--{Section}:ClientCertificatePassword=...), or User Secrets instead.",
+                                section);
+                        }
+
                         var certificate = new X509Certificate2(
                             settings.ClientCertificatePath!,
                             certificatePassword,
                             X509KeyStorageFlags.EphemeralKeySet);
+
+                        if (!certificate.HasPrivateKey)
+                        {
+                            throw new CryptographicException("Client certificate must contain a private key.");
+                        }
 
                         return new ClientCertificateCredential(settings.TenantId!, settings.ClientId!, certificate);
 
@@ -109,17 +123,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 ex is UnauthorizedAccessException ||
                 ex is ArgumentException)
             {
-                var section = settings is CosmosSinkSettings ? "SinkSettings" : "SourceSettings";
                 throw new InvalidOperationException(
                     $"Failed to configure RBAC credentials from {section}. Validate TenantId/ClientId and service principal secret/certificate settings.",
                     ex);
             }
         }
 
-        public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, ILogger logger, string? sourceDisplayName = null)
+        internal static CosmosClientOptions CreateClientOptions(CosmosSettingsBase settings, string userAgentString, ILogger logger)
         {
-            string userAgentString = CreateUserAgentString(displayName, sourceDisplayName);
-
             var cosmosSerializer = new RawJsonCosmosSerializer();
             if (settings is CosmosSinkSettings sinkSettings)
             {
@@ -163,6 +174,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 logger.LogWarning("SSL certificate validation is DISABLED. This should ONLY be used for development scenarios. Never use in production.");
                 clientOptions.ServerCertificateCustomValidationCallback = (cert, chain, errors) => true;
             }
+
+            return clientOptions;
+        }
+
+        public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, ILogger logger, string? sourceDisplayName = null)
+        {
+            string userAgentString = CreateUserAgentString(displayName, sourceDisplayName);
+            var clientOptions = CreateClientOptions(settings, userAgentString, logger);
             
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)

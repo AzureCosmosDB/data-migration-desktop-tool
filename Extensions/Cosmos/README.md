@@ -37,7 +37,7 @@ These properties will be preserved exactly as they appear in the source when mig
 - `TenantId`: Microsoft Entra tenant ID for explicit service principal auth (RBAC mode).
 - `ClientId`: Service principal app/client ID for explicit service principal auth (RBAC mode).
 - `ClientSecret`: Service principal client secret for explicit service principal auth (RBAC mode).
-- `ClientCertificatePath`: Path to a service principal certificate file for explicit service principal auth (RBAC mode).
+- `ClientCertificatePath`: Path to a PFX/PKCS#12 service principal certificate file that contains a private key for explicit service principal auth (RBAC mode).
 - `ClientCertificatePassword`: Optional password for the service principal certificate.
 - `Database`: Cosmos DB database name.
 - `Container`: Cosmos DB container name.
@@ -53,7 +53,7 @@ Source and sink require settings used to locate and access the Cosmos DB account
 - Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available. See [migrate-passwordless](https://learn.microsoft.com/azure/cosmos-db/nosql/migrate-passwordless?tabs=sign-in-azure-cli%2Cdotnet%2Cazure-portal-create%2Cazure-portal-associate%2Capp-service-identity) for how to configure Cosmos DB for passwordless access.
 - Using RBAC with explicit service principal credentials by setting `UseRbacAuth` to true and specifying `AccountEndpoint`, `TenantId`, `ClientId`, and either `ClientSecret` or `ClientCertificatePath`.
 
-> **Security warning**: `ClientSecret` is plaintext in settings files. Do not commit secrets to source control. Prefer runtime injection through .NET configuration providers such as environment variables, command-line args (for example `--SourceSettings:ClientSecret=...` / `--SinkSettings:ClientSecret=...`), or User Secrets.
+> **Security warning**: `ClientSecret` and `ClientCertificatePassword` are plaintext in settings files. Do not commit secrets to source control. Prefer runtime injection through .NET configuration providers such as environment variables, command-line args (for example `--SourceSettings:ClientSecret=...`, `--SinkSettings:ClientSecret=...`, `--SourceSettings:ClientCertificatePassword=...`, or `--SinkSettings:ClientCertificatePassword=...`), or User Secrets.
 > **Implementation note**: The RBAC service principal path now uses explicit credential-selection logic with additional validation and error wrapping. This was added to make auth-path behavior deterministic and testable, avoid unmanaged certificate object lifetime handling in the tool process, and surface actionable messages when certificate/credential configuration is invalid.
 
 ### Bulk Execution
