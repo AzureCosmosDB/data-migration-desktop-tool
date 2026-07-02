@@ -1,5 +1,8 @@
 # Example `migrationsettings.json` Files
 
+> For Microsoft Entra ID / Azure RBAC authentication details, supported credential flows, and role
+> requirements, see the [Authentication guide](docs/authentication.md).
+
 ## JSON to Cosmos-NoSQL
 
 ```json
@@ -18,6 +21,34 @@
         "WriteMode": "Insert",
         "CreatedContainerMaxThroughput": 5000,
         "IsServerlessAccount": false
+    }
+}
+```
+
+## Passwordless Cosmos-NoSQL to Cosmos-NoSQL (Microsoft Entra ID / RBAC)
+
+Reads from one Cosmos DB account and writes to another using Azure RBAC — no keys or secrets. The
+identity running the tool (your `az login` user, a managed identity, or a service principal) needs
+the `Cosmos DB Built-in Data Reader` role on the source account and the
+`Cosmos DB Built-in Data Contributor` role on the sink account. See the
+[Authentication guide](docs/authentication.md) for role assignment and other credential flows.
+
+```json
+{
+    "Source": "Cosmos-nosql",
+    "Sink": "Cosmos-nosql",
+    "SourceSettings": {
+        "UseRbacAuth": true,
+        "AccountEndpoint": "https://source-account.documents.azure.com:443/",
+        "Database": "myDb",
+        "Container": "sourceContainer"
+    },
+    "SinkSettings": {
+        "UseRbacAuth": true,
+        "AccountEndpoint": "https://sink-account.documents.azure.com:443/",
+        "Database": "myDb",
+        "Container": "sinkContainer",
+        "PartitionKeyPath": "/id"
     }
 }
 ```

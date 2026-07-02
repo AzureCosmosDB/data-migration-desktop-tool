@@ -19,6 +19,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? AccountEndpoint { get; set; }
         public bool EnableInteractiveCredentials { get; set; }
         public bool InitClientEncryption { get; set; } = false;
+        public string? ManagedIdentityClientId { get; set; }
         public string? TenantId { get; set; }
         public string? ClientId { get; set; }
         public string? ClientSecret { get; set; }
@@ -135,6 +136,22 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         nameof(ClientCertificatePath),
                         nameof(ClientCertificatePassword)
                     });
+            }
+
+            var managedIdentityClientIdSet = !string.IsNullOrWhiteSpace(ManagedIdentityClientId);
+
+            if (!UseRbacAuth && managedIdentityClientIdSet)
+            {
+                yield return new ValidationResult(
+                    "ManagedIdentityClientId requires UseRbacAuth to be set to true.",
+                    new[] { nameof(UseRbacAuth), nameof(ManagedIdentityClientId) });
+            }
+
+            if (UseRbacAuth && managedIdentityClientIdSet && servicePrincipalSet)
+            {
+                yield return new ValidationResult(
+                    "ManagedIdentityClientId cannot be combined with service principal settings (TenantId/ClientId).",
+                    new[] { nameof(ManagedIdentityClientId), nameof(TenantId), nameof(ClientId) });
             }
         }
     }

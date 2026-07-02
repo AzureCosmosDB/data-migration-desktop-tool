@@ -1,6 +1,7 @@
 using Azure.Identity;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -218,6 +219,94 @@ public class CosmosExtensionServicesCredentialTests
         clientOptions = CosmosExtensionServices.CreateClientOptions(settings, "test-agent", loggerMock.Object);
 
         Assert.IsFalse(clientOptions.AllowBulkExecution);
+    }
+
+    [TestMethod]
+    public void GetTokenCredentialSelection_WithManagedIdentityClientId_ReturnsDefaultAzureCredential()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            UseRbacAuth = true,
+            AccountEndpoint = "https://localhost:8081/",
+            Database = "db",
+            Container = "container",
+            ManagedIdentityClientId = "11111111-1111-1111-1111-111111111111",
+        };
+
+        var selection = CosmosExtensionServices.GetTokenCredentialSelection(settings);
+
+        Assert.AreEqual(CosmosExtensionServices.TokenCredentialSelection.DefaultAzureCredential, selection);
+    }
+
+    [TestMethod]
+    public void CreateRbacTokenCredential_WithManagedIdentityClientId_ReturnsDefaultAzureCredential()
+    {
+        var loggerMock = new Mock<ILogger>();
+        var settings = new CosmosSourceSettings
+        {
+            UseRbacAuth = true,
+            AccountEndpoint = "https://localhost:8081/",
+            Database = "db",
+            Container = "container",
+            ManagedIdentityClientId = "11111111-1111-1111-1111-111111111111",
+        };
+
+        var credential = CosmosExtensionServices.CreateRbacTokenCredential(settings, loggerMock.Object);
+
+        Assert.IsInstanceOfType<DefaultAzureCredential>(credential);
+    }
+
+    [TestMethod]
+    public void Validate_WithManagedIdentityClientIdAndNoRbac_ReturnsError()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=key",
+            Database = "db",
+            Container = "container",
+            ManagedIdentityClientId = "11111111-1111-1111-1111-111111111111",
+        };
+
+        var results = settings.Validate(new ValidationContext(settings)).ToList();
+
+        Assert.IsTrue(results.Any(r => r.ErrorMessage!.Contains("ManagedIdentityClientId requires UseRbacAuth")));
+    }
+
+    [TestMethod]
+    public void Validate_WithManagedIdentityClientIdAndServicePrincipal_ReturnsError()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            UseRbacAuth = true,
+            AccountEndpoint = "https://localhost:8081/",
+            Database = "db",
+            Container = "container",
+            ManagedIdentityClientId = "11111111-1111-1111-1111-111111111111",
+            TenantId = "tenant-id",
+            ClientId = "client-id",
+            ClientSecret = "client-secret",
+        };
+
+        var results = settings.Validate(new ValidationContext(settings)).ToList();
+
+        Assert.IsTrue(results.Any(r => r.ErrorMessage!.Contains("ManagedIdentityClientId cannot be combined with service principal")));
+    }
+
+    [TestMethod]
+    public void Validate_WithManagedIdentityClientIdAndRbac_ReturnsNoManagedIdentityError()
+    {
+        var settings = new CosmosSourceSettings
+        {
+            UseRbacAuth = true,
+            AccountEndpoint = "https://localhost:8081/",
+            Database = "db",
+            Container = "container",
+            ManagedIdentityClientId = "11111111-1111-1111-1111-111111111111",
+        };
+
+        var results = settings.Validate(new ValidationContext(settings)).ToList();
+
+        Assert.IsFalse(results.Any(r => r.ErrorMessage!.Contains("ManagedIdentityClientId")));
     }
 
     private static string CreatePasswordProtectedPfx(string password)

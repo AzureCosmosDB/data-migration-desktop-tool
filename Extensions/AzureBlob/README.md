@@ -11,6 +11,10 @@ Source and sink require settings used to locate and access the Azure Blob Storag
 - Using a `ConnectionString` that includes an AccountEndpoint and AccountKey
 - Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available.
 
+When `UseRbacAuth` is `true`, the extension authenticates with `DefaultAzureCredential`, which supports Azure CLI sign-in (`az login`), managed identities, and service principal / user-assigned managed identity selection via the standard `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET` environment variables. The identity needs the `Storage Blob Data Reader` role (source) or `Storage Blob Data Contributor` role (sink) on the storage account.
+
+> For supported credential flows, Azure RBAC role requirements, and CI/CD guidance, see the central [Authentication guide](../../docs/authentication.md).
+
 ### Source
 
 An optional `ReadBufferSizeInKB` parameter can be used to control stream buffering.

@@ -114,6 +114,15 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         return new ClientCertificateCredential(settings.TenantId!, settings.ClientId!, certificate);
 
                     default:
+                        if (!string.IsNullOrWhiteSpace(settings.ManagedIdentityClientId))
+                        {
+                            var options = new DefaultAzureCredentialOptions
+                            {
+                                ManagedIdentityClientId = settings.ManagedIdentityClientId,
+                            };
+                            return new DefaultAzureCredential(options);
+                        }
+
                         return new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
                 }
             }

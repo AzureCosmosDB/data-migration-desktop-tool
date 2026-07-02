@@ -7,6 +7,7 @@ To access the archived version of the tool, navigate to the [**Archive branch**]
 - [Azure Cosmos DB Desktop Data Migration Tool](#azure-cosmos-db-desktop-data-migration-tool)
   - [Overview](#overview)
   - [Extension documentation](#extension-documentation)
+  - [Authentication](#authentication)
   - [Architecture](#architecture)
   - [Project Structure](#project-structure)
   - [Getting Started](#getting-started)
@@ -117,6 +118,10 @@ Multiple extensions are provided in this repository. Find the documentation for 
 1. [AWS S3](Extensions/AwsS3/README.md)
 
 6. [Azure Cognitive Search](Extensions/CognitiveSearch/README.md)
+
+## Authentication
+
+The Azure extensions support both key-based authentication and passwordless authentication using **Microsoft Entra ID** (Azure AD) with **Azure RBAC**. For supported credential flows (Azure CLI, managed identity, service principal), required Azure RBAC roles, end-to-end passwordless examples, and CI/CD guidance, see the [Authentication guide](docs/authentication.md).
 
 ## Architecture
 

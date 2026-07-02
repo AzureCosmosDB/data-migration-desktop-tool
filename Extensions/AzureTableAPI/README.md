@@ -132,6 +132,10 @@ The AzureTableAPI extension supports two authentication methods for connecting t
 
 > **Note**: To use RBAC authentication, your Azure account must have the appropriate permissions (such as Storage Table Data Contributor) on the storage account. For more information, see [Authorize access to tables using Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/storage/tables/authorize-access-azure-active-directory).
 
+When `UseRbacAuth` is `true`, the extension authenticates with `DefaultAzureCredential`, which supports Azure CLI sign-in (`az login`), managed identities, and service principal / user-assigned managed identity selection via the standard `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET` environment variables. The identity needs the `Storage Table Data Reader` role (source) or `Storage Table Data Contributor` role (sink) on the storage account.
+
+> For supported credential flows, Azure RBAC role requirements, and CI/CD guidance, see the central [Authentication guide](../../docs/authentication.md).
+
 ### Example RBAC Settings
 
 **Source Example (RBAC)**
