@@ -56,7 +56,7 @@ The credential is selected based on the settings you provide:
 
 > **Legend:** ✅ supported via a tool setting · ⚠️ supported through the standard Azure SDK
 > environment variables (`DefaultAzureCredential`), not a dedicated tool setting · ⛔ not supported.
-
+>
 > **Per-side identity (design intent):** Because the tool moves data between a separate source and
 > sink, each side can require a *different* identity. Per-extension credential **settings** are
 > evaluated independently for `SourceSettings` and `SinkSettings`, so they can express two distinct

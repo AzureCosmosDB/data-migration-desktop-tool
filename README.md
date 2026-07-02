@@ -117,7 +117,7 @@ Multiple extensions are provided in this repository. Find the documentation for 
 
 1. [AWS S3](Extensions/AwsS3/README.md)
 
-6. [Azure Cognitive Search](Extensions/CognitiveSearch/README.md)
+1. [Azure Cognitive Search](Extensions/CognitiveSearch/README.md)
 
 ## Authentication
 
