@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/dotnet/sdk:8.0
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
     - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@8e6bd2905eef86446227f003dda1deb3916c4aaf # v2.2.1
       with:
         dotnet-version: 8.0.x
     - name: Restore dependencies
@@ -25,12 +25,12 @@ jobs:
       run: dotnet test --no-build --verbosity normal
 
     - name: Debug Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: debug-build
         path: /home/runner/work/data-migration-desktop-tool/data-migration-desktop-tool/Core/Cosmos.DataTransfer.Core/bin/Debug/net8.0 #path/to/artifact/ # or path/to/artifact  
     - name: Code Coverage Report
-      uses: irongut/CodeCoverageSummary@v1.3.0
+      uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
       with:
         filename: ./**/coverage.cobertura.xml
         badge: true
