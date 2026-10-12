@@ -2,7 +2,7 @@
 
 ## Multiple Cosmos-NoSQL Sinks (Different Accounts)
 
-The tool supports writing to multiple different Cosmos DB accounts simultaneously using the `Operations` feature. This allows you to replicate data from one source to multiple destination accounts in a single execution.
+The tool supports writing to multiple different Cosmos DB accounts in a single execution using the `Operations` feature. Operations run sequentially in the order listed, reading the source again for each destination; they are not concurrent writes or a single-read broadcast.
 
 ```json
 {
@@ -34,7 +34,7 @@ The tool supports writing to multiple different Cosmos DB accounts simultaneousl
 }
 ```
 
-> **Note**: The tool creates separate CosmosClient instances for each operation's sink, allowing you to write to multiple different Cosmos DB accounts simultaneously. Each sink connection can have its own configuration including connection mode, proxy settings, and authentication method (connection string or RBAC).
+> **Note**: Each operation inherits the top-level source and sink settings, then applies its own overrides. The tool creates a separate CosmosClient for each operation's sink. Keep account-specific connection and authentication settings inside each operation when targeting different accounts or mixing connection-string and RBAC authentication. Use a stable source if each destination must receive identical data; the operations do not share a snapshot or transaction.
 
 ## Cosmos-NoSQL to Cosmos-NoSQL (Different Accounts)
 
@@ -91,7 +91,7 @@ The tool supports simultaneous connections to two different Cosmos DB accounts, 
 }
 ```
 
-> **Note**: The tool creates separate CosmosClient instances for the source and sink, allowing you to connect to different Cosmos DB accounts simultaneously. Each connection can have its own configuration including connection mode, proxy settings, and authentication method (connection string or RBAC).
+> **Note**: The tool creates separate CosmosClient instances for the source and sink, allowing you to connect to different Cosmos DB accounts simultaneously. Each connection can have its own configuration including connection mode, proxy settings, and authentication method (connection string or RBAC). For RBAC, provision the database and container before running the tool and grant the identity the appropriate Cosmos DB data-plane permissions on each account.
 
 ## JSON to Cosmos-NoSQL
 

@@ -6,9 +6,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 
 /// <summary>
-/// Tests to verify that the tool can handle multiple Cosmos DB sink accounts simultaneously.
-/// This confirms that separate CosmosClient instances are created for multiple sink operations
-/// to different Cosmos DB accounts.
+/// Verifies client and configuration isolation without connecting to live accounts.
+/// Operation ordering and source rereads are covered by RunCommandTests.
 /// </summary>
 [TestClass]
 public class CosmosMultiAccountSupportTests
@@ -17,7 +16,6 @@ public class CosmosMultiAccountSupportTests
     public void CreateClient_WithTwoDifferentSinkAccounts_CreatesSeparateInstances()
     {
         // Arrange - Create two different sink configurations for different Cosmos DB accounts
-        // This simulates writing to two different accounts simultaneously (e.g., in multiple operations)
         // Using valid Base64-encoded keys (dummy keys for testing)
         var sink1Settings = new CosmosSinkSettings
         {
@@ -38,8 +36,8 @@ public class CosmosMultiAccountSupportTests
         };
 
         // Act - Create clients for two different sink accounts
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Verify that two distinct client instances are created for different sink accounts
         Assert.IsNotNull(sink1Client, "First sink client should be created");
@@ -49,10 +47,8 @@ public class CosmosMultiAccountSupportTests
         // Verify client configurations are independent
         Assert.AreEqual(ConnectionMode.Gateway, sink1Client.ClientOptions.ConnectionMode);
         Assert.AreEqual(ConnectionMode.Direct, sink2Client.ClientOptions.ConnectionMode);
-        
-        // Dispose clients
-        sink1Client.Dispose();
-        sink2Client.Dispose();
+        Assert.AreEqual(new Uri("https://sink1-account.documents.azure.com:443/"), sink1Client.Endpoint);
+        Assert.AreEqual(new Uri("https://sink2-account.documents.azure.com:443/"), sink2Client.Endpoint);
     }
 
     [TestMethod]
@@ -80,17 +76,15 @@ public class CosmosMultiAccountSupportTests
         };
 
         // Act - Create clients for two different sink accounts
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Verify separate instances for different sink accounts
         Assert.IsNotNull(sink1Client);
         Assert.IsNotNull(sink2Client);
         Assert.AreNotSame(sink1Client, sink2Client, "RBAC-based sinks to different accounts should use separate CosmosClient instances");
-        
-        // Dispose clients
-        sink1Client.Dispose();
-        sink2Client.Dispose();
+        Assert.AreEqual(new Uri(sink1Settings.AccountEndpoint), sink1Client.Endpoint);
+        Assert.AreEqual(new Uri(sink2Settings.AccountEndpoint), sink2Client.Endpoint);
     }
 
     [TestMethod]
@@ -117,17 +111,16 @@ public class CosmosMultiAccountSupportTests
         };
 
         // Act - Create clients for two sinks to the same account
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Even with the same account, separate client instances should be created for multiple sinks
         Assert.IsNotNull(sink1Client);
         Assert.IsNotNull(sink2Client);
         Assert.AreNotSame(sink1Client, sink2Client, "Multiple sinks should use separate client instances even for the same account");
-        
-        // Dispose clients
-        sink1Client.Dispose();
-        sink2Client.Dispose();
+        Assert.AreEqual(sink1Client.Endpoint, sink2Client.Endpoint);
+        Assert.IsFalse(sink1Client.ClientOptions.AllowBulkExecution);
+        Assert.IsFalse(sink2Client.ClientOptions.AllowBulkExecution);
     }
 
     [TestMethod]
@@ -155,8 +148,8 @@ public class CosmosMultiAccountSupportTests
         };
 
         // Act - Create clients for two sinks with different proxy settings
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Verify separate instances for different proxy configurations
         Assert.IsNotNull(sink1Client);
@@ -166,14 +159,17 @@ public class CosmosMultiAccountSupportTests
         // Verify proxy settings are properly configured
         Assert.IsNotNull(sink1Client.ClientOptions.WebProxy);
         Assert.IsNotNull(sink2Client.ClientOptions.WebProxy);
-        
-        // Dispose clients
-        sink1Client.Dispose();
-        sink2Client.Dispose();
+        Assert.AreNotSame(sink1Client.ClientOptions.WebProxy, sink2Client.ClientOptions.WebProxy);
+        Assert.AreEqual(new Uri(sink1Settings.WebProxy), sink1Client.ClientOptions.WebProxy.GetProxy(sink1Client.Endpoint));
+        Assert.AreEqual(new Uri(sink2Settings.WebProxy), sink2Client.ClientOptions.WebProxy.GetProxy(sink2Client.Endpoint));
+        Assert.IsNotNull(sink1Client.ClientOptions.WebProxy.Credentials);
+        Assert.IsNull(sink2Client.ClientOptions.WebProxy.Credentials);
     }
 
-    [TestMethod]
-    public void SinkExtensionInitialization_CreatesIndependentClientsForMultipleSinks()
+    [DataTestMethod]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    public void CreateClient_FromSeparateSinkConfigurations_PreservesIndependentOptions(bool sink1Bulk, bool sink2Bulk)
     {
         // Arrange - This test verifies that multiple sink operations can use independent clients
         var sink1Config = TestHelpers.CreateConfig(new Dictionary<string, string>()
@@ -181,7 +177,8 @@ public class CosmosMultiAccountSupportTests
             { "ConnectionString", "AccountEndpoint=https://sink1-account.documents.azure.com:443/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==;" },
             { "Database", "sink1Db" },
             { "Container", "sink1Container" },
-            { "PartitionKeyPath", "/id" }
+            { "PartitionKeyPath", "/id" },
+            { "AllowBulkExecution", sink1Bulk.ToString() }
         });
 
         var sink2Config = TestHelpers.CreateConfig(new Dictionary<string, string>()
@@ -189,16 +186,19 @@ public class CosmosMultiAccountSupportTests
             { "ConnectionString", "AccountEndpoint=https://sink2-account.documents.azure.com:443/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==;" },
             { "Database", "sink2Db" },
             { "Container", "sink2Container" },
-            { "PartitionKeyPath", "/id" }
+            { "PartitionKeyPath", "/id" },
+            { "AllowBulkExecution", sink2Bulk.ToString() }
         });
 
         // Get settings from configuration
         var sink1Settings = sink1Config.Get<CosmosSinkSettings>();
         var sink2Settings = sink2Config.Get<CosmosSinkSettings>();
+        Assert.IsNotNull(sink1Settings);
+        Assert.IsNotNull(sink2Settings);
 
         // Act - Simulate what multiple sink operations do internally
-        CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings!, "Cosmos-nosql", NullLogger.Instance, "JSON");
-        CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings!, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
 
         // Assert - Verify that multiple sink operations create independent clients
         Assert.IsNotNull(sink1Client, "First sink extension should create a client");
@@ -207,11 +207,36 @@ public class CosmosMultiAccountSupportTests
             "Multiple sink operations should create and use separate CosmosClient instances");
 
         // Verify that both clients can be used independently
-        Assert.IsTrue(sink1Client.ClientOptions.AllowBulkExecution, "First sink client should have bulk execution enabled");
-        Assert.IsTrue(sink2Client.ClientOptions.AllowBulkExecution, "Second sink client should have bulk execution enabled");
-        
-        // Dispose clients
-        sink1Client.Dispose();
-        sink2Client.Dispose();
+        Assert.AreEqual(sink1Bulk, sink1Client.ClientOptions.AllowBulkExecution);
+        Assert.AreEqual(sink2Bulk, sink2Client.ClientOptions.AllowBulkExecution);
+        Assert.AreEqual(new Uri("https://sink1-account.documents.azure.com:443/"), sink1Client.Endpoint);
+        Assert.AreEqual(new Uri("https://sink2-account.documents.azure.com:443/"), sink2Client.Endpoint);
+    }
+
+    [TestMethod]
+    public void CreateClient_WithConnectionStringAndRbac_CreatesIndependentClients()
+    {
+        var keySettings = new CosmosSinkSettings
+        {
+            ConnectionString = "AccountEndpoint=https://key-account.documents.azure.com:443/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==;",
+            Database = "keyDb",
+            Container = "keyContainer",
+            PartitionKeyPath = "/id"
+        };
+        var rbacSettings = new CosmosSinkSettings
+        {
+            UseRbacAuth = true,
+            AccountEndpoint = "https://rbac-account.documents.azure.com:443/",
+            Database = "rbacDb",
+            Container = "rbacContainer",
+            PartitionKeyPath = "/id"
+        };
+
+        using var keyClient = CosmosExtensionServices.CreateClient(keySettings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using var rbacClient = CosmosExtensionServices.CreateClient(rbacSettings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+
+        Assert.AreNotSame(keyClient, rbacClient);
+        Assert.AreEqual(new Uri("https://key-account.documents.azure.com:443/"), keyClient.Endpoint);
+        Assert.AreEqual(new Uri(rbacSettings.AccountEndpoint), rbacClient.Endpoint);
     }
 }
