@@ -205,6 +205,9 @@ namespace Cosmos.DataTransfer.Core
 
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // Validate that source and sink don't point to the same container when RecreateContainer is enabled
+                ValidateSourceAndSinkNotSameWithRecreate(source, sourceConfig, sink, sinkConfig);
+
                 try
                 {
                     var data = source.ReadAsync(sourceConfig, _loggerFactory.CreateLogger(source.GetType().Name), cancellationToken);
@@ -218,6 +221,94 @@ namespace Cosmos.DataTransfer.Core
                     _logger.LogError(ex, "Data transfer failed");
                     return false;
                 }
+            }
+
+            private void ValidateSourceAndSinkNotSameWithRecreate(
+                IDataSourceExtension source, 
+                IConfiguration sourceConfig, 
+                IDataSinkExtension sink, 
+                IConfiguration sinkConfig)
+            {
+                // Only validate if both source and sink are Cosmos-nosql extensions
+                const string cosmosExtensionName = "Cosmos-nosql";
+                if (!source.DisplayName.Equals(cosmosExtensionName, StringComparison.OrdinalIgnoreCase) ||
+                    !sink.DisplayName.Equals(cosmosExtensionName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                // Check if RecreateContainer is enabled
+                var recreateContainer = sinkConfig.GetValue<bool>("RecreateContainer");
+                if (!recreateContainer)
+                {
+                    return;
+                }
+
+                // Compare connection details
+                var sourceConnectionString = sourceConfig.GetValue<string>("ConnectionString");
+                var sinkConnectionString = sinkConfig.GetValue<string>("ConnectionString");
+                var sourceAccountEndpoint = sourceConfig.GetValue<string>("AccountEndpoint");
+                var sinkAccountEndpoint = sinkConfig.GetValue<string>("AccountEndpoint");
+                var sourceDatabase = sourceConfig.GetValue<string>("Database");
+                var sinkDatabase = sinkConfig.GetValue<string>("Database");
+                var sourceContainer = sourceConfig.GetValue<string>("Container");
+                var sinkContainer = sinkConfig.GetValue<string>("Container");
+
+                // Normalize account endpoints for comparison
+                string? sourceAccount = GetAccountFromConnectionOrEndpoint(sourceConnectionString, sourceAccountEndpoint);
+                string? sinkAccount = GetAccountFromConnectionOrEndpoint(sinkConnectionString, sinkAccountEndpoint);
+
+                // Check if they point to the same container
+                bool sameAccount = !string.IsNullOrEmpty(sourceAccount) && 
+                                   !string.IsNullOrEmpty(sinkAccount) &&
+                                   sourceAccount.Equals(sinkAccount, StringComparison.OrdinalIgnoreCase);
+                bool sameDatabase = !string.IsNullOrEmpty(sourceDatabase) && 
+                                    !string.IsNullOrEmpty(sinkDatabase) &&
+                                    sourceDatabase.Equals(sinkDatabase, StringComparison.OrdinalIgnoreCase);
+                bool sameContainer = !string.IsNullOrEmpty(sourceContainer) && 
+                                     !string.IsNullOrEmpty(sinkContainer) &&
+                                     sourceContainer.Equals(sinkContainer, StringComparison.OrdinalIgnoreCase);
+
+                if (sameAccount && sameDatabase && sameContainer)
+                {
+                    var errorMessage = $"Invalid configuration: Source and Sink are configured to use the same Cosmos DB container " +
+                                       $"(Database: '{sourceDatabase}', Container: '{sourceContainer}') with RecreateContainer enabled. " +
+                                       $"This would delete the source container before the data transfer begins, resulting in data loss. " +
+                                       $"Please use different containers for Source and Sink, or disable RecreateContainer in the Sink settings.";
+                    _logger.LogError(errorMessage);
+                    throw new InvalidOperationException(errorMessage);
+                }
+            }
+
+            private static string? GetAccountFromConnectionOrEndpoint(string? connectionString, string? accountEndpoint)
+            {
+                if (!string.IsNullOrEmpty(accountEndpoint))
+                {
+                    // Normalize the endpoint URL
+                    return NormalizeAccountEndpoint(accountEndpoint);
+                }
+
+                if (!string.IsNullOrEmpty(connectionString))
+                {
+                    // Extract AccountEndpoint from connection string
+                    var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var part in parts)
+                    {
+                        if (part.Trim().StartsWith("AccountEndpoint=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var endpoint = part.Substring(part.IndexOf('=') + 1).Trim();
+                            return NormalizeAccountEndpoint(endpoint);
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            private static string NormalizeAccountEndpoint(string endpoint)
+            {
+                // Remove trailing slashes and convert to lowercase for comparison
+                return endpoint.TrimEnd('/').ToLowerInvariant();
             }
 
             private static async Task<T> GetExtensionSelection<T>(string? selectionName, List<T> extensions, string inputPrompt, CancellationToken cancellationToken)

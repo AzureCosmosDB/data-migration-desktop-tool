@@ -336,5 +336,290 @@ namespace Cosmos.DataTransfer.Core.UnitTests
             // Should throw exception when sink extension is not found
             Assert.ThrowsException<InvalidOperationException>(() => handler.Invoke(new InvocationContext(parseResult)));
         }
+
+        [TestMethod]
+        public void Invoke_WithSameCosmosSourceAndSinkWithRecreateContainer_ThrowsException()
+        {
+            const string cosmosExtension = "Cosmos-nosql";
+            const string connectionString = "AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=test";
+            const string database = "testDb";
+            const string container = "testContainer";
+            
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Source", cosmosExtension },
+                    { "Sink", cosmosExtension },
+                    { "SourceSettings:ConnectionString", connectionString },
+                    { "SourceSettings:Database", database },
+                    { "SourceSettings:Container", container },
+                    { "SinkSettings:ConnectionString", connectionString },
+                    { "SinkSettings:Database", database },
+                    { "SinkSettings:Container", container },
+                    { "SinkSettings:RecreateContainer", "true" },
+                })
+                .Build();
+            
+            var loader = new Mock<IExtensionLoader>();
+            var sourceExtension = new Mock<IDataSourceExtension>();
+            sourceExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { sourceExtension.Object });
+
+            var sinkExtension = new Mock<IDataSinkExtension>();
+            sinkExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sinkExtension.Object });
+            
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            
+            // Should throw exception when same container is used for source and sink with RecreateContainer
+            var exception = Assert.ThrowsException<InvalidOperationException>(() => handler.Invoke(new InvocationContext(parseResult)));
+            Assert.IsTrue(exception.Message.Contains("same Cosmos DB container"));
+            Assert.IsTrue(exception.Message.Contains("RecreateContainer"));
+        }
+
+        [TestMethod]
+        public void Invoke_WithSameCosmosSourceAndSinkWithoutRecreateContainer_Succeeds()
+        {
+            const string cosmosExtension = "Cosmos-nosql";
+            const string connectionString = "AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=test";
+            const string database = "testDb";
+            const string container = "testContainer";
+            
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Source", cosmosExtension },
+                    { "Sink", cosmosExtension },
+                    { "SourceSettings:ConnectionString", connectionString },
+                    { "SourceSettings:Database", database },
+                    { "SourceSettings:Container", container },
+                    { "SinkSettings:ConnectionString", connectionString },
+                    { "SinkSettings:Database", database },
+                    { "SinkSettings:Container", container },
+                    { "SinkSettings:RecreateContainer", "false" },
+                })
+                .Build();
+            
+            var loader = new Mock<IExtensionLoader>();
+            var sourceExtension = new Mock<IDataSourceExtension>();
+            sourceExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { sourceExtension.Object });
+
+            var sinkExtension = new Mock<IDataSinkExtension>();
+            sinkExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sinkExtension.Object });
+            
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            var result = handler.Invoke(new InvocationContext(parseResult));
+            
+            // Should succeed when RecreateContainer is false even with same container
+            Assert.AreEqual(0, result);
+            sourceExtension.Verify(se => se.ReadAsync(It.IsAny<IConfiguration>(), It.IsAny<ILogger>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void Invoke_WithSameCosmosSourceAndSinkDifferentDatabase_Succeeds()
+        {
+            const string cosmosExtension = "Cosmos-nosql";
+            const string connectionString = "AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=test";
+            const string sourceDatabase = "sourceDb";
+            const string sinkDatabase = "sinkDb";
+            const string container = "testContainer";
+            
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Source", cosmosExtension },
+                    { "Sink", cosmosExtension },
+                    { "SourceSettings:ConnectionString", connectionString },
+                    { "SourceSettings:Database", sourceDatabase },
+                    { "SourceSettings:Container", container },
+                    { "SinkSettings:ConnectionString", connectionString },
+                    { "SinkSettings:Database", sinkDatabase },
+                    { "SinkSettings:Container", container },
+                    { "SinkSettings:RecreateContainer", "true" },
+                })
+                .Build();
+            
+            var loader = new Mock<IExtensionLoader>();
+            var sourceExtension = new Mock<IDataSourceExtension>();
+            sourceExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { sourceExtension.Object });
+
+            var sinkExtension = new Mock<IDataSinkExtension>();
+            sinkExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sinkExtension.Object });
+            
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            var result = handler.Invoke(new InvocationContext(parseResult));
+            
+            // Should succeed when database is different
+            Assert.AreEqual(0, result);
+            sourceExtension.Verify(se => se.ReadAsync(It.IsAny<IConfiguration>(), It.IsAny<ILogger>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void Invoke_WithSameCosmosSourceAndSinkDifferentContainer_Succeeds()
+        {
+            const string cosmosExtension = "Cosmos-nosql";
+            const string connectionString = "AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=test";
+            const string database = "testDb";
+            const string sourceContainer = "sourceContainer";
+            const string sinkContainer = "sinkContainer";
+            
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Source", cosmosExtension },
+                    { "Sink", cosmosExtension },
+                    { "SourceSettings:ConnectionString", connectionString },
+                    { "SourceSettings:Database", database },
+                    { "SourceSettings:Container", sourceContainer },
+                    { "SinkSettings:ConnectionString", connectionString },
+                    { "SinkSettings:Database", database },
+                    { "SinkSettings:Container", sinkContainer },
+                    { "SinkSettings:RecreateContainer", "true" },
+                })
+                .Build();
+            
+            var loader = new Mock<IExtensionLoader>();
+            var sourceExtension = new Mock<IDataSourceExtension>();
+            sourceExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { sourceExtension.Object });
+
+            var sinkExtension = new Mock<IDataSinkExtension>();
+            sinkExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sinkExtension.Object });
+            
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            var result = handler.Invoke(new InvocationContext(parseResult));
+            
+            // Should succeed when container is different
+            Assert.AreEqual(0, result);
+            sourceExtension.Verify(se => se.ReadAsync(It.IsAny<IConfiguration>(), It.IsAny<ILogger>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void Invoke_WithDifferentExtensionTypesAndRecreateContainer_Succeeds()
+        {
+            const string sourceExtension = "Json";
+            const string sinkExtension = "Cosmos-nosql";
+            
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Source", sourceExtension },
+                    { "Sink", sinkExtension },
+                    { "SourceSettings:FilePath", "test.json" },
+                    { "SinkSettings:ConnectionString", "AccountEndpoint=https://test.documents.azure.com:443/;AccountKey=test" },
+                    { "SinkSettings:Database", "testDb" },
+                    { "SinkSettings:Container", "testContainer" },
+                    { "SinkSettings:RecreateContainer", "true" },
+                })
+                .Build();
+            
+            var loader = new Mock<IExtensionLoader>();
+            var source = new Mock<IDataSourceExtension>();
+            source.SetupGet(ds => ds.DisplayName).Returns(sourceExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { source.Object });
+
+            var sink = new Mock<IDataSinkExtension>();
+            sink.SetupGet(ds => ds.DisplayName).Returns(sinkExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sink.Object });
+            
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            var result = handler.Invoke(new InvocationContext(parseResult));
+            
+            // Should succeed when source and sink are different extension types
+            Assert.AreEqual(0, result);
+            source.Verify(se => se.ReadAsync(It.IsAny<IConfiguration>(), It.IsAny<ILogger>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void Invoke_WithSameCosmosSourceAndSinkUsingAccountEndpoint_ThrowsException()
+        {
+            const string cosmosExtension = "Cosmos-nosql";
+            const string accountEndpoint = "https://test.documents.azure.com:443/";
+            const string database = "testDb";
+            const string container = "testContainer";
+            
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Source", cosmosExtension },
+                    { "Sink", cosmosExtension },
+                    { "SourceSettings:AccountEndpoint", accountEndpoint },
+                    { "SourceSettings:Database", database },
+                    { "SourceSettings:Container", container },
+                    { "SinkSettings:AccountEndpoint", accountEndpoint },
+                    { "SinkSettings:Database", database },
+                    { "SinkSettings:Container", container },
+                    { "SinkSettings:RecreateContainer", "true" },
+                })
+                .Build();
+            
+            var loader = new Mock<IExtensionLoader>();
+            var sourceExtension = new Mock<IDataSourceExtension>();
+            sourceExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { sourceExtension.Object });
+
+            var sinkExtension = new Mock<IDataSinkExtension>();
+            sinkExtension.SetupGet(ds => ds.DisplayName).Returns(cosmosExtension);
+            loader
+                .Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sinkExtension.Object });
+            
+            var handler = new RunCommand.CommandHandler(loader.Object,
+                configuration,
+                NullLoggerFactory.Instance);
+
+            var parseResult = new RootCommand().Parse(Array.Empty<string>());
+            
+            // Should throw exception when same container is used with AccountEndpoint
+            var exception = Assert.ThrowsException<InvalidOperationException>(() => handler.Invoke(new InvocationContext(parseResult)));
+            Assert.IsTrue(exception.Message.Contains("same Cosmos DB container"));
+        }
     }
 }

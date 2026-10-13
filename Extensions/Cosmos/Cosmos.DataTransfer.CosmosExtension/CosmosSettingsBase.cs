@@ -19,6 +19,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? AccountEndpoint { get; set; }
         public bool EnableInteractiveCredentials { get; set; }
         public bool InitClientEncryption { get; set; } = false;
+        public string? ManagedIdentityClientId { get; set; }
+        public string? TenantId { get; set; }
+        public string? ClientId { get; set; }
+        public string? ClientSecret { get; set; }
+        public string? ClientCertificatePath { get; set; }
+        public string? ClientCertificatePassword { get; set; }
         
         /// <summary>
         /// <see cref="CosmosClientOptions.LimitToEndpoint"/>
@@ -27,19 +33,152 @@ namespace Cosmos.DataTransfer.CosmosExtension
         /// </summary>
         public bool LimitToEndpoint { get; set; } = false;
 
+        /// <summary>
+        /// Disables SSL certificate validation for the Cosmos DB connection.
+        /// This is intended for use with local development environments.
+        /// WARNING: Never use this option in production as it disables critical security checks.
+        /// </summary>
+        public bool DisableSslValidation { get; set; } = false;
+
+        /// <summary>
+        /// Enables bulk execution for Cosmos DB operations.
+        /// When set to <c>true</c>, operations such as bulk inserts and updates are optimized for performance.
+        /// <para>
+        /// <b>Default:</b> <c>false</c>
+        /// </para>
+        /// <para>
+        /// <b>Warning:</b> Use with caution, as enabling bulk execution may affect consistency and error handling. 
+        /// Review Cosmos DB documentation for bulk operation caveats before enabling in production environments.
+        /// </para>
+        /// </summary>
+        public bool AllowBulkExecution { get; set; } = false;
+
+        /// <summary>
+        /// Enables .NET HTTP diagnostic event logging for troubleshooting connectivity issues.
+        /// Logs are emitted at Debug level and may include endpoint and request details.
+        /// </summary>
+        public bool EnableNetHttpLogging { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether to return the resource in the Cosmos DB response
+        /// for write item operations like Create, Upsert, Patch and Replace.
+        /// Setting to <c>false</c> will cause the response to have a null resource,
+        /// reducing networking and CPU load by not sending the resource back over the network
+        /// and serializing it on the client.
+        /// <para>
+        /// This setting applies to sink (write) operations.
+        /// </para>
+        /// <para>
+        /// <b>Default:</b> <c>true</c>
+        /// </para>
+        /// <para>
+        /// For more information, see
+        /// <see href="https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.enablecontentresponseonwrite">
+        /// CosmosClientOptions.EnableContentResponseOnWrite Property
+        /// </see>
+        /// </para>
+        /// </summary>
+        public bool EnableContentResponseOnWrite { get; set; } = true;
+
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            if (!UseRbacAuth && string.IsNullOrEmpty(ConnectionString))
+            if (!UseRbacAuth && string.IsNullOrWhiteSpace(ConnectionString))
             {
                 yield return new ValidationResult("ConnectionString must be specified unless UseRbacAuth is true", new[] { nameof(ConnectionString) });
             }
-            if (UseRbacAuth && string.IsNullOrEmpty(AccountEndpoint))
+            if (UseRbacAuth && string.IsNullOrWhiteSpace(AccountEndpoint))
             {
                 yield return new ValidationResult("AccountEndpoint must be specified when UseRbacAuth is true", new[] { nameof(AccountEndpoint) });
+            }
+            if (UseRbacAuth && !string.IsNullOrWhiteSpace(ConnectionString))
+            {
+                yield return new ValidationResult(
+                    "ConnectionString must not be set when UseRbacAuth is true.",
+                    new[] { nameof(UseRbacAuth), nameof(ConnectionString) });
             }
             if (!UseRbacAuth && InitClientEncryption)
             {
                 yield return new ValidationResult("InitClientEncryption can only be used when UseRbacAuth is true", new[] { nameof(InitClientEncryption) });
+            }
+
+            var tenantIdSet = !string.IsNullOrWhiteSpace(TenantId);
+            var clientIdSet = !string.IsNullOrWhiteSpace(ClientId);
+            var servicePrincipalSet = tenantIdSet && clientIdSet;
+            var clientSecretSet = !string.IsNullOrWhiteSpace(ClientSecret);
+            var clientCertificateSet = !string.IsNullOrWhiteSpace(ClientCertificatePath);
+            var clientCertificatePasswordSet = !string.IsNullOrWhiteSpace(ClientCertificatePassword);
+
+            if (UseRbacAuth && tenantIdSet != clientIdSet)
+            {
+                yield return new ValidationResult(
+                    "Both TenantId and ClientId must be specified when UseRbacAuth is used with service principal",
+                    new[] { nameof(TenantId), nameof(ClientId) });
+            }
+
+            if (UseRbacAuth && servicePrincipalSet && !clientSecretSet && !clientCertificateSet)
+            {
+                yield return new ValidationResult(
+                    "Either ClientSecret or ClientCertificatePath must be specified when UseRbacAuth is used with service principal",
+                    new[] { nameof(ClientSecret), nameof(ClientCertificatePath) });
+            }
+
+            if (UseRbacAuth && servicePrincipalSet && clientSecretSet && clientCertificateSet)
+            {
+                yield return new ValidationResult(
+                    "Specify either ClientSecret or ClientCertificatePath, not both.",
+                    new[] { nameof(ClientSecret), nameof(ClientCertificatePath) });
+            }
+
+            if (UseRbacAuth && servicePrincipalSet && !clientCertificateSet && clientCertificatePasswordSet)
+            {
+                yield return new ValidationResult(
+                    "ClientCertificatePassword can only be set when ClientCertificatePath is set.",
+                    new[] { nameof(ClientCertificatePassword), nameof(ClientCertificatePath) });
+            }
+
+            if (UseRbacAuth && !servicePrincipalSet && (clientSecretSet || clientCertificateSet || clientCertificatePasswordSet))
+            {
+                yield return new ValidationResult(
+                    "ClientSecret, ClientCertificatePath, or ClientCertificatePassword cannot be set without TenantId/ClientId.",
+                    new[]
+                    {
+                        nameof(TenantId),
+                        nameof(ClientId),
+                        nameof(ClientSecret),
+                        nameof(ClientCertificatePath),
+                        nameof(ClientCertificatePassword)
+                    });
+            }
+
+            if (!UseRbacAuth && (tenantIdSet || clientIdSet || clientSecretSet || clientCertificateSet || clientCertificatePasswordSet))
+            {
+                yield return new ValidationResult(
+                    "Service principal settings require UseRbacAuth to be set to true.",
+                    new[]
+                    {
+                        nameof(UseRbacAuth),
+                        nameof(TenantId),
+                        nameof(ClientId),
+                        nameof(ClientSecret),
+                        nameof(ClientCertificatePath),
+                        nameof(ClientCertificatePassword)
+                    });
+            }
+
+            var managedIdentityClientIdSet = !string.IsNullOrWhiteSpace(ManagedIdentityClientId);
+
+            if (!UseRbacAuth && managedIdentityClientIdSet)
+            {
+                yield return new ValidationResult(
+                    "ManagedIdentityClientId requires UseRbacAuth to be set to true.",
+                    new[] { nameof(UseRbacAuth), nameof(ManagedIdentityClientId) });
+            }
+
+            if (UseRbacAuth && managedIdentityClientIdSet && servicePrincipalSet)
+            {
+                yield return new ValidationResult(
+                    "ManagedIdentityClientId cannot be combined with service principal settings (TenantId/ClientId).",
+                    new[] { nameof(ManagedIdentityClientId), nameof(TenantId), nameof(ClientId) });
             }
         }
     }
