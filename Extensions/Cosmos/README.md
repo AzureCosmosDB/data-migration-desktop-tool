@@ -49,12 +49,39 @@ An independent SDK control uses regular `CreateItemAsync` with inferred keys,
 sequential writes, and correct/wrong-key reads to verify that missing and null
 remain separate partitions without involving the DMT sink or serializer.
 
-Both Linux and Windows emulator workflows retain TRX results and require
-all seven integration tests to execute and pass, including the partition-key regression
-tests. Missing, skipped, duplicate, or failed results fail the job.
+Both Linux and Windows emulator workflows retain TRX results. Current Linux and
+Windows require all seven integration tests to execute and pass, including
+missing/null partition identity and incorrect-key rejection. Missing, skipped,
+duplicate, or failed required results fail the job.
 The Linux preview job remains advisory; the current emulator and the separate
 failure-guard regression job are mandatory. Check each matrix job's outcome,
 summary, and artifacts rather than relying on the overall workflow status.
+
+#### Preview partition-key capabilities
+
+The vNext preview currently aliases undefined and null for single/nested partition
+keys. The independent SDK control reproduced wrong-key reads returning `200`
+instead of `404`, and a null-key write sharing an ID with an undefined-key document
+returning `409` instead of `201`. It also accepts a mismatched explicit-null stream
+request for a missing field (`201` rather than `400`).
+
+The Linux matrix explicitly sets `Cosmos_EmulatorVariant=vnext` for that image.
+Only `Test_SdkPartitionKeys_DistinguishMissingAndNull` and
+`Test_StreamPartitionKeyMismatch_IsRejected` are intentionally skipped there, with
+a `[vNext missing/null capability]` reason. All five other integration tests must
+pass. Single/nested positive transfer tests still run every missing/null/string/
+number/boolean case, all four insert/upsert modes, point reads, and both delete
+modes. Only the explicit-null document gets a separate ID on preview; other keys
+share an ID. Current Linux and Windows retain the original same-ID fixture for
+all keys. Hierarchical tests and exact outgoing-key request-capture regressions
+remain unchanged and run everywhere.
+
+The result gate accepts only these two named, reason-marked preview skips;
+unexpected skips or failures still fail it. Guard regressions verify both profiles.
+This approved capability-specific coverage is not a claim that preview satisfies
+missing/null identity or incorrect-header conformance. To recheck those capabilities
+after an emulator update, omit `Cosmos_EmulatorVariant` or set it to `current`,
+which runs all strict assertions.
 
 ### Main Settings
 
