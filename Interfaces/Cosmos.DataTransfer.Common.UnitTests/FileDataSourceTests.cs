@@ -1,4 +1,8 @@
 using System.Text;
+using System.Net;
+using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -6,6 +10,105 @@ namespace Cosmos.DataTransfer.Common.UnitTests;
 
 [TestClass]
 public class FileSinkDataSourceTests {
+
+    [TestMethod]
+    public async Task ReadSourceAsync_MissingFile_ThrowsWithPath()
+    {
+        var path = $"{Guid.NewGuid():N}.json";
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", path } });
+        var error = await Assert.ThrowsExceptionAsync<FileNotFoundException>(async () =>
+            await new FileDataSource().ReadSourceAsync(config, NullLogger.Instance).ToListAsync());
+        StringAssert.Contains(error.FileName!, path);
+    }
+
+    [TestMethod]
+    public async Task ReadSourceAsync_EmptyDirectory_ReturnsNoStreams()
+    {
+        var directory = GetTemporaryDirectory();
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(directory, "ignored.txt"), "not a matching file");
+            var config = TestHelpers.CreateConfig(new() { { "FilePath", directory } });
+            var streams = await new FileDataSource().ReadSourceAsync(config, NullLogger.Instance).ToListAsync();
+            Assert.AreEqual(0, streams.Count);
+        }
+        finally
+        {
+            File.Delete(Path.Combine(directory, "ignored.txt"));
+            Directory.Delete(directory);
+        }
+    }
+
+    [DataTestMethod]
+    [DataRow(HttpStatusCode.NotFound)]
+    [DataRow(HttpStatusCode.Forbidden)]
+    [DataRow(HttpStatusCode.InternalServerError)]
+    public async Task ReadSourceAsync_HttpError_ThrowsWithStatusAndSafeLocation(HttpStatusCode status)
+    {
+        await using var server = new HttpTestServer(status, "not JSON");
+        var uri = new UriBuilder(server.Url) { UserName = "private", Password = "private", Query = "token=private", Fragment = "private" };
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", uri.Uri.AbsoluteUri } });
+        var logger = new Mock<ILogger>();
+        var error = await Assert.ThrowsExceptionAsync<HttpRequestException>(async () =>
+            await new FileDataSource().ReadSourceAsync(config, logger.Object).ToListAsync());
+        Assert.AreEqual(status, error.StatusCode);
+        StringAssert.Contains(error.Message, server.Url);
+        Assert.IsFalse(error.ToString().Contains("private"));
+        logger.Verify(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("private")),
+            It.IsAny<Exception?>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Never);
+    }
+
+    [TestMethod]
+    public async Task ReadSourceAsync_UnreachableHttp_ThrowsWithLocation()
+    {
+        using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+        var url = $"http://127.0.0.1:{((IPEndPoint)socket.LocalEndPoint!).Port}/source.json";
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", url } });
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var error = await Assert.ThrowsExceptionAsync<HttpRequestException>(async () =>
+            await new FileDataSource().ReadSourceAsync(config, NullLogger.Instance, timeout.Token).ToListAsync());
+        StringAssert.Contains(error.Message, url);
+        Assert.IsInstanceOfType<HttpRequestException>(error.InnerException);
+    }
+
+    [TestMethod]
+    public async Task ReadSourceAsync_LockedFile_PropagatesIOException()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.json");
+        try
+        {
+            using var locked = File.Open(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+            var config = TestHelpers.CreateConfig(new() { { "FilePath", path } });
+            await Assert.ThrowsExceptionAsync<IOException>(async () =>
+                await new FileDataSource().ReadSourceAsync(config, NullLogger.Instance).ToListAsync());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [TestMethod]
+    public async Task ReadSourceAsync_MissingParent_ThrowsWithPath()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}", "missing.json");
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", path } });
+        var error = await Assert.ThrowsExceptionAsync<DirectoryNotFoundException>(async () =>
+            await new FileDataSource().ReadSourceAsync(config, NullLogger.Instance).ToListAsync());
+        StringAssert.Contains(error.Message, path);
+    }
+
+    [TestMethod]
+    public async Task ReadSourceAsync_Canceled_PropagatesCancellation()
+    {
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", "Data/foobar.txt" } });
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+            await new FileDataSource().ReadSourceAsync(config, NullLogger.Instance, cancellation.Token).ToListAsync());
+    }
 
     public static IEnumerable<object[]> Test_ReadFileData { get {
         yield return new object[] { "Data/foobar.txt", CompressionEnum.None };
