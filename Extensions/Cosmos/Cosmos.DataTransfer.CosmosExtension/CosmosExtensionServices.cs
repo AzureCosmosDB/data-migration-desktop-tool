@@ -13,6 +13,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Diagnostics.Tracing;
+using System.Collections.Concurrent;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -25,27 +26,41 @@ namespace Cosmos.DataTransfer.CosmosExtension
             ClientCertificateCredential,
         }
 
-        // Static HttpClient instances with different configurations for reuse across connections
-        // This avoids connection exhaustion and properly handles credentials
-        private static readonly Lazy<HttpClient> _httpClientWithDefaultCredentials = new Lazy<HttpClient>(() =>
-        {
-            var handler = new HttpClientHandler
-            {
-                Credentials = CredentialCache.DefaultNetworkCredentials,
-                PreAuthenticate = false
-            };
-            return new HttpClient(handler);
-        });
+        // The SDK configures and disposes each HttpClient. Only handlers/pools are process-owned.
+        private static readonly ConcurrentDictionary<HttpTransportSettings, Lazy<SocketsHttpHandler>> _httpHandlers = new();
 
-        private static readonly Lazy<HttpClient> _httpClientWithDefaultCredentialsAndPreAuth = new Lazy<HttpClient>(() =>
+        private sealed record HttpTransportSettings(string? WebProxy, bool UseDefaultProxyCredentials,
+            bool PreAuthenticate, bool DisableSslValidation);
+
+        internal static SocketsHttpHandler GetHttpHandler(CosmosSettingsBase settings)
         {
-            var handler = new HttpClientHandler
+            var transportSettings = new HttpTransportSettings(
+                string.IsNullOrEmpty(settings.WebProxy) ? null : settings.WebProxy,
+                settings.UseDefaultProxyCredentials, settings.PreAuthenticate, settings.DisableSslValidation);
+            return _httpHandlers.GetOrAdd(transportSettings, key => new Lazy<SocketsHttpHandler>(() =>
             {
-                Credentials = CredentialCache.DefaultNetworkCredentials,
-                PreAuthenticate = true
-            };
-            return new HttpClient(handler);
-        });
+                var handler = new SocketsHttpHandler
+                {
+                    Credentials = CredentialCache.DefaultNetworkCredentials,
+                    PreAuthenticate = key.PreAuthenticate,
+                    // Refresh DNS for long-running migrations without giving up connection pooling.
+                    PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+                    UseCookies = false,
+                };
+                if (key.WebProxy is not null)
+                {
+                    handler.Proxy = new WebProxy(key.WebProxy)
+                    {
+                        UseDefaultCredentials = key.UseDefaultProxyCredentials,
+                    };
+                }
+                if (key.DisableSslValidation)
+                {
+                    handler.SslOptions.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+                }
+                return handler;
+            })).Value;
+        }
 
         private static readonly object _httpEventListenerLock = new();
         private static EventListener? _httpEventListener;
@@ -168,7 +183,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 LimitToEndpoint = settings.LimitToEndpoint,
             };
 
-            if (!string.IsNullOrEmpty(settings.WebProxy))
+            if (settings.UseDefaultCredentials)
+            {
+                var handler = GetHttpHandler(settings);
+                clientOptions.HttpClientFactory = () => new HttpClient(handler, disposeHandler: false);
+            }
+            else if (!string.IsNullOrEmpty(settings.WebProxy))
             {
                 var webProxy = new WebProxy(settings.WebProxy);
                 if (settings.UseDefaultProxyCredentials)
@@ -176,15 +196,6 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     webProxy.UseDefaultCredentials = true;
                 }
                 clientOptions.WebProxy = webProxy;
-            }
-
-            // Configure the HttpClient with default credentials if requested
-            // This enables authenticated proxy support for the underlying HTTP connections
-            if (settings.UseDefaultCredentials)
-            {
-                clientOptions.HttpClientFactory = settings.PreAuthenticate
-                    ? () => _httpClientWithDefaultCredentialsAndPreAuth.Value
-                    : () => _httpClientWithDefaultCredentials.Value;
             }
 
             // Disable SSL certificate validation for development scenarios

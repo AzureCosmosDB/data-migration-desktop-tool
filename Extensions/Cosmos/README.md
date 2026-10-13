@@ -42,7 +42,16 @@ uses the documented `/ready` probe on port 8080; the current emulator waits for
 its certificate endpoint. The tests use Gateway mode and explicitly disable bulk
 execution, which the vNext emulator does not support with the .NET SDK. See the
 [Linux vNext emulator documentation](https://learn.microsoft.com/azure/cosmos-db/emulator-linux).
-These tests cover JSON round trips, not bulk execution or authentication enforcement.
+The round-trip test also runs sequential Cosmos-to-Cosmos `Operations` with
+`UseDefaultCredentials` and both `PreAuthenticate` values. This exercises source
+enumeration, sink completion/disposal, and later client creation after real HTTP
+requests. These tests do not validate bulk execution, live Entra authentication,
+or enterprise proxy credential negotiation.
+
+`CosmosHttpClientLifecycleTests` runs without an emulator or Azure credentials.
+It covers key/RBAC client construction after transport use, disposal (including
+the encryption wrapper), concurrent client creation, proxy routing, connection
+reuse, and self-signed TLS rejection/explicit opt-out using local loopback servers.
 
 Both Linux and Windows emulator workflows retain TRX results and require
 `Test_Json_RoundTrip_WithLongValues` and `Test_FromJson_WithLongValues` to each
@@ -134,9 +143,32 @@ Source supports the following optional parameters:
 - `Query` - Allows further filtering using a Cosmos SQL statement.
 - `WebProxy` (`null` by default) - Enables connections through a proxy.
 - `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`. See [WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials).
-- `UseDefaultCredentials` (`false` by default) - When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
-- `PreAuthenticate` (`false` by default) - When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
+- `UseDefaultCredentials` (`false` by default) - When `true`, configures HTTP server authentication with the current user's default network credentials. This is separate from Cosmos account authentication and from proxy credentials; it is **not required for RBAC**. For an explicit authenticated `WebProxy`, use `UseDefaultProxyCredentials`.
+- `PreAuthenticate` (`false` by default) - With `UseDefaultCredentials`, enables HTTP pre-authentication for matching URIs after authentication has succeeded. It does not eliminate the first authentication challenge and does not acquire an Entra token.
 - `EnableNetHttpLogging` (`false` by default) - When `true`, enables `.NET` `System.Net.Http` diagnostic events to help investigate connection issues. These events are emitted at Debug level and can include endpoint/request details.
+
+### Connection settings and client lifetime
+
+These connection settings apply independently to sources, sinks, and each entry
+in `Operations`, with either key or RBAC authentication. Leave
+`UseDefaultCredentials` unset unless your HTTP network environment requires it.
+On older versions, removing this setting when it is unnecessary also avoids
+the "This instance has already started one or more requests" error.
+
+When default network credentials are enabled, each Cosmos SDK client receives
+a fresh `HttpClient` so its timeout, headers, and disposal cannot affect another
+client. Process-owned handlers retain connection pools across operations and
+are separated by proxy URL, proxy-credential setting, pre-authentication, and TLS
+validation setting. Connections are recycled after five minutes to refresh DNS;
+cookies are not shared between clients. Account keys and Entra tokens remain
+per Cosmos client and are not stored in the handler configuration.
+
+Explicit proxies and opt-in `DisableSslValidation` are applied to the custom
+HTTP handler; certificate validation stays enabled by default. The TLS opt-out
+also applies to SDK Direct-mode connections and retains its development-only
+warning. Without `UseDefaultCredentials`, the SDK continues to manage its own
+HTTP transport. Source clients live until enumeration completes or is disposed;
+sink clients live until writes finish, including failure/cancellation cleanup.
 
 ### Connectivity troubleshooting (.NET HTTP diagnostics)
 
