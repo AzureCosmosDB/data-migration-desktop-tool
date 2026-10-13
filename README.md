@@ -121,7 +121,7 @@ Multiple extensions are provided in this repository. Find the documentation for 
 
 ## Authentication
 
-The Azure extensions support both key-based authentication and passwordless authentication using **Microsoft Entra ID** (Azure AD) with **Azure RBAC**. For supported credential flows (Azure CLI, managed identity, service principal), required Azure RBAC roles, end-to-end passwordless examples, and CI/CD guidance, see the [Authentication guide](docs/authentication.md).
+The Cosmos, Azure Blob, and Azure Table API extensions support both key-based authentication and passwordless authentication using **Microsoft Entra ID** (Azure AD) with **Azure RBAC**. The CognitiveSearch extension uses API keys only. For supported credential flows (Azure CLI, managed identity, service principal), required roles, end-to-end passwordless examples, and CI/CD guidance, see the [Authentication guide](docs/authentication.md).
 
 ## Architecture
 

@@ -272,6 +272,79 @@ public class CosmosExtensionServicesCredentialTests
         Assert.IsTrue(results.Any(r => r.ErrorMessage!.Contains("ManagedIdentityClientId requires UseRbacAuth")));
     }
 
+    [DataTestMethod]
+    [DataRow(false, null)]
+    [DataRow(true, null)]
+    [DataRow(false, "")]
+    [DataRow(true, "")]
+    [DataRow(false, " ")]
+    [DataRow(true, " ")]
+    [DataRow(false, "11111111-1111-1111-1111-111111111111")]
+    [DataRow(true, "11111111-1111-1111-1111-111111111111")]
+    public void CreateDefaultAzureCredentialOptions_PreservesInteractiveSettingAndClientId(
+        bool enableInteractiveCredentials, string? managedIdentityClientId)
+    {
+        CosmosSettingsBase[] settings =
+        {
+            new CosmosSourceSettings(),
+            new CosmosSinkSettings(),
+        };
+        var defaultClientId = new DefaultAzureCredentialOptions().ManagedIdentityClientId;
+
+        foreach (var side in settings)
+        {
+            side.EnableInteractiveCredentials = enableInteractiveCredentials;
+            side.ManagedIdentityClientId = managedIdentityClientId;
+
+            var options = CosmosExtensionServices.CreateDefaultAzureCredentialOptions(side);
+
+            Assert.AreEqual(!enableInteractiveCredentials, options.ExcludeInteractiveBrowserCredential);
+            Assert.AreEqual(
+                string.IsNullOrWhiteSpace(managedIdentityClientId) ? defaultClientId : managedIdentityClientId,
+                options.ManagedIdentityClientId);
+            Assert.IsFalse(options.ExcludeEnvironmentCredential);
+            Assert.IsFalse(options.ExcludeWorkloadIdentityCredential);
+            Assert.IsFalse(options.ExcludeManagedIdentityCredential);
+            Assert.IsFalse(options.ExcludeAzureCliCredential);
+        }
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void CreateDefaultAzureCredentialOptions_PreservesEnvironmentDefaultAndPerSideOverrides()
+    {
+        const string environmentClientId = "22222222-2222-2222-2222-222222222222";
+        var originalClientId = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID");
+        try
+        {
+            Environment.SetEnvironmentVariable("AZURE_CLIENT_ID", environmentClientId);
+            var source = new CosmosSourceSettings
+            {
+                ManagedIdentityClientId = "11111111-1111-1111-1111-111111111111",
+            };
+            var sink = new CosmosSinkSettings
+            {
+                ManagedIdentityClientId = "33333333-3333-3333-3333-333333333333",
+            };
+
+            Assert.AreEqual(source.ManagedIdentityClientId,
+                CosmosExtensionServices.CreateDefaultAzureCredentialOptions(source).ManagedIdentityClientId);
+            Assert.AreEqual(sink.ManagedIdentityClientId,
+                CosmosExtensionServices.CreateDefaultAzureCredentialOptions(sink).ManagedIdentityClientId);
+
+            foreach (var unsetClientId in new[] { null, "", " " })
+            {
+                source.ManagedIdentityClientId = unsetClientId;
+                Assert.AreEqual(environmentClientId,
+                    CosmosExtensionServices.CreateDefaultAzureCredentialOptions(source).ManagedIdentityClientId);
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("AZURE_CLIENT_ID", originalClientId);
+        }
+    }
+
     [TestMethod]
     public void Validate_WithManagedIdentityClientIdAndServicePrincipal_ReturnsError()
     {

@@ -32,6 +32,8 @@ identity running the tool (your `az login` user, a managed identity, or a servic
 the `Cosmos DB Built-in Data Reader` role on the source account and the
 `Cosmos DB Built-in Data Contributor` role on the sink account. See the
 [Authentication guide](docs/authentication.md) for role assignment and other credential flows.
+Both databases and containers must already exist; DMT does not create or recreate them in RBAC
+mode. The example assumes the destination container is partitioned on `/id`.
 
 ```json
 {
