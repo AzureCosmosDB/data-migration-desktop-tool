@@ -34,6 +34,7 @@ These properties will be preserved exactly as they appear in the source when mig
 - `UseRbacAuth` (default: `false`): Use role-based access control for authentication.
 - `AccountEndpoint`: Cosmos DB account endpoint (required for RBAC).
 - `EnableInteractiveCredentials` (default: `false`): Prompt for Azure login if default credentials are unavailable.
+- `ManagedIdentityClientId`: Client ID of a user-assigned managed identity attached to the host (RBAC mode). Selects the identity for the managed-identity step of `DefaultAzureCredential`; it does not override earlier environment/workload credentials. Cannot be combined with explicit service principal settings. If omitted, the SDK uses `AZURE_CLIENT_ID` when set.
 - `TenantId`: Microsoft Entra tenant ID for explicit service principal auth (RBAC mode).
 - `ClientId`: Service principal app/client ID for explicit service principal auth (RBAC mode).
 - `ClientSecret`: Service principal client secret for explicit service principal auth (RBAC mode).
@@ -53,9 +54,15 @@ Source and sink require settings used to locate and access the Cosmos DB account
 
 - Using a `ConnectionString` that includes an AccountEndpoint and AccountKey
 - Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available. See [migrate-passwordless](https://learn.microsoft.com/azure/cosmos-db/nosql/migrate-passwordless?tabs=sign-in-azure-cli%2Cdotnet%2Cazure-portal-create%2Cazure-portal-associate%2Capp-service-identity) for how to configure Cosmos DB for passwordless access.
+- Using RBAC with a specific user-assigned managed identity by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and `ManagedIdentityClientId`.
 - Using RBAC with explicit service principal credentials by setting `UseRbacAuth` to true and specifying `AccountEndpoint`, `TenantId`, `ClientId`, and either `ClientSecret` or `ClientCertificatePath`.
 
+> For a complete walkthrough of Microsoft Entra ID authentication, supported credential flows, and Azure RBAC role requirements across all Azure extensions, see the [Authentication guide](../../docs/authentication.md).
+>
+> **RBAC prerequisite**: The database and container must already exist, including the destination container with the intended partition key. DMT does not create them in RBAC mode, and `RecreateContainer: true` is rejected. The source needs the Cosmos DB Built-in Data Reader role and the sink needs the Cosmos DB Built-in Data Contributor role.
+>
 > **Security warning**: `ClientSecret` and `ClientCertificatePassword` are plaintext in settings files. Do not commit secrets to source control. Prefer runtime injection through .NET configuration providers such as environment variables, command-line args (for example `--SourceSettings:ClientSecret=...`, `--SinkSettings:ClientSecret=...`, `--SourceSettings:ClientCertificatePassword=...`, or `--SinkSettings:ClientCertificatePassword=...`), or User Secrets.
+>
 > **Implementation note**: The RBAC service principal path now uses explicit credential-selection logic with additional validation and error wrapping. This was added to make auth-path behavior deterministic and testable, avoid unmanaged certificate object lifetime handling in the tool process, and surface actionable messages when certificate/credential configuration is invalid.
 
 ### Bulk Execution
@@ -175,6 +182,22 @@ Or with RBAC:
     "UseDefaultProxyCredentials": true,
     "UseDefaultCredentials": true,
     "PreAuthenticate": true
+}
+```
+
+Or with RBAC and a specific user-assigned managed identity:
+
+```json
+{
+  "UseRbacAuth": true,
+  "AccountEndpoint": "https://source.documents.azure.com:443/",
+  "ManagedIdentityClientId": "<user-assigned-identity-client-id>",
+  "Database":"myDb",
+  "Container":"myContainer",
+  "IncludeMetadataFields": false,
+  "PartitionKeyValue":"123",
+  "Query":"SELECT * FROM c WHERE c.category='event'",
+  "InitClientEncryption": false
 }
 ```
 

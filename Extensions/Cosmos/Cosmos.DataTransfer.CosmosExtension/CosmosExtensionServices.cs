@@ -69,6 +69,21 @@ namespace Cosmos.DataTransfer.CosmosExtension
             return TokenCredentialSelection.DefaultAzureCredential;
         }
 
+        internal static DefaultAzureCredentialOptions CreateDefaultAzureCredentialOptions(CosmosSettingsBase settings)
+        {
+            var options = new DefaultAzureCredentialOptions
+            {
+                ExcludeInteractiveBrowserCredential = !settings.EnableInteractiveCredentials,
+            };
+
+            if (!string.IsNullOrWhiteSpace(settings.ManagedIdentityClientId))
+            {
+                options.ManagedIdentityClientId = settings.ManagedIdentityClientId;
+            }
+
+            return options;
+        }
+
         // NOTE: Added explicit exception wrapping to surface actionable auth configuration failures.
         internal static TokenCredential CreateRbacTokenCredential(CosmosSettingsBase settings, ILogger logger)
         {
@@ -118,7 +133,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         return new ClientCertificateCredential(settings.TenantId!, settings.ClientId!, certificate);
 
                     default:
-                        return new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
+                        return new DefaultAzureCredential(CreateDefaultAzureCredentialOptions(settings));
                 }
             }
             catch (Exception ex) when (

@@ -7,6 +7,7 @@ To access the archived version of the tool, navigate to the [**Archive branch**]
 - [Azure Cosmos DB Data Migration Tool](#azure-cosmos-db-data-migration-tool)
   - [Overview](#overview)
   - [Extension documentation](#extension-documentation)
+  - [Authentication](#authentication)
   - [Architecture](#architecture)
   - [Project Structure](#project-structure)
   - [Getting Started](#getting-started)
@@ -116,7 +117,11 @@ Multiple extensions are provided in this repository. Find the documentation for 
 
 1. [AWS S3](Extensions/AwsS3/README.md)
 
-6. [Azure Cognitive Search](Extensions/CognitiveSearch/README.md)
+1. [Azure Cognitive Search](Extensions/CognitiveSearch/README.md)
+
+## Authentication
+
+The Cosmos, Azure Blob, and Azure Table API extensions support both key-based authentication and passwordless authentication using **Microsoft Entra ID** (Azure AD) with **Azure RBAC**. The CognitiveSearch extension uses API keys only. For supported credential flows (Azure CLI, managed identity, service principal), required roles, end-to-end passwordless examples, and CI/CD guidance, see the [Authentication guide](docs/authentication.md).
 
 ## Architecture
 

@@ -144,6 +144,12 @@ The AzureTableAPI extension supports two authentication methods for connecting t
 
 > **Note**: To use RBAC authentication, your Azure account must have the appropriate permissions (such as Storage Table Data Contributor) on the storage account. For more information, see [Authorize access to tables using Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/storage/tables/authorize-access-azure-active-directory).
 
+When `UseRbacAuth` is `true`, the extension authenticates with `DefaultAzureCredential`, which supports Azure CLI sign-in (`az login`) and managed identities. For a service principal, set `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET`. To select a user-assigned managed identity attached to the host, set `AZURE_CLIENT_ID` without service principal secret/certificate variables. These variables are shared across source and sink. For **Azure Storage Tables**, the identity needs the `Storage Table Data Reader` role (source) or `Storage Table Data Contributor` role (sink) on the storage account.
+
+The Storage roles and RBAC examples below apply to Azure Storage Tables. Azure Cosmos DB for Table has separate [native data-plane RBAC roles](https://learn.microsoft.com/azure/cosmos-db/table/how-to-connect-role-based-access-control); Storage Table roles do not grant access to Cosmos DB for Table.
+
+> For supported credential flows, Azure RBAC role requirements, and CI/CD guidance, see the central [Authentication guide](../../docs/authentication.md).
+
 ### Example RBAC Settings
 
 **Source Example (RBAC)**
