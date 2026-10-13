@@ -43,9 +43,10 @@ These properties will be preserved exactly as they appear in the source when mig
 - `Container`: Cosmos DB container name.
 - `WebProxy`: Proxy server URL for Cosmos DB connections.
 - `InitClientEncryption` (default: `false`): Enable Always Encrypted feature.
-- `LimitToEndpoint` (default: `false`): Restrict client to endpoint (see CosmosClientOptions.LimitToEndpoint).
+- `LimitToEndpoint` (default: `false`): Restrict client to endpoint. See [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint).
 - `DisableSslValidation` (default: `false`): Disable SSL certificate validation (for local dev only; not for production).
 - `AllowBulkExecution` (default: `false`): Enable bulk execution for optimized performance. Warning: may affect consistency and error handling.
+- `EnableContentResponseOnWrite` (default: `true`): Return the response body for write operations. Set to `false` to return only headers and status code, reducing network IO. Applies to sink operations. See [CosmosClientOptions.EnableContentResponseOnWrite Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.enablecontentresponseonwrite).
 
 Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of three ways:
 
@@ -71,6 +72,25 @@ Example:
 }
 ```
 
+### Content Response On Write
+
+The `EnableContentResponseOnWrite` setting controls whether the full response body is returned for write operations (Create, Upsert, Patch, Replace). When set to `false`, only headers and status code are returned, which can drastically reduce network IO and improve performance. This is especially beneficial for high-throughput scenarios where the response body is not needed. Default is `true`.
+
+**Note**: This setting applies to sink (write) operations.
+
+For more information, see [CosmosClientOptions.EnableContentResponseOnWrite Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.enablecontentresponseonwrite).
+
+Example:
+
+```json
+{
+    "ConnectionString": "AccountEndpoint=https://...",
+    "Database": "myDb",
+    "Container": "myContainer",
+    "EnableContentResponseOnWrite": false
+}
+```
+
 Source and sink settings also both require parameters to specify the data location within a Cosmos DB account:
 
 - `Database`
@@ -82,7 +102,7 @@ Source supports the following optional parameters:
 - `PartitionKeyValue` - Allows for filtering to a single partition.
 - `Query` - Allows further filtering using a Cosmos SQL statement.
 - `WebProxy` (`null` by default) - Enables connections through a proxy.
-- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
+- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`. See [WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials).
 - `UseDefaultCredentials` (`false` by default) - When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
 - `PreAuthenticate` (`false` by default) - When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 
@@ -196,14 +216,14 @@ For development purposes with SSL validation disabled:
   - `Direct`
 
 - **`WebProxy`**: Optional. Specifies the proxy server URL to use for connections (e.g., `http://yourproxy.server.com/`).
-- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
+- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`. See [WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials).
 - **`UseDefaultCredentials`**: Optional, defaults to `false`. When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
 - **`PreAuthenticate`**: Optional, defaults to `false`. When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
   write and read regions, and use them when the configured application region is not available.
   When set to `true`, availability is limited to the endpoint specified.
-  - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint?view=azure-dotnet). When using the Cosmos DB Emulator Container for Linux it's been observed
+  - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint). When using the Cosmos DB Emulator Container for Linux it has been observed
     setting the value to `true` enables import and export of data.
 
 #### **SSL/Certificate Settings**

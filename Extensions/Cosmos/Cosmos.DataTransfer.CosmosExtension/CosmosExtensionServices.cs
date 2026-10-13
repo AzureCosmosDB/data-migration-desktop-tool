@@ -144,7 +144,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 ConnectionMode = settings.ConnectionMode,
                 ApplicationName = userAgentString,
                 AllowBulkExecution = settings.AllowBulkExecution,
-                EnableContentResponseOnWrite = false,
+                EnableContentResponseOnWrite = settings.EnableContentResponseOnWrite,
                 Serializer = cosmosSerializer,
                 LimitToEndpoint = settings.LimitToEndpoint,
             };
