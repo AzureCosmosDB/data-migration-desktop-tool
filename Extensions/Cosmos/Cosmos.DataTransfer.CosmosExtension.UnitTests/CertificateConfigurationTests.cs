@@ -95,19 +95,28 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             Assert.IsNotNull(client, "CosmosClient should be created");
         }
 
-        [TestMethod]
-        public void CreateClient_WithEnableNetHttpLogging_LogsWarning()
+        [DataTestMethod]
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        public void CreateClient_WithEnableNetHttpLogging_LogsWarningAndPreservesClientOptions(
+            bool useRbacAuth, bool enableContentResponseOnWrite)
         {
             var loggerMock = new Mock<ILogger>();
             var settings = new TestableCosmosSettings
             {
-                ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+                ConnectionString = useRbacAuth ? null : "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+                UseRbacAuth = useRbacAuth,
+                AccountEndpoint = "https://localhost:8081/",
                 Database = "testDb",
                 Container = "testContainer",
-                EnableNetHttpLogging = true
+                EnableNetHttpLogging = true,
+                EnableContentResponseOnWrite = enableContentResponseOnWrite,
+                AllowBulkExecution = true
             };
 
-            var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
+            using var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
 
             loggerMock.Verify(
                 x => x.Log(
@@ -119,6 +128,8 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
                 Times.Once);
 
             Assert.IsNotNull(client, "CosmosClient should be created");
+            Assert.AreEqual(enableContentResponseOnWrite, client.ClientOptions.EnableContentResponseOnWrite);
+            Assert.IsTrue(client.ClientOptions.AllowBulkExecution);
         }
 
         [TestMethod]
@@ -129,11 +140,11 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
             {
                 ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
                 Database = "testDb",
-                Container = "testContainer",
-                EnableNetHttpLogging = false
+                Container = "testContainer"
             };
 
-            var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
+            Assert.IsFalse(settings.EnableNetHttpLogging, "HTTP diagnostics should be opt-in");
+            using var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
 
             loggerMock.Verify(
                 x => x.Log(

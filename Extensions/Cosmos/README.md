@@ -28,29 +28,35 @@ These properties will be preserved exactly as they appear in the source when mig
 
 ## Settings
 
-
 ### Main Settings
 
-| Setting                | Description                                                                                       | Default   |
-|------------------------|---------------------------------------------------------------------------------------------------|-----------|
-| ConnectionString       | Cosmos DB connection string (AccountEndpoint + AccountKey)                                         |           |
-| UseRbacAuth            | Use Role Based Access Control for authentication                                                   | false     |
-| AccountEndpoint        | Cosmos DB account endpoint (required for RBAC)                                                     |           |
-| EnableInteractiveCredentials | Prompt for Azure login if default credentials are unavailable                                 | false     |
-| Database               | Cosmos DB database name                                                                           |           |
-| Container              | Cosmos DB container name                                                                          |           |
-| WebProxy               | Proxy server URL for Cosmos DB connections                                                        |           |
-| InitClientEncryption   | Enable Always Encrypted feature                                                                   | false     |
-| LimitToEndpoint        | Restrict client to endpoint (see CosmosClientOptions.LimitToEndpoint)                             | false     |
-| DisableSslValidation   | Disable SSL certificate validation (for local dev only; not for production)                       | false     |
-| AllowBulkExecution     | Enable bulk execution for optimized performance. <br>**Warning:** May affect consistency and error handling. | false     |
-| EnableNetHttpLogging   | Enable .NET HTTP diagnostic events for troubleshooting connectivity issues (Debug log level)       | false     |
+- `ConnectionString`: Cosmos DB connection string (AccountEndpoint + AccountKey).
+- `UseRbacAuth` (default: `false`): Use role-based access control for authentication.
+- `AccountEndpoint`: Cosmos DB account endpoint (required for RBAC).
+- `EnableInteractiveCredentials` (default: `false`): Prompt for Azure login if default credentials are unavailable.
+- `TenantId`: Microsoft Entra tenant ID for explicit service principal auth (RBAC mode).
+- `ClientId`: Service principal app/client ID for explicit service principal auth (RBAC mode).
+- `ClientSecret`: Service principal client secret for explicit service principal auth (RBAC mode).
+- `ClientCertificatePath`: Path to a PFX/PKCS#12 service principal certificate file that contains a private key for explicit service principal auth (RBAC mode).
+- `ClientCertificatePassword`: Optional password for the service principal certificate (RBAC mode).
+- `Database`: Cosmos DB database name.
+- `Container`: Cosmos DB container name.
+- `WebProxy`: Proxy server URL for Cosmos DB connections.
+- `InitClientEncryption` (default: `false`): Enable Always Encrypted feature.
+- `LimitToEndpoint` (default: `false`): Restrict client to endpoint. See [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint).
+- `DisableSslValidation` (default: `false`): Disable SSL certificate validation (for local dev only; not for production).
+- `AllowBulkExecution` (default: `false`): Enable bulk execution for optimized performance. Warning: may affect consistency and error handling.
+- `EnableContentResponseOnWrite` (default: `true`): Return the response body for write operations. Set to `false` to return only headers and status code, reducing network IO. Applies to sink operations. See [CosmosClientOptions.EnableContentResponseOnWrite Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.enablecontentresponseonwrite).
+- `EnableNetHttpLogging` (default: `false`): Enable .NET HTTP diagnostic events for troubleshooting connectivity issues (Debug log level).
 
-Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of two ways:
+Source and sink require settings used to locate and access the Cosmos DB account. This can be done in one of three ways:
 
 - Using a `ConnectionString` that includes an AccountEndpoint and AccountKey
-- Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available. See ([migrate-passwordless](https://learn.microsoft.com/azure/cosmos-db/nosql/migrate-passwordless?tabs=sign-in-azure-cli%2Cdotnet%2Cazure-portal-create%2Cazure-portal-associate%2Capp-service-identity) for how to configure Cosmos DB for passwordless access.
+- Using RBAC (Role Based Access Control) by setting `UseRbacAuth` to true and specifying `AccountEndpoint` and optionally `EnableInteractiveCredentials` to prompt the user to log in to Azure if default credentials are not available. See [migrate-passwordless](https://learn.microsoft.com/azure/cosmos-db/nosql/migrate-passwordless?tabs=sign-in-azure-cli%2Cdotnet%2Cazure-portal-create%2Cazure-portal-associate%2Capp-service-identity) for how to configure Cosmos DB for passwordless access.
+- Using RBAC with explicit service principal credentials by setting `UseRbacAuth` to true and specifying `AccountEndpoint`, `TenantId`, `ClientId`, and either `ClientSecret` or `ClientCertificatePath`.
 
+> **Security warning**: `ClientSecret` and `ClientCertificatePassword` are plaintext in settings files. Do not commit secrets to source control. Prefer runtime injection through .NET configuration providers such as environment variables, command-line args (for example `--SourceSettings:ClientSecret=...`, `--SinkSettings:ClientSecret=...`, `--SourceSettings:ClientCertificatePassword=...`, or `--SinkSettings:ClientCertificatePassword=...`), or User Secrets.
+> **Implementation note**: The RBAC service principal path now uses explicit credential-selection logic with additional validation and error wrapping. This was added to make auth-path behavior deterministic and testable, avoid unmanaged certificate object lifetime handling in the tool process, and surface actionable messages when certificate/credential configuration is invalid.
 
 ### Bulk Execution
 
@@ -67,17 +73,37 @@ Example:
 }
 ```
 
+### Content Response On Write
+
+The `EnableContentResponseOnWrite` setting controls whether the full response body is returned for write operations (Create, Upsert, Patch, Replace). When set to `false`, only headers and status code are returned, which can drastically reduce network IO and improve performance. This is especially beneficial for high-throughput scenarios where the response body is not needed. Default is `true`.
+
+**Note**: This setting applies to sink (write) operations.
+
+For more information, see [CosmosClientOptions.EnableContentResponseOnWrite Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.enablecontentresponseonwrite).
+
+Example:
+
+```json
+{
+    "ConnectionString": "AccountEndpoint=https://...",
+    "Database": "myDb",
+    "Container": "myContainer",
+    "EnableContentResponseOnWrite": false
+}
+```
+
 Source and sink settings also both require parameters to specify the data location within a Cosmos DB account:
 
 - `Database`
 - `Container`
 
 Source supports the following optional parameters:
+
 - `IncludeMetadataFields` (`false` by default) - Enables inclusion of built-in Cosmos fields prefixed with `"_"`, for example `"_etag"` and `"_ts"`.
 - `PartitionKeyValue` - Allows for filtering to a single partition.
 - `Query` - Allows further filtering using a Cosmos SQL statement.
 - `WebProxy` (`null` by default) - Enables connections through a proxy.
-- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
+- `UseDefaultProxyCredentials` (`false` by default) - When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`. See [WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials).
 - `UseDefaultCredentials` (`false` by default) - When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
 - `PreAuthenticate` (`false` by default) - When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 - `EnableNetHttpLogging` (`false` by default) - When `true`, enables `.NET` `System.Net.Http` diagnostic events to help investigate connection issues. These events are emitted at Debug level and can include endpoint/request details.
@@ -111,7 +137,7 @@ Command-line arguments have highest precedence and override both environment var
 
 Source and Sink support Always Encrypted as an optional parameter. When `InitClientEncryption` is set to `true`, the extension will initialize the Cosmos client with the Always Encrypted feature enabled. This allows for the use of encrypted fields in the Cosmos DB container. The extension will automatically decrypt the fields when reading from the source and encrypt the fields when writing to the sink.
 </br>
-The extension will also automatically handle the encryption keys and encryption policy for the client, but it requires `UseRbacAuth` to be set to `true` and the user to have the necessary permissions to access the key vault.
+The extension will also automatically handle the encryption keys and encryption policy for the client, but it requires `UseRbacAuth` to be set to `true` and the user/service principal to have the necessary permissions to access the key vault.
 </br>
 > **Note**: To use Always Encrypted, Cosmos DB container must be pre-configured with the necessary encryption policy and the user must have the necessary permissions to access the key vault.
 
@@ -149,6 +175,24 @@ Or with RBAC:
     "UseDefaultProxyCredentials": true,
     "UseDefaultCredentials": true,
     "PreAuthenticate": true
+}
+```
+
+Or with RBAC and explicit service principal credentials:
+
+```json
+{
+  "UseRbacAuth": true,
+  "AccountEndpoint": "https://source.documents.azure.com:443/",
+  "TenantId": "<tenant-id>",
+  "ClientId": "<client-id>",
+  "ClientSecret": "<client-secret>",
+  "Database":"myDb",
+  "Container":"myContainer",
+  "IncludeMetadataFields": false,
+  "PartitionKeyValue":"123",
+  "Query":"SELECT * FROM c WHERE c.category='event'",
+  "InitClientEncryption": false
 }
 ```
 
@@ -199,7 +243,7 @@ For development purposes with SSL validation disabled:
   - `Direct`
 
 - **`WebProxy`**: Optional. Specifies the proxy server URL to use for connections (e.g., `http://yourproxy.server.com/`).
-- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns [`407 Proxy Authentication Required`](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials?view=net-10.0#remarks).
+- **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`. See [WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials).
 - **`UseDefaultCredentials`**: Optional, defaults to `false`. When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
 - **`PreAuthenticate`**: Optional, defaults to `false`. When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
 - **`EnableNetHttpLogging`**: Optional, defaults to `false`. When `true`, enables `.NET` `System.Net.Http` diagnostic events for troubleshooting. Events are logged at Debug level and may include endpoint/request details.
@@ -207,7 +251,7 @@ For development purposes with SSL validation disabled:
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover
   write and read regions, and use them when the configured application region is not available.
   When set to `true`, availability is limited to the endpoint specified.
-  - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint?view=azure-dotnet). When using the Cosmos DB Emulator Container for Linux it's been observed
+  - **Note**: [CosmosClientOptions.LimitToEndpoint Property](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.limittoendpoint). When using the Cosmos DB Emulator Container for Linux it has been observed
     setting the value to `true` enables import and export of data.
 
 #### **SSL/Certificate Settings**
@@ -249,5 +293,36 @@ For development purposes with SSL validation disabled:
     "UseSharedThroughput": false,
     "InitClientEncryption": false,
     "LimitToEndpoint": false
+}
+```
+
+Or with RBAC and explicit service principal credentials:
+
+```json
+{
+  "UseRbacAuth": true,
+  "AccountEndpoint": "https://target.documents.azure.com:443/",
+  "TenantId": "<tenant-id>",
+  "ClientId": "<client-id>",
+  "ClientCertificatePath": "./certs/sp-auth.pfx",
+  "ClientCertificatePassword": "<optional-password>",
+  "Database":"myDb",
+  "Container":"myContainer",
+  "PartitionKeyPath":"/id",
+  "RecreateContainer": false,
+  "BatchSize": 100,
+  "ConnectionMode": "Gateway",
+  "MaxRetryCount": 5,
+  "InitialRetryDurationMs": 200,
+  "CreatedContainerMaxThroughput": 1000,
+  "UseAutoscaleForDatabase": false,
+  "UseAutoscaleForCreatedContainer": true,
+  "WriteMode": "InsertStream",
+  "PreserveMixedCaseIds": false,
+  "IgnoreNullValues": false,
+  "IsServerlessAccount": false,
+  "UseSharedThroughput": false,
+  "InitClientEncryption": false,
+  "LimitToEndpoint": false
 }
 ```

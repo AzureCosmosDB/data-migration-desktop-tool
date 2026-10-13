@@ -12,6 +12,13 @@ public class MongoSourceSettings : MongoBaseSettings
     /// </summary>
     public string? Query { get; set; }
 
+    /// <summary>
+    /// The number of documents to return per batch when reading from MongoDB.
+    /// This can help prevent cursor timeout errors when reading large collections.
+    /// If not specified, MongoDB's default batch size will be used.
+    /// </summary>
+    public int? BatchSize { get; set; }
+
     [SensitiveValue]
     public Dictionary<string, IReadOnlyDictionary<string, object>>? KMSProviders { get; set; }
 
