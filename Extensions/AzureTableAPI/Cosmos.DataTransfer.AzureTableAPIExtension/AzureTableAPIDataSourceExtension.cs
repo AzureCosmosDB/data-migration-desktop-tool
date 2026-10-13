@@ -42,23 +42,48 @@ namespace Cosmos.DataTransfer.AzureTableAPIExtension
             }
             var tableClient = serviceClient.GetTableClient(settings.Table);
 
-            //Pageable<TableEntity> queryResultsFilter = tableClient.Query<TableEntity>(filter: $"PartitionKey eq '{partitionKey}'");
+            logger.LogInformation("Reading from table '{Table}'", settings.Table);
+
             AsyncPageable<TableEntity> queryResults;
             if (!string.IsNullOrWhiteSpace(settings.QueryFilter)) {
+                logger.LogInformation("Applying QueryFilter: {QueryFilter}", settings.QueryFilter);
+
+                if (settings.QueryFilter.Contains("Timestamp", StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.LogWarning("QueryFilter references the system 'Timestamp' property. " +
+                        "Note: Cosmos DB Table API does not support filtering on the system Timestamp property — " +
+                        "queries will silently return 0 results. Consider using a custom datetime property instead. " +
+                        "This limitation does not apply to Azure Storage Tables.");
+                }
+
                 queryResults = tableClient.QueryAsync<TableEntity>(filter: settings.QueryFilter);
             } else {
+                logger.LogInformation("No QueryFilter specified, reading all entities");
                 queryResults = tableClient.QueryAsync<TableEntity>();
             }
 
-            var enumerator = queryResults.GetAsyncEnumerator();
-            while (await enumerator.MoveNextAsync())
+            int itemCount = 0;
+            await foreach (var entity in queryResults.WithCancellation(cancellationToken))
             {
-                yield return new AzureTableAPIDataItem(enumerator.Current, settings.PartitionKeyFieldName, settings.RowKeyFieldName);
+                yield return new AzureTableAPIDataItem(entity, settings.PartitionKeyFieldName, settings.RowKeyFieldName);
+                itemCount++;
             }
-            //do
-            //{
-            //    yield return new AzureTableAPIDataItem(enumerator.Current, settings.PartitionKeyFieldName, settings.RowKeyFieldName);
-            //} while (await enumerator.MoveNextAsync());
+
+            if (itemCount > 0)
+            {
+                logger.LogInformation("Read {ItemCount} items from table '{Table}'", itemCount, settings.Table);
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(settings.QueryFilter))
+                {
+                    logger.LogWarning("No items read from table '{Table}' with QueryFilter: {QueryFilter}. Verify the filter syntax is correct for your table API provider.", settings.Table, settings.QueryFilter);
+                }
+                else
+                {
+                    logger.LogWarning("No items read from table '{Table}'", settings.Table);
+                }
+            }
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()

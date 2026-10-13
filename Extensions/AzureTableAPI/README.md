@@ -30,6 +30,17 @@ The following setting is supported for the Source:
 
 #### Query Filter Examples
 
+> **⚠️ Known Limitation — Cosmos DB Table API and Timestamp Filters**
+>
+> If you are using **Azure Cosmos DB Table API** (not Azure Storage Tables), filtering on the system `Timestamp` property is **not supported**. Queries with `Timestamp` filters will silently return 0 results, even when the filter syntax is correct and entities exist in the table. Per [Microsoft's documentation](https://learn.microsoft.com/en-us/azure/cosmos-db/table/tutorial-query#query-by-using-an-odata-filter): *"Azure Cosmos DB blocks the queries on timestamp properties."* See also [Azure SDK #32468](https://github.com/Azure/azure-sdk-for-net/issues/32468).
+>
+> **Workaround**: Store datetime values in a custom property (e.g., `ModifiedDate`, `CreatedAt`) and filter on that property instead:
+> ```json
+> "QueryFilter": "ModifiedDate ge '2023-01-01T00:00:00Z'"
+> ```
+>
+> The `Timestamp` filter examples below work correctly with **Azure Storage Tables** only.
+
 The `QueryFilter` setting supports OData filter syntax for querying Azure Table API entities. Below are examples of common filter patterns:
 
 **Basic Filters:**
@@ -103,6 +114,7 @@ The following table analyzes common mistakes when specifying datetime filters. E
 - No entities exist with timestamps matching the filter criteria
 - The specific timestamp value doesn't match any entity timestamps (especially with `eq` operator)
 - For exact matches with `eq`, consider using `ge` (greater than or equal) or `le` (less than or equal) operators instead, as table timestamps include high-precision fractional seconds
+- **⚠️ Cosmos DB Table API limitation**: Filtering on the system `Timestamp` property is **not supported** on Cosmos DB Table API accounts. Per [Microsoft's documentation](https://learn.microsoft.com/en-us/azure/cosmos-db/table/tutorial-query#query-by-using-an-odata-filter), *"Azure Cosmos DB blocks the queries on timestamp properties."* Queries with `Timestamp` filters will silently return 0 results. See also [Azure SDK #32468](https://github.com/Azure/azure-sdk-for-net/issues/32468). This applies only to Cosmos DB Table API — Azure Storage Tables support `Timestamp` filtering correctly. As a workaround, store dates in a custom property (e.g., `ModifiedDate`) and filter on that instead.
 
 **Key Takeaways:**
 1. Always use `datetime` prefix before the timestamp value
