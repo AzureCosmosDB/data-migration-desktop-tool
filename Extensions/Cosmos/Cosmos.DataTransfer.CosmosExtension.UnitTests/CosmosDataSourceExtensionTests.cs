@@ -49,7 +49,7 @@ public class CosmosDataSourceExtensionTests
     public static async Task CleanUp() {
         try {
             if (testDatabase is not null) {
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
                 await testDatabase.DeleteAsync(cancellationToken: timeout.Token);
             }
         } catch (CosmosException e) when (e.StatusCode == HttpStatusCode.NotFound) {
