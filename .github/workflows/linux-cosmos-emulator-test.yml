@@ -5,100 +5,144 @@ on:
     branches: [ "main" ]
     paths:
       - 'Extensions/Cosmos/**'
+      - 'Extensions/Json/**'
+      - 'Interfaces/**'
+      - 'Directory.*.props'
+      - '.github/scripts/*Cosmos*.ps1'
       - '.github/workflows/linux-cosmos-emulator-test.yml'
 
+permissions:
+  contents: read
+
 jobs:
-  cosmos_tests_linux:
-    name: Run Cosmos .NET unit tests on Linux (${{ matrix.emulator_version.name }})
+  integration_guard:
+    name: Verify Cosmos integration test failure guards
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build Cosmos tests
+        run: dotnet build Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension.UnitTests/
+      - name: Verify missing configuration and failed initialization
+        shell: pwsh
+        run: ./.github/scripts/Test-CosmosIntegrationGuard.ps1
+      - name: Upload guard test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cosmos-integration-guard
+          path: TestResults/guard/
+          if-no-files-found: error
+
+  cosmos_tests_linux:
+    name: Run Cosmos .NET unit tests on Linux (${{ matrix.emulator.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     strategy:
-      matrix:
-        emulator_version: [
-          {
-            name: "current",
-            image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest",
-            allow_failure: false,
-            protocol: "https",
-            endpoint_port: 8081,
-            explorer_port: 8081,
-            use_https: true
-          },
-          {
-            name: "vnext",
-            image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview",
-            allow_failure: true,
-            protocol: "http",
-            endpoint_port: 8081,
-            explorer_port: 1234,
-            use_https: false
-          }
-        ]
       fail-fast: false
-    continue-on-error: ${{ matrix.emulator_version.allow_failure }}
+      matrix:
+        emulator:
+          - name: current
+            image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+            allow_failure: false
+          - name: vnext
+            image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest
+            allow_failure: true
+    # Preview compatibility is advisory; the current emulator and guard job are mandatory.
+    continue-on-error: ${{ matrix.emulator.allow_failure }}
     services:
       cosmos-emulator:
-        image: ${{ matrix.emulator_version.image }}
+        image: ${{ matrix.emulator.image }}
         ports:
           - 8081:8081
-          - 1234:1234
-          - 10251:10251
-          - 10252:10252
-          - 10253:10253
-          - 10254:10254
+          - 8080:8080
         env:
+          PROTOCOL: https
           AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 10
           AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: false
           AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: 127.0.0.1
-        # TCP port check works for both HTTP (vnext) and HTTPS (current) emulators
-        options: >-
-          --health-cmd="timeout 5 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8081' || exit 1"
-          --health-interval=20s
-          --health-timeout=10s
-          --health-retries=20
-          --health-start-period=120s
     steps:
-      - name: Checkout (GitHub)
-        uses: actions/checkout@v4
-        
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-          
-      - name: Restore dependencies
-        run: dotnet restore
-        
-      - name: Build
-        run: dotnet build --no-restore
-        
-      - name: Wait for Cosmos Emulator
-        run: |
-          echo "Waiting for Cosmos DB Emulator (${{ matrix.emulator_version.name }}) to be ready..."
-          if [ "${{ matrix.emulator_version.use_https }}" == "true" ]; then
-            timeout 600 bash -c 'until curl -f -k https://127.0.0.1:8081/_explorer/emulator.pem; do sleep 5; done'
-          else
-            timeout 600 bash -c 'until curl -f http://127.0.0.1:8081/; do sleep 5; done'
-          fi
-          echo "Cosmos DB Emulator is ready!"
-          
-      - name: Import Cosmos Emulator Certificate
-        if: matrix.emulator_version.use_https == true
-        run: |
-          curl -k https://127.0.0.1:8081/_explorer/emulator.pem > ~/emulatorcert.crt
-          sudo cp ~/emulatorcert.crt /usr/local/share/ca-certificates/
-          sudo update-ca-certificates
-          
-      - name: Run Cosmos Extension Tests
-        run: |
-          echo "Running Cosmos extension unit tests with emulator connection (${{ matrix.emulator_version.name }})..."
-          echo "Cosmos_Endpoint: $Cosmos_Endpoint"
-          echo "Testing connectivity to emulator..."
-          if [ "${{ matrix.emulator_version.use_https }}" == "true" ]; then
-            curl -k -s https://127.0.0.1:8081/_explorer/index.html > /dev/null && echo "Emulator is responding" || echo "Warning: Emulator may not be fully ready"
-          else
-            curl -s http://127.0.0.1:8081/ > /dev/null && echo "Emulator is responding" || echo "Warning: Emulator may not be fully ready"
-          fi
-          dotnet test ./Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension.UnitTests/ --no-build --verbosity normal
+
+      - name: Wait for Cosmos Emulator and trust its certificate
         env:
-          Cosmos_Endpoint: ${{ matrix.emulator_version.protocol }}://127.0.0.1:8081/
+          EMULATOR_VERSION: ${{ matrix.emulator.name }}
+          EMULATOR_ID: ${{ job.services.cosmos-emulator.id }}
+        run: |
+          mkdir -p TestResults
+          deadline=$((SECONDS + 600))
+          ready=false
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            if [ "$(docker inspect --format '{{.State.Running}}' "$EMULATOR_ID")" != "true" ]; then
+              echo "::error::Cosmos DB emulator stopped during startup."
+              exit 1
+            fi
+            if [ "$EMULATOR_VERSION" = "vnext" ]; then
+              if curl --fail --silent --show-error --max-time 10 http://localhost:8080/ready; then
+                ready=true
+                break
+              fi
+            elif curl --fail --silent --show-error --insecure --max-time 10 \
+                https://localhost:8081/_explorer/emulator.pem -o "$RUNNER_TEMP/emulator.crt"; then
+              ready=true
+              break
+            fi
+            sleep 5
+          done
+          if [ "$ready" != "true" ]; then
+            echo "::error::Cosmos DB emulator did not become ready within 10 minutes."
+            exit 1
+          fi
+          if [ "$EMULATOR_VERSION" = "vnext" ]; then
+            timeout 30 openssl s_client -connect localhost:8081 -servername localhost -showcerts \
+              </dev/null > "$RUNNER_TEMP/emulator-tls.txt"
+            sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' \
+              "$RUNNER_TEMP/emulator-tls.txt" > "$RUNNER_TEMP/emulator.crt"
+          fi
+          openssl x509 -in "$RUNNER_TEMP/emulator.crt" -noout -subject -issuer -dates
+          sudo cp "$RUNNER_TEMP/emulator.crt" /usr/local/share/ca-certificates/cosmos-emulator.crt
+          sudo update-ca-certificates
+          # An unauthenticated response is fine here; TLS validation must succeed.
+          curl --silent --show-error --max-time 15 https://localhost:8081/ -o /dev/null
+
+      - name: Run Cosmos Extension Tests
+        timeout-minutes: 10
+        run: >-
+          dotnet test Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension.UnitTests/
+          --logger "trx;LogFileName=cosmos.trx" --results-directory TestResults
+        env:
+          Cosmos_Endpoint: https://localhost:8081/
           Cosmos_Key: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+
+      - name: Require both integration tests to pass
+        if: always()
+        shell: pwsh
+        run: ./.github/scripts/Assert-CosmosIntegrationResults.ps1 -Path TestResults/cosmos.trx
+
+      - name: Capture emulator diagnostics
+        if: always()
+        env:
+          EMULATOR_ID: ${{ job.services.cosmos-emulator.id }}
+          EMULATOR_VERSION: ${{ matrix.emulator.name }}
+        run: |
+          mkdir -p TestResults
+          docker logs "$EMULATOR_ID" > TestResults/emulator.log 2>&1
+          docker inspect "$EMULATOR_ID" > TestResults/emulator-inspect.json
+          if [ "$EMULATOR_VERSION" = "vnext" ]; then
+            curl --silent --show-error --max-time 10 http://localhost:8080/status \
+              -o TestResults/emulator-status.json || echo "::warning::Could not collect vNext status."
+          fi
+
+      - name: Upload emulator and test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cosmos-linux-${{ matrix.emulator.name }}
+          path: TestResults/
+          if-no-files-found: error

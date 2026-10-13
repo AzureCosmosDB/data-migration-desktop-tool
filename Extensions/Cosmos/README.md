@@ -28,6 +28,29 @@ These properties will be preserved exactly as they appear in the source when mig
 
 ## Settings
 
+### Emulator integration tests
+
+Set both `Cosmos_Endpoint` and `Cosmos_Key` to run the two integration tests in
+`CosmosDataSourceExtensionTests`. They create a temporary database and delete it
+after the class finishes. With neither variable set, these tests are skipped so
+ordinary local unit tests do not require an emulator. Partial configuration or
+failed initialization fails the tests instead of silently skipping them.
+
+The Linux emulator workflow tests the current `latest` image and the preview
+`vnext-latest` image over HTTPS, with certificate validation enabled. The preview
+uses the documented `/ready` probe on port 8080; the current emulator waits for
+its certificate endpoint. The tests use Gateway mode and explicitly disable bulk
+execution, which the vNext emulator does not support with the .NET SDK. See the
+[Linux vNext emulator documentation](https://learn.microsoft.com/azure/cosmos-db/emulator-linux).
+These tests cover JSON round trips, not bulk execution or authentication enforcement.
+
+Both Linux and Windows emulator workflows retain TRX results and require
+`Test_Json_RoundTrip_WithLongValues` and `Test_FromJson_WithLongValues` to each
+execute and pass. Missing, skipped, duplicate, or failed results fail the job.
+The Linux preview job remains advisory; the current emulator and the separate
+failure-guard regression job are mandatory. Check each matrix job's outcome,
+summary, and artifacts rather than relying on the overall workflow status.
+
 ### Main Settings
 
 - `ConnectionString`: Cosmos DB connection string (AccountEndpoint + AccountKey).

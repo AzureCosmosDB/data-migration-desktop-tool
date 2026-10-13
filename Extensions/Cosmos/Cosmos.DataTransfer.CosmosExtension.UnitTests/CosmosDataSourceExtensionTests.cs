@@ -7,82 +7,63 @@ using System.Net;
 namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 
 [TestClass]
-public class CosmosDataSourceExtensionTests : IDisposable
+public class CosmosDataSourceExtensionTests
 {
-    private static readonly Database testDatabase;
-    private static readonly CosmosClient cosmosClient;
-    private static readonly string connectionString;
-    private static readonly Action dismantleTestDb = () => {};
-    private static readonly bool runTests = false;
+    private static Database? testDatabase;
+    private static CosmosClient? cosmosClient;
+    private static string? connectionString;
 
-    // Sets up a connection to CosmosDB. 
-    // Default values here are to a local Cosmos DB emulator.
-    // Use the two environment variables to pass a custom connection.
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-    static CosmosDataSourceExtensionTests() {
+    [ClassInitialize]
+    public static async Task Initialize(TestContext context) {
         string? endpoint = Environment.GetEnvironmentVariable("Cosmos_Endpoint");
         string? accountKey = Environment.GetEnvironmentVariable("Cosmos_Key");
 
-        if (endpoint is null || accountKey is null) {
-            Console.WriteLine("Connection details for Cosmos DB not found. Ignoring tests...");
-            return;
+        if (string.IsNullOrWhiteSpace(endpoint) && string.IsNullOrWhiteSpace(accountKey)) {
+            Assert.Inconclusive("Set Cosmos_Endpoint and Cosmos_Key to run Cosmos DB integration tests.");
         }
+
+        Assert.IsFalse(string.IsNullOrWhiteSpace(endpoint), "Cosmos_Endpoint is required when Cosmos_Key is configured.");
+        Assert.IsFalse(string.IsNullOrWhiteSpace(accountKey), "Cosmos_Key is required when Cosmos_Endpoint is configured.");
         
         connectionString = $"AccountEndpoint={endpoint};AccountKey={accountKey};";
 
         var fullname = typeof(CosmosDataSourceExtensionTests).Assembly.ManifestModule.Name;
         var dbname = typeof(CosmosDataSourceExtensionTests).Name + "-" + Guid.NewGuid().ToString().Substring(0, 8);
 
-        CosmosClient client = new(
+        cosmosClient = new CosmosClient(
             accountEndpoint: endpoint,
             authKeyOrResourceToken: accountKey,
             new CosmosClientOptions {
-                ApplicationName = fullname
+                ApplicationName = fullname,
+                ConnectionMode = ConnectionMode.Gateway,
+                LimitToEndpoint = true,
+                RequestTimeout = TimeSpan.FromSeconds(10)
             }
         );
-        cosmosClient = client;
-        
-        DatabaseResponse db;
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        testDatabase = await cosmosClient.CreateDatabaseAsync(dbname, cancellationToken: timeout.Token);
+    }
+
+    [ClassCleanup(ClassCleanupBehavior.EndOfClass)]
+    public static async Task CleanUp() {
         try {
-            _ = client.ReadAccountAsync().Result;
-            db = client.CreateDatabaseAsync(dbname, (int?)null, new RequestOptions()).Result;
-        } catch (Exception) {
-            Console.WriteLine("Issues encountered connecting to Cosmos DB. Ignoring these tests...");
-            return;
-        }
-        testDatabase = db.Database;
-        runTests = true;
-        dismantleTestDb = () => {
-            
-        };
-    }
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-
-    [ClassCleanup]
-    public static void CleanUp() {
-        if (runTests) {
-            try {
-                testDatabase.DeleteAsync().Wait();
-            } catch (CosmosException e) when (e.StatusCode == HttpStatusCode.NotFound) {
-                // Ignore; the database has already been deleted.
-            } catch (AggregateException e) when (e.InnerException is CosmosException ce 
-                && ce.StatusCode == HttpStatusCode.NotFound)
-            {
-                // Ignore; the database has already been deleted.
+            if (testDatabase is not null) {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                await testDatabase.DeleteAsync(cancellationToken: timeout.Token);
             }
+        } catch (CosmosException e) when (e.StatusCode == HttpStatusCode.NotFound) {
+            // Ignore; the database has already been deleted.
+        } finally {
+            cosmosClient?.Dispose();
         }
-    }
-
-    public void Dispose()
-    {
-        CleanUp();
     }
 
     private static (CosmosClient client, Database database, string connectionString) GetSetup() {
-        if (!runTests) {
-            throw new AssertInconclusiveException("Cosmos DB not active");
-        }
-        return (cosmosClient, testDatabase, connectionString);
+        return (
+            cosmosClient ?? throw new InvalidOperationException("Cosmos DB client was not initialized."),
+            testDatabase ?? throw new InvalidOperationException("Cosmos DB test database was not initialized."),
+            connectionString ?? throw new InvalidOperationException("Cosmos DB connection string was not initialized."));
     }
 
 
@@ -92,6 +73,8 @@ public class CosmosDataSourceExtensionTests : IDisposable
         var config = TestHelpers.CreateConfig(new Dictionary<string,string>() {
             { "UseRbacAuth", "false" },
             { "ConnectionString", connectionString },
+            { "ConnectionMode", "Gateway" },
+            { "AllowBulkExecution", "false" },
             { "Database", database.Id },
             { "Container", "Test_Json_RoundTrip_WithLongValues" },
             { "RecreateContainer", "true" },
@@ -130,6 +113,8 @@ public class CosmosDataSourceExtensionTests : IDisposable
         var config = TestHelpers.CreateConfig(new Dictionary<string,string>() {
             { "UseRbacAuth", "false" },
             { "ConnectionString", connectionString },
+            { "ConnectionMode", "Gateway" },
+            { "AllowBulkExecution", "false" },
             { "Database", database.Id },
             { "Container", "Test_FromJson_WithLongValues" },
             { "RecreateContainer", "true" },
