@@ -52,6 +52,9 @@ or enterprise proxy credential negotiation.
 It covers key/RBAC client construction after transport use, disposal (including
 the encryption wrapper), concurrent client creation, proxy routing, connection
 reuse, and self-signed TLS rejection/explicit opt-out using local loopback servers.
+RBAC constructor tests inject an offline credential that fails token requests
+locally: the SDK eagerly requests tokens during construction, even before a test
+sends a request. These tests never use developer sign-ins or real identity providers.
 
 Both Linux and Windows emulator workflows retain TRX results and require
 `Test_Json_RoundTrip_WithLongValues` and `Test_FromJson_WithLongValues` to each

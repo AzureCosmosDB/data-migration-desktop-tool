@@ -210,6 +210,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         public static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, ILogger logger, string? sourceDisplayName = null)
         {
+            return CreateClient(settings, displayName, logger, sourceDisplayName, CreateRbacTokenCredential);
+        }
+
+        internal static CosmosClient CreateClient(CosmosSettingsBase settings, string displayName, ILogger logger,
+            string? sourceDisplayName, Func<CosmosSettingsBase, ILogger, TokenCredential> credentialFactory)
+        {
             string userAgentString = CreateUserAgentString(displayName, sourceDisplayName);
             var clientOptions = CreateClientOptions(settings, userAgentString, logger);
 
@@ -222,7 +228,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)
             {
-                var tokenCredential = CreateRbacTokenCredential(settings, logger);
+                var tokenCredential = credentialFactory(settings, logger);
 
                 cosmosClient = settings.InitClientEncryption
                     ? new CosmosClient(settings.AccountEndpoint, tokenCredential, clientOptions)

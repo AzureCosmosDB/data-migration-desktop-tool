@@ -31,17 +31,17 @@ public class CosmosHttpClientLifecycleTests
     {
         var source = CreateSettings<CosmosSourceSettings>(useRbacAuth, preAuthenticate);
         var sink = CreateSettings<CosmosSinkSettings>(useRbacAuth, preAuthenticate,
-            differentAccount ? 8082 : 8081);
-        using var first = CosmosExtensionServices.CreateClient(source, "source", NullLogger.Instance);
+            differentAccount ? 2 : 1);
+        using var first = CreateOfflineClient(source, "source");
         using var transport = first.ClientOptions.HttpClientFactory();
         await StartTransportAsync(transport);
 
         // Construct through DMT, not by manually assigning HttpClient.Timeout.
-        using var second = CosmosExtensionServices.CreateClient(sink, "sink", NullLogger.Instance, "source");
+        using var second = CreateOfflineClient(sink, "sink", "source");
         first.Dispose();
         using var secondTransport = second.ClientOptions.HttpClientFactory();
         await StartTransportAsync(secondTransport);
-        using var third = CosmosExtensionServices.CreateClient(source, "next-operation", NullLogger.Instance);
+        using var third = CreateOfflineClient(source, "next-operation");
         using var thirdTransport = third.ClientOptions.HttpClientFactory();
         await StartTransportAsync(thirdTransport);
     }
@@ -53,8 +53,8 @@ public class CosmosHttpClientLifecycleTests
     {
         var settings = CreateSettings<CosmosSourceSettings>(useRbacAuth, false);
         settings.UseDefaultCredentials = false;
-        using var first = CosmosExtensionServices.CreateClient(settings, "source", NullLogger.Instance);
-        using var second = CosmosExtensionServices.CreateClient(settings, "sink", NullLogger.Instance);
+        using var first = CreateOfflineClient(settings, "source");
+        using var second = CreateOfflineClient(settings, "sink");
         Assert.IsNull(first.ClientOptions.HttpClientFactory);
         Assert.IsNull(second.ClientOptions.HttpClientFactory);
     }
@@ -92,7 +92,7 @@ public class CosmosHttpClientLifecycleTests
         var factory = options.HttpClientFactory;
         HttpClient? ownedTransport = null;
         options.HttpClientFactory = () => ownedTransport = factory();
-        var credential = CosmosExtensionServices.CreateRbacTokenCredential(settings, NullLogger.Instance);
+        var credential = new OfflineTokenCredential();
         using var client = new CosmosClient(settings.AccountEndpoint, credential, options);
         Assert.IsNotNull(ownedTransport);
         await StartTransportAsync(ownedTransport);
@@ -106,7 +106,7 @@ public class CosmosHttpClientLifecycleTests
 
         using var survivingTransport = factory();
         await StartTransportAsync(survivingTransport);
-        using var next = CosmosExtensionServices.CreateClient(settings, "next", NullLogger.Instance);
+        using var next = CreateOfflineClient(settings, "next");
     }
 
     [TestMethod]
@@ -114,11 +114,11 @@ public class CosmosHttpClientLifecycleTests
     {
         await Task.WhenAll(Enumerable.Range(0, 24).Select(i => Task.Run(async () =>
         {
-            var settings = CreateSettings<CosmosSinkSettings>(i % 2 == 0, i % 3 == 0, 8081 + i % 2);
-            using var client = CosmosExtensionServices.CreateClient(settings, $"sink-{i}", NullLogger.Instance);
+            var settings = CreateSettings<CosmosSinkSettings>(i % 2 == 0, i % 3 == 0, 1 + i % 2);
+            using var client = CreateOfflineClient(settings, $"sink-{i}");
             using var transport = client.ClientOptions.HttpClientFactory();
             await StartTransportAsync(transport);
-            using var next = CosmosExtensionServices.CreateClient(settings, $"next-{i}", NullLogger.Instance);
+            using var next = CreateOfflineClient(settings, $"next-{i}");
         })));
     }
 
@@ -128,7 +128,7 @@ public class CosmosHttpClientLifecycleTests
         var settings = CreateSettings<CosmosSourceSettings>(false, false);
         var handler = CosmosExtensionServices.GetHttpHandler(settings);
         Assert.AreSame(handler, CosmosExtensionServices.GetHttpHandler(
-            CreateSettings<CosmosSinkSettings>(true, false, 8082)));
+            CreateSettings<CosmosSinkSettings>(true, false, 2)));
         Assert.AreSame(CredentialCache.DefaultNetworkCredentials, handler.Credentials);
         Assert.IsNull(handler.DefaultProxyCredentials);
         Assert.IsNull(handler.Proxy);
@@ -229,8 +229,6 @@ public class CosmosHttpClientLifecycleTests
         settings.WebProxy = "http://127.0.0.1:1/";
         for (var i = 0; i < 2; i++)
         {
-            using var cosmos = CosmosExtensionServices.CreateClient(
-                CreateSettings<CosmosSinkSettings>(false, true), "sink", NullLogger.Instance);
             using var transport = options.HttpClientFactory();
             using var response = await transport.GetAsync("http://cosmos.invalid/dbs", server.Token);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -353,7 +351,25 @@ public class CosmosHttpClientLifecycleTests
         }
     }
 
-    private static T CreateSettings<T>(bool useRbacAuth, bool preAuthenticate, int port = 8081)
+    [TestMethod]
+    public async Task CreateClient_RbacConstructor_UsesOnlyOfflineCredentialForEagerTokenAcquisition()
+    {
+        var credential = new OfflineTokenCredential();
+        var settings = CreateSettings<CosmosSourceSettings>(true, false);
+        using var client = CosmosExtensionServices.CreateClient(settings, "test", NullLogger.Instance, null,
+            (_, _) => credential);
+        var scopes = await credential.RequestedScopes.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        CollectionAssert.AreEqual(new[] { "https://127.0.0.1/.default" }, scopes);
+    }
+
+    private static CosmosClient CreateOfflineClient(CosmosSettingsBase settings, string displayName,
+        string? sourceDisplayName = null)
+    {
+        return CosmosExtensionServices.CreateClient(settings, displayName, NullLogger.Instance, sourceDisplayName,
+            (_, _) => new OfflineTokenCredential());
+    }
+
+    private static T CreateSettings<T>(bool useRbacAuth, bool preAuthenticate, int port = 1)
         where T : CosmosSettingsBase, new()
     {
         var endpoint = $"https://127.0.0.1:{port}/";
