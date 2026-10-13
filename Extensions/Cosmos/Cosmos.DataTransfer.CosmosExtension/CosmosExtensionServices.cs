@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using System.Diagnostics.Tracing;
 
 namespace Cosmos.DataTransfer.CosmosExtension
 {
@@ -46,6 +47,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
             return new HttpClient(handler);
         });
 
+        private static readonly object _httpEventListenerLock = new();
+        private static EventListener? _httpEventListener;
+
         // NOTE: Kept as a separate helper so auth-path behavior can be tested directly.
         internal static TokenCredentialSelection GetTokenCredentialSelection(CosmosSettingsBase settings)
         {
@@ -63,6 +67,21 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             return TokenCredentialSelection.DefaultAzureCredential;
+        }
+
+        internal static DefaultAzureCredentialOptions CreateDefaultAzureCredentialOptions(CosmosSettingsBase settings)
+        {
+            var options = new DefaultAzureCredentialOptions
+            {
+                ExcludeInteractiveBrowserCredential = !settings.EnableInteractiveCredentials,
+            };
+
+            if (!string.IsNullOrWhiteSpace(settings.ManagedIdentityClientId))
+            {
+                options.ManagedIdentityClientId = settings.ManagedIdentityClientId;
+            }
+
+            return options;
         }
 
         // NOTE: Added explicit exception wrapping to surface actionable auth configuration failures.
@@ -114,7 +133,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         return new ClientCertificateCredential(settings.TenantId!, settings.ClientId!, certificate);
 
                     default:
-                        return new DefaultAzureCredential(includeInteractiveCredentials: settings.EnableInteractiveCredentials);
+                        return new DefaultAzureCredential(CreateDefaultAzureCredentialOptions(settings));
                 }
             }
             catch (Exception ex) when (
@@ -144,7 +163,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 ConnectionMode = settings.ConnectionMode,
                 ApplicationName = userAgentString,
                 AllowBulkExecution = settings.AllowBulkExecution,
-                EnableContentResponseOnWrite = false,
+                EnableContentResponseOnWrite = settings.EnableContentResponseOnWrite,
                 Serializer = cosmosSerializer,
                 LimitToEndpoint = settings.LimitToEndpoint,
             };
@@ -182,6 +201,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
         {
             string userAgentString = CreateUserAgentString(displayName, sourceDisplayName);
             var clientOptions = CreateClientOptions(settings, userAgentString, logger);
+
+            if (settings.EnableNetHttpLogging)
+            {
+                logger.LogWarning(".NET HTTP diagnostic logging is ENABLED for Cosmos connection troubleshooting. Logs are emitted at Debug level and may include endpoint/request details.");
+                EnsureHttpEventLoggingEnabled(logger);
+            }
             
             CosmosClient? cosmosClient;
             if (settings.UseRbacAuth)
@@ -199,6 +224,89 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             return cosmosClient;
+        }
+
+        private static void EnsureHttpEventLoggingEnabled(ILogger logger)
+        {
+            lock (_httpEventListenerLock)
+            {
+                _httpEventListener ??= new NetHttpEventListener(logger);
+            }
+        }
+
+        private sealed class NetHttpEventListener(ILogger logger) : EventListener
+        {
+            private readonly ILogger _logger = logger;
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "System.Net.Http" || eventSource.Name == "System.Net.Security")
+                {
+                    EnableEvents(eventSource, EventLevel.Informational, EventKeywords.All);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (!_logger.IsEnabled(LogLevel.Debug))
+                {
+                    return;
+                }
+
+                if (eventData.EventSource.Name != "System.Net.Http" && eventData.EventSource.Name != "System.Net.Security")
+                {
+                    return;
+                }
+
+                if (string.Equals(eventData.EventName, "EventCounters", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                var payload = FormatPayload(eventData);
+
+                _logger.LogDebug(".NET HTTP event {Source}:{EventName} ({EventId}) {Payload}",
+                    eventData.EventSource.Name,
+                    eventData.EventName ?? "unknown",
+                    eventData.EventId,
+                    payload);
+            }
+
+            private static string FormatPayload(EventWrittenEventArgs eventData)
+            {
+                if (eventData.Payload is null || eventData.Payload.Count == 0)
+                {
+                    return string.Empty;
+                }
+
+                return string.Join(", ", eventData.Payload.Select((value, index) =>
+                {
+                    var key = eventData.PayloadNames is not null && index < eventData.PayloadNames.Count
+                        ? eventData.PayloadNames[index]
+                        : $"arg{index}";
+                    return $"{key}={FormatPayloadValue(value)}";
+                }));
+            }
+
+            private static string FormatPayloadValue(object? value)
+            {
+                if (value is null)
+                {
+                    return "null";
+                }
+
+                if (value is string text)
+                {
+                    return text;
+                }
+
+                if (value is IEnumerable<KeyValuePair<string, object>> keyValuePairs)
+                {
+                    return string.Join(";", keyValuePairs.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                }
+
+                return value.ToString() ?? string.Empty;
+            }
         }
 
         private static string CreateUserAgentString(string displayName, string? sourceDisplayName)
