@@ -43,3 +43,15 @@ Additionally, an optional `ItemProgressFrequency` parameter (`1000` by default) 
     "ItemProgressFrequency": 1000
 }
 ```
+
+## Notes
+
+### Multi-dimensional arrays
+
+Multi-dimensional (nested) arrays are supported on write. This includes GeoJSON geometries such as `LineString` (2-D), `Polygon` (3-D), and `MultiPolygon` (4-D) `coordinates`. Documents that previously emitted `"System.Collections.Generic.List``1[System.Object]"` placeholders for these shapes now serialize correctly.
+
+### Maximum nesting depth
+
+To guard against pathological or recursively nested input (which would otherwise stack-overflow the host process), JSON serialization enforces a **maximum combined object + array nesting depth of 64**. Documents that exceed this limit are rejected with an `InvalidOperationException` whose message contains the phrase `nesting depth`.
+
+This limit is well above any realistic document — GeoJSON `MultiPolygon` reaches depth 5, and typical nested business documents are under depth 10 — but if you hit it, it almost always indicates a corrupt or self-referential source document.
