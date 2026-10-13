@@ -46,6 +46,12 @@ Additionally, an optional `ItemProgressFrequency` parameter (`1000` by default) 
 
 ## Notes
 
+### Streamed array parse errors
+
+For failures within streamed array items, the primary `JsonException.Path` and error message report the global zero-based array index, including any preceding `null` entries. The parser's property-path suffix, zero-based line number, and byte position are preserved. Arrays still stream incrementally with the default JSON parsing rules.
+
+System.Text.Json currently reports a batch-relative outer array index after streaming buffers have been drained. The JSON reader corrects that structured index without reparsing the source or rewriting the parser's error message. When a correction is needed, the original parser exception is retained as the inner exception for its detailed cause; its path still contains the SDK's batch-relative index. Property-path detail remains limited to what the parser supplies (for example, an error inside a nested `JsonElement` value can identify its containing property).
+
 ### Multi-dimensional arrays
 
 Multi-dimensional (nested) arrays are supported on write. This includes GeoJSON geometries such as `LineString` (2-D), `Polygon` (3-D), and `MultiPolygon` (4-D) `coordinates`. Documents that previously emitted `"System.Collections.Generic.List``1[System.Object]"` placeholders for these shapes now serialize correctly.

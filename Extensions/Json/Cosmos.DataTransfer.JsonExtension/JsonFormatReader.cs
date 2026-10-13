@@ -49,7 +49,7 @@ public class JsonFormatReader : IFormattedDataReader
             {
                 jsonStream.Seek(0, SeekOrigin.Begin);
             }
-            return JsonSerializer.DeserializeAsyncEnumerable<Dictionary<string, object?>>(jsonStream, cancellationToken: cancellationToken);
+            return JsonArrayReader.ReadAsync(jsonStream, cancellationToken);
         }
         catch (Exception ex)
         {
