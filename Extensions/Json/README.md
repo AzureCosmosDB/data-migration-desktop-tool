@@ -24,6 +24,12 @@ See storage extension documentation for any storage specific settings needed ([e
 
 Source does not require any formatter specific settings.
 
+A source may contain a single JSON object or an array of objects, including on non-seekable HTTP/cloud streams and in compressed files. Arrays are read incrementally. A valid empty array (`[]`) is an empty source; an empty file or malformed JSON fails the migration (CLI exit code `1`).
+
+Parse failures retain the JSON path, zero-based line number, and byte position reported by the JSON parser. The error log identifies the source type and stream number; the preceding source read log identifies the file or resource. Document contents are not dumped for diagnostics. Parsing still uses the default JSON rules (for example, no comments or trailing commas).
+
+Sinks are not transactional: a source failure can leave partial output. Do not use that output as a completed migration.
+
 ```json
 {
 }

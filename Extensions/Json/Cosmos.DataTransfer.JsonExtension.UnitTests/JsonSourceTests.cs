@@ -1,6 +1,7 @@
 using Cosmos.DataTransfer.Interfaces;
 using Cosmos.DataTransfer.Common.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
 
 namespace Cosmos.DataTransfer.JsonExtension.UnitTests
 {
@@ -141,18 +142,33 @@ namespace Cosmos.DataTransfer.JsonExtension.UnitTests
         [TestMethod]
         public async Task ReadAsync_WithFlatObjects_ReadsValuesFromUrl()
         {
+            await using var server = new HttpTestServer(HttpStatusCode.OK, "[{\"id\":1,\"name\":\"One\"}]");
             var extension = new JsonFileSource();
             var config = TestHelpers.CreateConfig(new Dictionary<string, string>
             {
-                { "FilePath", "https://raw.githubusercontent.com/Azure/azure-documentdb-datamigrationtool/main/Extensions/Json/.JsonExtension.UnitTests/Data/SimpleIdName.json" }
+                { "FilePath", server.Url }
             });
 
+            int count = 0;
             await foreach (var dataItem in extension.ReadAsync(config, NullLogger.Instance))
             {
+                count++;
                 CollectionAssert.AreEquivalent(new[] { "id", "name" }, dataItem.GetFieldNames().ToArray());
                 Assert.IsNotNull(dataItem.GetValue("id"));
                 Assert.IsNotNull(dataItem.GetValue("name"));
             }
+            Assert.AreEqual(1, count);
+        }
+
+        [DataTestMethod]
+        [DataRow("{\"id\":1}", 1)]
+        [DataRow("[]", 0)]
+        public async Task ReadAsync_WithHttpObjectOrEmptyArray_ReadsExpectedCount(string json, int expectedCount)
+        {
+            await using var server = new HttpTestServer(HttpStatusCode.OK, json);
+            var config = TestHelpers.CreateConfig(new() { { "FilePath", server.Url } });
+            var items = await new JsonFileSource().ReadAsync(config, NullLogger.Instance).ToListAsync();
+            Assert.AreEqual(expectedCount, items.Count);
         }
 
         [TestMethod]

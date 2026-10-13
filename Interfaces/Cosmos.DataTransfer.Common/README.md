@@ -10,6 +10,8 @@ Source and sink settings both require a `FilePath` parameter, which should speci
 
 ### Source
 
+Missing or unreadable source paths, HTTP connection failures, and non-success HTTP responses fail the migration (CLI exit code `1`); they are not treated as empty sources. An existing directory with no matching files still produces an empty source. HTTP diagnostics omit URL credentials, query strings, and fragments.
+
 Gzip, bzip2, and zlib compressed files are automatically detected by file extension
 (`.gz`, `.bz2`, and `.zz`, respectively) and decompressed, when `"None"` is specified as `"Compression"`.
 
