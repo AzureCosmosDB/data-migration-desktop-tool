@@ -8,7 +8,14 @@ $ErrorActionPreference = 'Stop'
 $namespace = [System.Xml.XmlNamespaceManager]::new($trx.NameTable)
 $namespace.AddNamespace('t', 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010')
 $className = 'Cosmos.DataTransfer.CosmosExtension.UnitTests.CosmosDataSourceExtensionTests'
-$requiredTests = @('Test_Json_RoundTrip_WithLongValues', 'Test_FromJson_WithLongValues')
+$requiredTests = @(
+    'Test_Json_RoundTrip_WithLongValues',
+    'Test_FromJson_WithLongValues',
+    'Test_StreamPartitionKeyMismatch_IsRejected',
+    'Test_PartitionKeys_RoundTripAndDelete',
+    'Test_NestedPartitionKeys_RoundTripAndDelete',
+    'Test_HierarchicalPartitionKeys_RoundTripAndDelete'
+)
 $definitions = @($trx.SelectNodes('/t:TestRun/t:TestDefinitions/t:UnitTest', $namespace))
 $results = @($trx.SelectNodes('/t:TestRun/t:Results/t:UnitTestResult', $namespace))
 $failures = @()

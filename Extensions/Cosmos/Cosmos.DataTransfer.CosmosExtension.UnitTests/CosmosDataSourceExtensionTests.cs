@@ -3,6 +3,9 @@ using Cosmos.DataTransfer.Common.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Azure.Cosmos;
 using System.Net;
+using Cosmos.DataTransfer.Interfaces;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 
@@ -64,6 +67,125 @@ public class CosmosDataSourceExtensionTests
             cosmosClient ?? throw new InvalidOperationException("Cosmos DB client was not initialized."),
             testDatabase ?? throw new InvalidOperationException("Cosmos DB test database was not initialized."),
             connectionString ?? throw new InvalidOperationException("Cosmos DB connection string was not initialized."));
+    }
+
+    [TestMethod]
+    public async Task Test_StreamPartitionKeyMismatch_IsRejected()
+    {
+        var (_, database, _) = GetSetup();
+        var container = await database.CreateContainerAsync("MissingKeyRepro", "/partitionKey", throughput: 400);
+        foreach (var upsert in new[] { false, true })
+        {
+            using var payload = new MemoryStream(Encoding.UTF8.GetBytes("""{"id":"missing-key","name":"sample"}"""));
+            using var response = upsert
+                ? await container.Container.UpsertItemStreamAsync(payload, PartitionKey.Null)
+                : await container.Container.CreateItemStreamAsync(payload, PartitionKey.Null);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode, "The old explicit-null key must not match a missing field.");
+        }
+    }
+
+    [TestMethod]
+    public Task Test_PartitionKeys_RoundTripAndDelete() =>
+        AssertPartitionKeyRoundTrip(new[] { "/partitionKey" }, new[]
+        {
+            ("{}", PartitionKey.None),
+            ("""{"partitionKey":null}""", PartitionKey.Null),
+            ("""{"partitionKey":"example"}""", new PartitionKey("example")),
+            ("""{"partitionKey":42}""", new PartitionKey(42)),
+            ("""{"partitionKey":-12.75}""", new PartitionKey(-12.75)),
+            ("""{"partitionKey":true}""", new PartitionKey(true)),
+            ("""{"partitionKey":false}""", new PartitionKey(false))
+        }, "PartitionKeys");
+
+    [TestMethod]
+    public Task Test_NestedPartitionKeys_RoundTripAndDelete() =>
+        AssertPartitionKeyRoundTrip(new[] { "/nested/key" }, new[]
+        {
+            ("""{"nested":{}}""", PartitionKey.None),
+            ("""{"nested":{"key":null}}""", PartitionKey.Null),
+            ("""{"nested":{"key":42}}""", new PartitionKey(42))
+        }, "NestedPartitionKeys");
+
+    [TestMethod]
+    public Task Test_HierarchicalPartitionKeys_RoundTripAndDelete() =>
+        AssertPartitionKeyRoundTrip(new[] { "/tenant", "/nested/key", "/active" }, new[]
+        {
+            ("""{"tenant":"one","nested":{"key":42},"active":true}""", new PartitionKeyBuilder().Add("one").Add(42).Add(true).Build()),
+            ("""{"tenant":"one","nested":{"key":null},"active":false}""", new PartitionKeyBuilder().Add("one").AddNullValue().Add(false).Build()),
+            ("""{"tenant":"one","active":true}""", new PartitionKeyBuilder().Add("one").AddNoneType().Add(true).Build()),
+            ("""{"active":false}""", new PartitionKeyBuilder().AddNoneType().AddNoneType().Add(false).Build()),
+            ("{}", new PartitionKeyBuilder().AddNoneType().AddNoneType().AddNoneType().Build())
+        }, "HierarchicalPartitionKeys");
+
+    private static async Task AssertPartitionKeyRoundTrip(string[] paths, (string json, PartitionKey key)[] cases, string containerName)
+    {
+        var (_, database, connectionString) = GetSetup();
+        var configValues = new Dictionary<string, string>
+        {
+            ["ConnectionString"] = connectionString,
+            ["ConnectionMode"] = "Gateway",
+            ["AllowBulkExecution"] = "false",
+            ["Database"] = database.Id,
+            ["Container"] = containerName
+        };
+        if (paths.Length == 1)
+        {
+            configValues["PartitionKeyPath"] = paths[0];
+        }
+        else
+        {
+            for (int i = 0; i < paths.Length; i++)
+                configValues[$"PartitionKeyPaths:{i}"] = paths[i];
+            // Container creation and every explicit-key operation must agree on plural precedence.
+            configValues["PartitionKeyPath"] = "/ignored";
+        }
+
+        var source = new CosmosDataSourceExtension();
+        var sink = new CosmosDataSinkExtension();
+        var container = database.GetContainer(containerName);
+        foreach (var mode in new[] { DataWriteMode.Insert, DataWriteMode.Upsert, DataWriteMode.InsertStream, DataWriteMode.UpsertStream })
+        {
+            var items = cases.Select(c =>
+            {
+                var values = JsonConvert.DeserializeObject<Dictionary<string, object?>>(c.json, RawJsonCosmosSerializer.GetDefaultSettings())!;
+                values["id"] = mode.ToString();
+                return new CosmosDictionaryDataItem(values);
+            }).ToArray();
+            configValues["WriteMode"] = mode.ToString();
+            var config = TestHelpers.CreateConfig(configValues);
+            await sink.WriteAsync(items.ToAsyncEnumerable(), config, source, NullLogger.Instance);
+            if (mode is DataWriteMode.Upsert or DataWriteMode.UpsertStream)
+            {
+                foreach (var item in items)
+                    item.Items["updated"] = true;
+                await sink.WriteAsync(items.ToAsyncEnumerable(), config, source, NullLogger.Instance);
+            }
+
+            for (int i = 0; i < cases.Length; i++)
+            {
+                var result = await container.ReadItemAsync<JObject>(mode.ToString(), cases[i].key);
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode, $"{mode}, case {i}");
+                var expected = JObject.FromObject(items[i].BuildDynamicObjectTree(requireStringId: true)!);
+                foreach (var property in expected.Properties())
+                    Assert.IsTrue(JToken.DeepEquals(property.Value, result.Resource[property.Name]), $"{mode}, case {i}, {property.Name}");
+                if (paths.Length == 1 && cases[i].key.Equals(PartitionKey.None))
+                    Assert.IsFalse(result.Resource.ContainsKey("partitionKey"));
+            }
+
+            // Same id in different partitions: a mistaken 404-as-success cannot hide an undeleted document.
+            foreach (var deleteMode in new[] { DataWriteMode.Delete, DataWriteMode.DeleteStream })
+            {
+                if (deleteMode == DataWriteMode.DeleteStream)
+                    await sink.WriteAsync(items.ToAsyncEnumerable(), config, source, NullLogger.Instance);
+                configValues["WriteMode"] = deleteMode.ToString();
+                await sink.WriteAsync(items.ToAsyncEnumerable(), TestHelpers.CreateConfig(configValues), source, NullLogger.Instance);
+                foreach (var (_, key) in cases)
+                {
+                    using var result = await container.ReadItemStreamAsync(mode.ToString(), key);
+                    Assert.AreEqual(HttpStatusCode.NotFound, result.StatusCode, $"{mode}, {deleteMode}");
+                }
+            }
+        }
     }
 
 
