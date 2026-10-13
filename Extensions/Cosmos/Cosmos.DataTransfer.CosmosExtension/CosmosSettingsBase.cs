@@ -53,6 +53,12 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public bool AllowBulkExecution { get; set; } = false;
 
         /// <summary>
+        /// Enables .NET HTTP diagnostic event logging for troubleshooting connectivity issues.
+        /// Logs are emitted at Debug level and may include endpoint and request details.
+        /// </summary>
+        public bool EnableNetHttpLogging { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets whether to return the resource in the Cosmos DB response
         /// for write item operations like Create, Upsert, Patch and Replace.
         /// Setting to <c>false</c> will cause the response to have a null resource,
