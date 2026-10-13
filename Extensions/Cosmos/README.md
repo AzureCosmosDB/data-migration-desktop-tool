@@ -30,7 +30,7 @@ These properties will be preserved exactly as they appear in the source when mig
 
 ### Emulator integration tests
 
-Set both `Cosmos_Endpoint` and `Cosmos_Key` to run the two integration tests in
+Set both `Cosmos_Endpoint` and `Cosmos_Key` to run the seven integration tests in
 `CosmosDataSourceExtensionTests`. They create a temporary database and delete it
 after the class finishes. With neither variable set, these tests are skipped so
 ordinary local unit tests do not require an emulator. Partial configuration or
@@ -42,14 +42,46 @@ uses the documented `/ready` probe on port 8080; the current emulator waits for
 its certificate endpoint. The tests use Gateway mode and explicitly disable bulk
 execution, which the vNext emulator does not support with the .NET SDK. See the
 [Linux vNext emulator documentation](https://learn.microsoft.com/azure/cosmos-db/emulator-linux).
-These tests cover JSON round trips, not bulk execution or authentication enforcement.
+These tests cover JSON round trips, the missing-field/explicit-null request mismatch,
+and typed/stream insert, upsert, and delete with single, nested, and hierarchical
+partition keys. They do not cover bulk execution or authentication enforcement.
+An independent SDK control uses regular `CreateItemAsync` with inferred keys,
+sequential writes, and correct/wrong-key reads to verify that missing and null
+remain separate partitions without involving the DMT sink or serializer.
 
-Both Linux and Windows emulator workflows retain TRX results and require
-`Test_Json_RoundTrip_WithLongValues` and `Test_FromJson_WithLongValues` to each
-execute and pass. Missing, skipped, duplicate, or failed results fail the job.
+Both Linux and Windows emulator workflows retain TRX results. Current Linux and
+Windows require all seven integration tests to execute and pass, including
+missing/null partition identity and incorrect-key rejection. Missing, skipped,
+duplicate, or failed required results fail the job.
 The Linux preview job remains advisory; the current emulator and the separate
 failure-guard regression job are mandatory. Check each matrix job's outcome,
 summary, and artifacts rather than relying on the overall workflow status.
+
+#### Preview partition-key capabilities
+
+The vNext preview currently aliases undefined and null for single/nested partition
+keys. The independent SDK control reproduced wrong-key reads returning `200`
+instead of `404`, and a null-key write sharing an ID with an undefined-key document
+returning `409` instead of `201`. It also accepts a mismatched explicit-null stream
+request for a missing field (`201` rather than `400`).
+
+The Linux matrix explicitly sets `Cosmos_EmulatorVariant=vnext` for that image.
+Only `Test_SdkPartitionKeys_DistinguishMissingAndNull` and
+`Test_StreamPartitionKeyMismatch_IsRejected` are intentionally skipped there, with
+a `[vNext missing/null capability]` reason. All five other integration tests must
+pass. Single/nested positive transfer tests still run every missing/null/string/
+number/boolean case, all four insert/upsert modes, point reads, and both delete
+modes. Only the explicit-null document gets a separate ID on preview; other keys
+share an ID. Current Linux and Windows retain the original same-ID fixture for
+all keys. Hierarchical tests and exact outgoing-key request-capture regressions
+remain unchanged and run everywhere.
+
+The result gate accepts only these two named, reason-marked preview skips;
+unexpected skips or failures still fail it. Guard regressions verify both profiles.
+This approved capability-specific coverage is not a claim that preview satisfies
+missing/null identity or incorrect-header conformance. To recheck those capabilities
+after an emulator update, omit `Cosmos_EmulatorVariant` or set it to `current`,
+which runs all strict assertions.
 
 ### Main Settings
 
@@ -259,8 +291,34 @@ For development purposes with SSL validation disabled:
 
 #### **Partition Key Settings**
 
-- **`PartitionKeyPath`**: Specifies the partition key path when creating the container (e.g., `/id`) if it does not exist.
-- **`PartitionKeyPaths`**: Use this to supply an array of up to 3 paths for hierarchical partition keys.
+- **`PartitionKeyPath`**: Specifies the partition key path (e.g., `/id` or `/address/country`) for container creation and explicit-key operations.
+- **`PartitionKeyPaths`**: An array of 1 to 3 paths in hierarchical order. When supplied, this takes precedence over `PartitionKeyPath` for both container creation and operations. Empty lists and blank entries are rejected; all paths must start with `/`.
+
+`InsertStream`, `UpsertStream`, `DeleteStream`, and `Delete` require one of these
+settings, matching the destination container's partition key definition. All
+configured hierarchical components are used, in order. Regular `Insert` and
+`Upsert` continue to let the Cosmos SDK infer keys from the document.
+
+Explicit keys are extracted from the serialized document after transformations
+and `IgnoreNullValues` processing. Strings, numbers, and booleans retain their
+JSON types; numbers use the SDK's double-precision representation. A missing
+property (including a missing nested component) is **undefined**, not JSON
+`null`. An explicit `null` remains null unless `IgnoreNullValues` removes it,
+in which case it becomes undefined. Object and array partition-key values are
+rejected with a path/type error, without logging their contents.
+
+For example, with `/partitionKey`, `{"id":"1"}` uses
+[`PartitionKey.None`](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.partitionkey.none),
+while `{"id":"1","partitionKey":null}` uses
+[`PartitionKey.Null`](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.partitionkey.null).
+This distinction matters for stream imports of documents that omit the configured
+partition-key field.
+
+When building CLI arguments, separate each option with whitespace and do not put
+a space after `=`. For example:
+`--SinkSettings:MaxRetryCount=2 --SinkSettings:BatchSize=100 --SinkSettings:WriteMode=InsertStream`.
+Concatenating `2--SinkSettings:BatchSize=100` is a separate argument-formatting
+error, not a stream-specific limitation.
 
 #### **Database Management**
 
@@ -281,6 +339,8 @@ For development purposes with SSL validation disabled:
   - `Insert`
   - `UpsertStream`
   - `Upsert`
+  - `DeleteStream`
+  - `Delete`
 
 #### **Connection Settings**
 

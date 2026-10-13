@@ -119,11 +119,12 @@ jobs:
         env:
           Cosmos_Endpoint: https://localhost:8081/
           Cosmos_Key: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+          Cosmos_EmulatorVariant: ${{ matrix.emulator.name }}
 
-      - name: Require both integration tests to pass
+      - name: Require applicable integration coverage
         if: always()
         shell: pwsh
-        run: ./.github/scripts/Assert-CosmosIntegrationResults.ps1 -Path TestResults/cosmos.trx
+        run: ./.github/scripts/Assert-CosmosIntegrationResults.ps1 -Path TestResults/cosmos.trx -EmulatorVariant '${{ matrix.emulator.name }}'
 
       - name: Capture emulator diagnostics
         if: always()
