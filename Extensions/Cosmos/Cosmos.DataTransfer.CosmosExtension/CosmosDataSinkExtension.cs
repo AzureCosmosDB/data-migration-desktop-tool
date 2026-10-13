@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Globalization;
 using System.Net;
+using System.Numerics;
 using System.Text;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
@@ -193,46 +195,96 @@ namespace Cosmos.DataTransfer.CosmosExtension
             logger.LogInformation("Added {AddedCount} total records in {TotalSeconds}s ({AddRate} records/s)", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}", $"{(int)(addedCount / (timer.ElapsedMilliseconds / 1000.0))}");
         }
 
-        private static AsyncRetryPolicy GetRetryPolicy(int maxRetryCount, int initialRetryDuration)
+        internal static AsyncRetryPolicy GetRetryPolicy(int maxRetryCount, int initialRetryDuration,
+            Func<int, CosmosException, TimeSpan>? retryDelayProvider = null)
         {
-            int retryDelayBaseMs = initialRetryDuration / 2;
-            var jitter = new Random();
-            var retryPolicy = Policy
-                .Handle<CosmosException>(c => c.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            ArgumentOutOfRangeException.ThrowIfNegative(maxRetryCount);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(initialRetryDuration);
+            return Policy
+                .Handle<CosmosException>(c => c.StatusCode == HttpStatusCode.TooManyRequests)
                 .WaitAndRetryAsync(maxRetryCount,
-                    retryAttempt => TimeSpan.FromMilliseconds(Math.Pow(2, retryAttempt) * retryDelayBaseMs + jitter.Next(0, retryDelayBaseMs))
-                );
-
-            return retryPolicy;
+                    (attempt, exception, _) => retryDelayProvider != null
+                        ? retryDelayProvider(attempt, (CosmosException)exception)
+                        : GetRetryDelay((CosmosException)exception, attempt, initialRetryDuration),
+                    (_, _, attempt, context) =>
+                    {
+                        context["RetryCount"] = attempt;
+                        return Task.CompletedTask;
+                    });
         }
 
-        private static Task<ItemResult> AddItemAsync(Container container, ExpandoObject item, string? partitionKeyPath, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger, CancellationToken cancellationToken)
+        internal static TimeSpan GetRetryDelay(CosmosException exception, int retryAttempt, int initialRetryDuration)
+        {
+            // The SDK returns null for headers outside Int64, which must not turn an
+            // oversized positive service delay into a short fallback wait.
+            if (BigInteger.TryParse(exception.Headers.Get("x-ms-retry-after-ms"), NumberStyles.Number,
+                    CultureInfo.InvariantCulture, out var serviceDelayMs) && serviceDelayMs > uint.MaxValue - 1)
+            {
+                throw new NotSupportedException("Cosmos sink retry-after exceeds the supported delay range; refusing to retry early.");
+            }
+
+            TimeSpan? retryAfter;
+            try
+            {
+                retryAfter = exception.RetryAfter;
+            }
+            catch (OverflowException)
+            {
+                throw new NotSupportedException("Cosmos sink retry-after exceeds the supported delay range; refusing to retry early.");
+            }
+
+            if (retryAfter > TimeSpan.Zero)
+            {
+                // Task.Delay on .NET 8 supports at most uint.MaxValue - 1 milliseconds.
+                if (retryAfter.Value.TotalMilliseconds > uint.MaxValue - 1)
+                {
+                    throw new NotSupportedException("Cosmos sink retry-after exceeds the supported delay range; refusing to retry early.");
+                }
+
+                return retryAfter.Value;
+            }
+
+            // Only fallback delays are capped. Limit the exponent before calculating it to avoid overflow.
+            const int maxFallbackDelayMs = 30_000;
+            double exponentialDelayMs = Math.Min(maxFallbackDelayMs,
+                initialRetryDuration * Math.Pow(2, Math.Min(retryAttempt - 1, 15)));
+            int jitterMs = Random.Shared.Next(0, Math.Max(1, Math.Min(initialRetryDuration, maxFallbackDelayMs) / 2));
+            return TimeSpan.FromMilliseconds(Math.Min(maxFallbackDelayMs, exponentialDelayMs + jitterMs));
+        }
+
+        internal static async Task<ItemResult> AddItemAsync(Container container, ExpandoObject item, string? partitionKeyPath, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger, CancellationToken cancellationToken)
         {
             string? id = GetPropertyValue(item, "id");
-            logger.LogTrace("Adding item {Id}", id);
-
-            var task = retryPolicy.ExecuteAsync(() => PopulateItem(container, item, partitionKeyPath, mode, id, cancellationToken))
-                .ContinueWith(t =>
+            var context = new Context();
+            try
+            {
+                var result = await retryPolicy.ExecuteAsync(
+                    (_, token) => PopulateItem(container, item, partitionKeyPath, mode, id, token),
+                    context, cancellationToken);
+                if (!result.IsSuccess)
                 {
-                    bool requestSucceeded = t.Result.IsSuccess;
-                    if (t.IsCompletedSuccessfully && requestSucceeded)
-                    {
-                        return t.Result;
-                    }
-
-                    if (t.IsFaulted)
-                    {
-                        logger.LogWarning(t.Exception, "Error adding record: {ErrorMessage}", t.Exception?.Message);
-                    }
-                    else if (!requestSucceeded)
-                    {
-                        logger.LogWarning(t.Exception, "Error adding record {Id}: {ErrorMessage}", t.Result.Id, t.Result.StatusCode);
-                        return t.Result;
-                    }
-
-                    return new ItemResult(null, mode, HttpStatusCode.InternalServerError);
-                }, cancellationToken);
-            return task;
+                    logger.LogWarning("Cosmos sink {WriteMode} failed with status {StatusCode}.", mode, (int)result.StatusCode);
+                }
+                return result;
+            }
+            catch (CosmosException exception)
+            {
+                var retries = context.TryGetValue("RetryCount", out var count) ? (int)count : 0;
+                if (exception.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    logger.LogWarning("Cosmos sink {WriteMode} exhausted {RetryCount} additional application retries with status 429. SDK retries also apply; consider reducing BatchSize or increasing available throughput.", mode, retries);
+                }
+                else
+                {
+                    logger.LogWarning("Cosmos sink {WriteMode} failed with status {StatusCode}; not retried by the application.", mode, (int)exception.StatusCode);
+                }
+                throw;
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogWarning("Cosmos sink {WriteMode} failed with {ErrorType}.", mode, exception.GetType().Name);
+                throw;
+            }
         }
 
         private static async Task<ItemResult> PopulateItem(Container container, ExpandoObject item, string? partitionKeyPath, DataWriteMode mode, string? itemId, CancellationToken cancellationToken)
@@ -242,8 +294,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
             {
                 case DataWriteMode.InsertStream:
                     ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
-                    var insertMessage = await container.CreateItemStreamAsync(CreateItemStream(item), new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken);
-                    statusCode = insertMessage.StatusCode;
+                    using (var payload = CreateItemStream(item))
+                    using (var insertMessage = await container.CreateItemStreamAsync(payload, new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken))
+                    {
+                        statusCode = GetStreamStatusCode(insertMessage);
+                    }
                     break;
                 case DataWriteMode.Insert:
                     var insertResponse = await container.CreateItemAsync(item, cancellationToken: cancellationToken);
@@ -251,8 +306,11 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     break;
                 case DataWriteMode.UpsertStream:
                     ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
-                    var upsertMessage = await container.UpsertItemStreamAsync(CreateItemStream(item), new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken);
-                    statusCode = upsertMessage.StatusCode;
+                    using (var payload = CreateItemStream(item))
+                    using (var upsertMessage = await container.UpsertItemStreamAsync(payload, new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken))
+                    {
+                        statusCode = GetStreamStatusCode(upsertMessage);
+                    }
                     break;
                 case DataWriteMode.Upsert:
                     var upsertResponse = await container.UpsertItemAsync(item, cancellationToken: cancellationToken);
@@ -260,13 +318,22 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     break;
                 case DataWriteMode.DeleteStream:
                     ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
-                    var deleteMessage = await container.DeleteItemStreamAsync(itemId, new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken);
-                    statusCode = deleteMessage.StatusCode;
+                    using (var deleteMessage = await container.DeleteItemStreamAsync(itemId, new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken))
+                    {
+                        statusCode = GetStreamStatusCode(deleteMessage);
+                    }
                     break;
                 case DataWriteMode.Delete:
                     ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
-                    var deleteResponse = await container.DeleteItemAsync<ExpandoObject>(itemId, new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken);
-                    statusCode = deleteResponse.StatusCode;
+                    try
+                    {
+                        var deleteResponse = await container.DeleteItemAsync<ExpandoObject>(itemId, new PartitionKey(GetPropertyValue(item, partitionKeyPath.TrimStart('/'))), cancellationToken: cancellationToken);
+                        statusCode = deleteResponse.StatusCode;
+                    }
+                    catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        statusCode = HttpStatusCode.NotFound;
+                    }
                     break;
             }
 
@@ -276,6 +343,17 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             return new ItemResult(itemId, mode, statusCode.Value);
+        }
+
+        private static HttpStatusCode GetStreamStatusCode(ResponseMessage response)
+        {
+            // Stream APIs return service failures instead of throwing. Normalize only throttling
+            // so other status handling (including delete-not-found success) remains unchanged.
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                response.EnsureSuccessStatusCode();
+            }
+            return response.StatusCode;
         }
 
         private static MemoryStream CreateItemStream(ExpandoObject item)

@@ -5,6 +5,40 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 [TestClass]
 public class CosmosSinkSettingsTests
 {
+    [DataTestMethod]
+    [DataRow(-1, 200, nameof(CosmosSinkSettings.MaxRetryCount))]
+    [DataRow(5, 0, nameof(CosmosSinkSettings.InitialRetryDurationMs))]
+    [DataRow(5, -1, nameof(CosmosSinkSettings.InitialRetryDurationMs))]
+    public void GetValidationErrors_InvalidRetrySettings_ReturnsError(int maxRetries, int initialDelay, string setting)
+    {
+        var settings = new CosmosSinkSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+            MaxRetryCount = maxRetries,
+            InitialRetryDurationMs = initialDelay,
+        };
+        Assert.IsTrue(settings.GetValidationErrors().Any(error => error.Contains(setting)));
+    }
+
+    [DataTestMethod]
+    [DataRow(0, 1)]
+    [DataRow(5, 200)]
+    [DataRow(int.MaxValue, int.MaxValue)]
+    public void GetValidationErrors_ValidRetrySettings_ReturnsNoErrors(int maxRetries, int initialDelay)
+    {
+        var settings = new CosmosSinkSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+            MaxRetryCount = maxRetries,
+            InitialRetryDurationMs = initialDelay,
+        };
+        Assert.IsFalse(settings.GetValidationErrors().Any());
+    }
+
     private static void LogErrors(IEnumerable<string?> errors)
     {
         foreach (var error in errors) Console.WriteLine($"Validation Error: {error}");
