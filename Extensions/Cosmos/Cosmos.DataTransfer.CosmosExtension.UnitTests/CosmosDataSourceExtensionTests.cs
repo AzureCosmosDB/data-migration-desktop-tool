@@ -70,6 +70,63 @@ public class CosmosDataSourceExtensionTests
     }
 
     [TestMethod]
+    public async Task Test_SdkPartitionKeys_DistinguishMissingAndNull()
+    {
+        var (_, database, _) = GetSetup();
+        var failures = new List<string>();
+        foreach (var nested in new[] { false, true })
+        {
+            var path = nested ? "/nested/key" : "/partitionKey";
+            var container = (await database.CreateContainerAsync(
+                nested ? "SdkNestedKeyControl" : "SdkKeyControl", path, throughput: 400)).Container;
+            var missing = new Dictionary<string, object?> { ["id"] = "missing" };
+            var explicitNull = new Dictionary<string, object?> { ["id"] = "null" };
+            explicitNull[nested ? "nested" : "partitionKey"] = nested
+                ? new Dictionary<string, object?> { ["key"] = null }
+                : null;
+
+            // Use the SDK's default serializer and inferred keys, without the DMT sink or its batching.
+            await CheckWrite(missing, "missing write");
+            await CheckWrite(explicitNull, "null write with distinct id");
+            await CheckRead("missing", PartitionKey.None, HttpStatusCode.OK, "missing read with undefined");
+            await CheckRead("null", PartitionKey.Null, HttpStatusCode.OK, "null read with null");
+            await CheckRead("missing", PartitionKey.Null, HttpStatusCode.NotFound, "missing read with null");
+            await CheckRead("null", PartitionKey.None, HttpStatusCode.NotFound, "null read with undefined");
+            explicitNull["id"] = "missing";
+            await CheckWrite(explicitNull, "null write with same id as missing");
+
+            async Task CheckWrite(Dictionary<string, object?> item, string operation)
+            {
+                HttpStatusCode status;
+                try
+                {
+                    status = (await container.CreateItemAsync(item)).StatusCode;
+                }
+                catch (CosmosException exception)
+                {
+                    status = exception.StatusCode;
+                }
+                CheckStatus(operation, HttpStatusCode.Created, status);
+            }
+
+            async Task CheckRead(string id, PartitionKey key, HttpStatusCode expected, string operation)
+            {
+                using var response = await container.ReadItemStreamAsync(id, key);
+                CheckStatus(operation, expected, response.StatusCode);
+            }
+
+            void CheckStatus(string operation, HttpStatusCode expected, HttpStatusCode actual)
+            {
+                var result = $"{path}: {operation}: expected {(int)expected}, actual {(int)actual}";
+                Console.WriteLine(result);
+                if (expected != actual)
+                    failures.Add(result);
+            }
+        }
+        Assert.AreEqual(0, failures.Count, string.Join(Environment.NewLine, failures));
+    }
+
+    [TestMethod]
     public async Task Test_StreamPartitionKeyMismatch_IsRejected()
     {
         var (_, database, _) = GetSetup();

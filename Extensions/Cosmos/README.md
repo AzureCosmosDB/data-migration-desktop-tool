@@ -30,7 +30,7 @@ These properties will be preserved exactly as they appear in the source when mig
 
 ### Emulator integration tests
 
-Set both `Cosmos_Endpoint` and `Cosmos_Key` to run the six integration tests in
+Set both `Cosmos_Endpoint` and `Cosmos_Key` to run the seven integration tests in
 `CosmosDataSourceExtensionTests`. They create a temporary database and delete it
 after the class finishes. With neither variable set, these tests are skipped so
 ordinary local unit tests do not require an emulator. Partial configuration or
@@ -45,9 +45,12 @@ execution, which the vNext emulator does not support with the .NET SDK. See the
 These tests cover JSON round trips, the missing-field/explicit-null request mismatch,
 and typed/stream insert, upsert, and delete with single, nested, and hierarchical
 partition keys. They do not cover bulk execution or authentication enforcement.
+An independent SDK control uses regular `CreateItemAsync` with inferred keys,
+sequential writes, and correct/wrong-key reads to verify that missing and null
+remain separate partitions without involving the DMT sink or serializer.
 
 Both Linux and Windows emulator workflows retain TRX results and require
-all six integration tests to execute and pass, including the partition-key regression
+all seven integration tests to execute and pass, including the partition-key regression
 tests. Missing, skipped, duplicate, or failed results fail the job.
 The Linux preview job remains advisory; the current emulator and the separate
 failure-guard regression job are mandatory. Check each matrix job's outcome,

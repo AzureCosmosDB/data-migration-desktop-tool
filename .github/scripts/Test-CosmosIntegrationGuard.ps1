@@ -44,8 +44,8 @@ try {
         $path = Join-Path $directory 'cosmos.trx'
         [xml] $trx = Get-Content -LiteralPath $path -Raw
         $results = @($trx.TestRun.Results.UnitTestResult)
-        if ($results.Count -ne 6 -or @($results | Where-Object { $_.outcome -ne $scenario.Outcome }).Count -ne 0) {
-            throw "$($scenario.Name): expected six $($scenario.Outcome) integration tests."
+        if ($results.Count -ne 7 -or @($results | Where-Object { $_.outcome -ne $scenario.Outcome }).Count -ne 0) {
+            throw "$($scenario.Name): expected seven $($scenario.Outcome) integration tests."
         }
         Assert-GateRejects $path
     }

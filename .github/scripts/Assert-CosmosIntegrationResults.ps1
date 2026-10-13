@@ -11,6 +11,7 @@ $className = 'Cosmos.DataTransfer.CosmosExtension.UnitTests.CosmosDataSourceExte
 $requiredTests = @(
     'Test_Json_RoundTrip_WithLongValues',
     'Test_FromJson_WithLongValues',
+    'Test_SdkPartitionKeys_DistinguishMissingAndNull',
     'Test_StreamPartitionKeyMismatch_IsRejected',
     'Test_PartitionKeys_RoundTripAndDelete',
     'Test_NestedPartitionKeys_RoundTripAndDelete',
