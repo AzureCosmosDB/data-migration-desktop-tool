@@ -127,7 +127,9 @@ The Cosmos, Azure Blob, and Azure Table API extensions support both key-based au
 
 The Azure Cosmos DB Data Migration Tool is a lightweight executable that leverages the [Managed Extensibility Framework (MEF)](https://docs.microsoft.com/en-us/dotnet/framework/mef/). MEF enables decoupled implementation of the core project and its extensions. The core application is a command-line executable responsible for composing the required extensions at runtime by automatically loading them from the Extensions folder of the application. An Extension is a class library that includes the implementation of a System as a Source and (optionally) Sink for data transfer. The core application project does not contain direct references to any extension implementation. Instead, these projects share a common interface.
 
-![An extensions folder holds multiple extensions implementations.The application loads extensions from the extensions folder and executes functionality based on an interface implementation.](media/application_architecture.png "Application architecture")
+![The command-line core loads source and sink extensions through MEF. Data streams from source to sink as IDataItem records. Extensions implement shared interfaces used by the core.](media/application_architecture.png "Application architecture")
+
+[Edit the architecture diagram](media/application_architecture.excalidraw).
 
 ## Project Structure
 
