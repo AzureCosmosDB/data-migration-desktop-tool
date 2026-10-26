@@ -30,27 +30,43 @@ The Azure Cosmos DB Desktop Data Migration Tool is an open-source project contai
 
 ## Quick Installation
 
-**To use a release, you do not need Visual Studio or the .NET SDK/runtime installed.** The release archives are self-contained. Download the archive for your operating system and processor from the [latest release](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases/latest), not the **Source code** archives.
+**To use a release, you do not need Visual Studio or the .NET SDK/runtime
+installed.** The release archives are self-contained. Download the archive for
+your operating system and processor from the
+[latest release](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases/latest),
+not the **Source code** archives.
 
-| Platform | Archive name |
-| --- | --- |
-| macOS, Apple Silicon (M-series) | `dmt-<version>-mac-arm64.zip` |
-| macOS, Intel | `dmt-<version>-mac-x64.zip` |
-| Windows | `dmt-<version>-win-x64.zip` or `dmt-<version>-win-arm64.zip` |
-| Linux | `dmt-<version>-linux-x64.tar.gz` or `dmt-<version>-linux-arm64.tar.gz` |
+|Platform|Archive name|
+|---|---|
+|macOS, Apple Silicon (M-series)|`dmt-<version>-mac-arm64.zip`|
+|macOS, Intel|`dmt-<version>-mac-x64.zip`|
+|Windows|`dmt-<version>-win-x64.zip` or `dmt-<version>-win-arm64.zip`|
+|Linux|`dmt-<version>-linux-x64.tar.gz` or `dmt-<version>-linux-arm64.tar.gz`|
 
-On macOS, check **Apple menu > About This Mac**: **Chip** identifies Apple Silicon, while **Processor** identifies an Intel Mac. Extract **all** files to your chosen install folder, keeping `dmt`, the configuration files, and `Extensions` together.
+On macOS, check **Apple menu > About This Mac**: **Chip** identifies Apple
+Silicon, while **Processor** identifies an Intel Mac. Extract **all** files to
+your chosen install folder, keeping `dmt`, the configuration files, and
+`Extensions` together.
 
-Open Terminal on macOS/Linux, change to the extracted folder (replace the example path below), and list the available extensions:
+Open Terminal on macOS/Linux, change to the extracted folder (replace the
+example path below), and list the available extensions:
 
 ```bash
 cd "$HOME/Downloads/dmt"
 ./dmt list
 ```
 
-On Windows, open PowerShell in the extracted folder and run `.\dmt.exe list`. If macOS/Linux reports **Permission denied**, run `chmod u+x ./dmt` in that folder and retry. If macOS blocks the downloaded application, follow [Apple's instructions for opening an app from an unidentified developer](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac) only after verifying that you downloaded it from this repository's releases. Do not disable Gatekeeper globally.
+On Windows, open PowerShell in the extracted folder and run `.\dmt.exe list`. If
+macOS/Linux reports **Permission denied**, run `chmod u+x ./dmt` in that folder
+and retry. If macOS blocks the downloaded application, follow
+[Apple's instructions for opening an app from an unidentified developer](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac)
+only after verifying that you downloaded it from this repository's releases. Do
+not disable Gatekeeper globally.
 
-To begin a transfer, configure `migrationsettings.json` for your source and sink, then follow [Using the command line](#using-the-command-line) or the [JSON tutorial](#tutorial-json-to-cosmos-db-migration). To modify or debug the tool instead, follow [Getting Started](#getting-started) to build the source.
+To begin a transfer, configure `migrationsettings.json` for your source and
+sink, then follow [Using the command line](#using-the-command-line) or the
+[JSON tutorial](#tutorial-json-to-cosmos-db-migration). To modify or debug the
+tool instead, follow [Getting Started](#getting-started) to build the source.
 
 ## Docker Container
 
@@ -162,13 +178,20 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 
 ## Getting Started
 
-This section is for **building from source** on macOS, Windows, or Linux. If you only want to run a migration, use [Quick Installation](#quick-installation) instead.
+This section is for **building from source** on macOS, Windows, or Linux. If you
+only want to run a migration, use [Quick Installation](#quick-installation)
+instead.
 
-Install [Git](https://git-scm.com/downloads) and the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) for your operating system and processor (Arm64 for Apple Silicon, x64 for Intel Macs). An IDE is optional; the commands below work in Terminal on macOS/Linux and PowerShell on Windows.
+Install [Git](https://git-scm.com/downloads) and the
+[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) for your
+operating system and processor (Arm64 for Apple Silicon, x64 for Intel Macs). An
+IDE is optional; the commands below work in Terminal on macOS/Linux and
+PowerShell on Windows.
 
 ### Clone the source code repository
 
-From a folder where you keep source code, clone the repository and enter its root:
+From a folder where you keep source code, clone the repository and enter its
+root:
 
 ```shell
 git clone https://github.com/AzureCosmosDB/data-migration-desktop-tool.git
@@ -184,45 +207,74 @@ dotnet --list-sdks
 dotnet build CosmosDbDataMigrationTool.sln --configuration Debug
 ```
 
-The build restores NuGet dependencies and builds both the **Core** application and the extension projects. Use the full solution and **Debug** configuration: the extension projects publish their assemblies and dependencies into `Core/Cosmos.DataTransfer.Core/bin/Debug/net8.0/Extensions`. Building only the Core project does not build the extensions. Keep that folder alongside the Core output.
+The build restores NuGet dependencies and builds both the **Core** application
+and the extension projects. Use the full solution and **Debug** configuration:
+the extension projects publish their assemblies and dependencies into
+`Core/Cosmos.DataTransfer.Core/bin/Debug/net8.0/Extensions`. Building only the
+Core project does not build the extensions. Keep that folder alongside the Core
+output.
 
-On Windows, you can alternatively open `CosmosDbDataMigrationTool.sln` in Visual Studio 2022 and build the solution in Debug with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>. [Visual Studio for Mac is retired](https://learn.microsoft.com/lifecycle/announcements/visual-studio-mac-end-of-servicing); use the CLI above or an editor such as Visual Studio Code on macOS. This repository does not include a VS Code build task, so <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> alone is not a build setup.
+On Windows, you can alternatively open `CosmosDbDataMigrationTool.sln` in Visual
+Studio 2022 and build the solution in Debug with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>.
+[Visual Studio for Mac is retired](https://learn.microsoft.com/lifecycle/announcements/visual-studio-mac-end-of-servicing);
+use the CLI above or an editor such as Visual Studio Code on macOS. This
+repository does not include a VS Code build task, so <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> alone is not
+a build setup.
 
 ### Run from source
 
-After the solution build, run this from the repository root to confirm extension discovery:
+After the solution build, run this from the repository root to confirm extension
+discovery:
 
 ```shell
-dotnet run --project Core/Cosmos.DataTransfer.Core --configuration Debug --no-build --no-launch-profile -- list
+dotnet run --project Core/Cosmos.DataTransfer.Core --configuration Debug \
+  --no-build --no-launch-profile -- list
 ```
 
-The list should include `JSON` and `Cosmos-nosql`. `--no-launch-profile` avoids applying the IDE's sample launch profiles.
+In Windows PowerShell, replace the trailing `\` with a backtick (`` ` ``)
+for line continuation, or enter the command on one line.
 
-Create your own `migrationsettings.json` in the repository root using the [tutorial](#task-3-setup-the-data-migration-configuration), then run:
+The list should include `JSON` and `Cosmos-nosql`. `--no-launch-profile` avoids
+applying the IDE's sample launch profiles.
+
+Create your own `migrationsettings.json` in the repository root using the
+[tutorial](#task-3-setup-the-data-migration-configuration), then run:
 
 **macOS/Linux (Terminal):**
 
 ```bash
-dotnet run --project Core/Cosmos.DataTransfer.Core --configuration Debug --no-build --no-launch-profile -- run --settings "$PWD/migrationsettings.json"
+dotnet run --project Core/Cosmos.DataTransfer.Core --configuration Debug \
+  --no-build --no-launch-profile -- \
+  run --settings "$PWD/migrationsettings.json"
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-dotnet run --project Core\Cosmos.DataTransfer.Core --configuration Debug --no-build --no-launch-profile -- run --settings (Join-Path $PWD "migrationsettings.json")
+dotnet run --project Core\Cosmos.DataTransfer.Core --configuration Debug `
+  --no-build --no-launch-profile -- `
+  run --settings (Join-Path $PWD "migrationsettings.json")
 ```
 
-The `--` separates .NET CLI options from DMT options. Using an explicit settings path avoids depending on the working directory selected by `dotnet run`. Application configuration and the default `Extensions` folder are loaded beside the built executable, not beside your migration settings file.
+The `--` separates .NET CLI options from DMT options. Using an explicit settings
+path avoids depending on the working directory selected by `dotnet run`.
+Application configuration and the default `Extensions` folder are loaded beside
+the built executable, not beside your migration settings file.
 
 ## Tutorial: JSON to Cosmos DB migration
 
-This tutorial moves a sample JSON document to Azure Cosmos DB for NoSQL. You can use a downloaded release or a source build on macOS, Windows, or Linux.
+This tutorial moves a sample JSON document to Azure Cosmos DB for NoSQL. You can
+use a downloaded release or a source build on macOS, Windows, or Linux.
 
 ### Tutorial Software prerequisites
 
-1. DMT installed from a [release](#quick-installation) or [built from source](#build-the-solution). Only source builds require the .NET SDK.
+1. DMT installed from a [release](#quick-installation) or
+   [built from source](#build-the-solution). Only source builds require the .NET
+   SDK.
 2. A text editor for the JSON configuration and a terminal to run DMT.
-3. A test Azure Cosmos DB for NoSQL account, or an emulator appropriate for your platform as described below. Use sample data and a dedicated test container, not a production destination.
+3. A test Azure Cosmos DB for NoSQL account, or an emulator appropriate for your
+   platform as described below. Use sample data and a dedicated test container,
+   not a production destination.
 
 ### Task 1: Prepare the Cosmos DB destination
 
@@ -230,21 +282,48 @@ Choose **one** of the following destinations.
 
 #### Azure account (all platforms, including macOS)
 
-1. Use a test Azure Cosmos DB for NoSQL account, or follow the [Azure portal quickstart](https://learn.microsoft.com/azure/cosmos-db/quickstart-portal) to create one. An Azure subscription is required and charges can apply.
-2. In the account's **Data Explorer**, select **New Container**. Create database `datamigration`, container `btcdata`, and partition key `/id`. Review the throughput and cost settings before creating it.
-3. For this connection-string example, copy the account's **Primary Connection String** from **Keys** in the Azure portal. Keep it private and do not commit it to source control. If your account requires Microsoft Entra ID instead of keys, use the [Authentication guide](docs/authentication.md); keep the database and container pre-created and use its RBAC sink settings in Task 3.
+1. Use a test Azure Cosmos DB for NoSQL account, or follow the
+   [Azure portal quickstart](https://learn.microsoft.com/azure/cosmos-db/quickstart-portal)
+   to create one. An Azure subscription is required and charges can apply.
+2. In the account's **Data Explorer**, select **New Container**. Create database
+   `datamigration`, container `btcdata`, and partition key `/id`. Review the
+   throughput and cost settings before creating it.
+3. For this connection-string example, copy the account's **Primary Connection
+   String** from **Keys** in the Azure portal. Keep it private and do not commit
+   it to source control. If your account requires Microsoft Entra ID instead of
+   keys, use the [Authentication guide](docs/authentication.md); keep the
+   database and container pre-created and use its RBAC sink settings in Task 3.
 
 #### Docker emulator (macOS/Linux)
 
-There is no native Windows emulator application to launch on macOS. For local development, follow the official [Linux vNext emulator setup and requirements](https://learn.microsoft.com/azure/cosmos-db/emulator-linux) with Docker on your Mac, including Intel and Apple Silicon. This emulator is a preview with limited feature support; the Azure-account route above avoids those limitations.
+There is no native Windows emulator application to launch on macOS. For local
+development, follow the official
+[Linux vNext emulator setup and requirements](https://learn.microsoft.com/azure/cosmos-db/emulator-linux)
+with Docker on your Mac, including Intel and Apple Silicon. This emulator is a
+preview with limited feature support; the Azure-account route above avoids those
+limitations.
 
-DMT uses the Cosmos DB .NET client, so enable **HTTPS** (`--protocol https` or `PROTOCOL=https`), configure trust for the emulator's certificate on the host, and retain TLS certificate validation. Use the emulator's HTTPS endpoint and documented emulator key in your connection string. Keep `ConnectionMode` set to `Gateway` and `AllowBulkExecution` set to `false` as in the example below; the repository's emulator tests use these settings for .NET compatibility. The API uses port `8081`, Data Explorer uses port `1234` (with the configured protocol), and the readiness probe is `http://localhost:8080/ready`. Create `datamigration` / `btcdata` with partition key `/id` in that Data Explorer.
+DMT uses the Cosmos DB .NET client, so enable **HTTPS** (`--protocol https` or
+`PROTOCOL=https`), configure trust for the emulator's certificate on the host,
+and retain TLS certificate validation. Use the emulator's HTTPS endpoint and
+documented emulator key in your connection string. Keep `ConnectionMode` set to
+`Gateway` and `AllowBulkExecution` set to `false` as in the example below; the
+repository's emulator tests use these settings for .NET compatibility. The API
+uses port `8081`, Data Explorer uses port `1234` (with the configured protocol),
+and the readiness probe is `http://localhost:8080/ready`. Create `datamigration`
+/ `btcdata` with partition key `/id` in that Data Explorer.
 
-The preview emulator does not enforce authentication. Keep its ports local to your machine and use it only for trusted development/test data. Do not use the Windows-only Explorer URL or screenshots below for this emulator. If local HTTPS/certificate setup is unavailable, use an Azure account rather than disabling certificate validation.
+The preview emulator does not enforce authentication. Keep its ports local to
+your machine and use it only for trusted development/test data. Do not use the
+Windows-only Explorer URL or screenshots below for this emulator. If local
+HTTPS/certificate setup is unavailable, use an Azure account rather than
+disabling certificate validation.
 
 #### Windows emulator
 
-Install the [Windows Azure Cosmos DB emulator](https://learn.microsoft.com/azure/cosmos-db/local-emulator) before following these Windows-only steps.
+Install the
+[Windows Azure Cosmos DB emulator](https://learn.microsoft.com/azure/cosmos-db/local-emulator)
+before following these Windows-only steps.
 
 1. Launch the Azure Cosmos DB emulator application and open <https://localhost:8081/_explorer/index.html> in a browser.
 
@@ -268,20 +347,26 @@ Install the [Windows Azure Cosmos DB emulator](https://learn.microsoft.com/azure
 
     ![The New Container blade displays with btcdata entered in the Container id field and /id entered in the Partition key field. The OK button is highlighted.](media/cosmosdbemulator_newcontainerform.png "New Container blade")
 
-    >**Note**: With key-based authentication, DMT can create a missing database and container using the sink settings. With RBAC authentication, they must already exist. This tutorial creates them explicitly for either route.
+   > **Note**: With key-based authentication, DMT can create a missing database
+   > and container using the sink settings. With RBAC authentication, they must
+   > already exist. This tutorial creates them explicitly for either route.
 
 ### Task 2: Prepare JSON source documents
 
-Download [resources/sample-data.zip](resources/sample-data.zip) from this repository (on GitHub, use **Download raw file**), or use that file in your source checkout. The release binary archive does not include it.
+Download [resources/sample-data.zip](resources/sample-data.zip) from this
+repository (on GitHub, use **Download raw file**), or use that file in your
+source checkout. The release binary archive does not include it.
 
-**macOS/Linux:** extract it into a working folder. If you cloned the repository, run the following from its root:
+**macOS/Linux:** extract it into a working folder. If you cloned the repository,
+run the following from its root:
 
 ```bash
 mkdir -p "$HOME/btcdata"
 unzip resources/sample-data.zip -d "$HOME/btcdata"
 ```
 
-If you downloaded only the sample ZIP, replace `resources/sample-data.zip` with its downloaded path, for example `"$HOME/Downloads/sample-data.zip"`.
+If you downloaded only the sample ZIP, replace `resources/sample-data.zip` with
+its downloaded path, for example `"$HOME/Downloads/sample-data.zip"`.
 
 **Windows (PowerShell):** from the repository root, run:
 
@@ -289,15 +374,33 @@ If you downloaded only the sample ZIP, replace `resources/sample-data.zip` with 
 Expand-Archive -Path .\resources\sample-data.zip -DestinationPath "$HOME\btcdata"
 ```
 
-Alternatively, extract the downloaded ZIP in File Explorer. The archive contains a **sample-data** subfolder. For this tutorial, use `sample-data/data_20090110.json` inside the extracted folder. For example, on macOS the full path is `/Users/<your-user>/btcdata/sample-data/data_20090110.json`; on Windows it is `C:\Users\<your-user>\btcdata\sample-data\data_20090110.json`. There is no `simple_json.json` in this archive.
+Alternatively, extract the downloaded ZIP in File Explorer. The archive contains
+a **sample-data** subfolder. For this tutorial, use
+`sample-data/data_20090110.json` inside the extracted folder. For example, on
+macOS the full path is
+`/Users/<your-user>/btcdata/sample-data/data_20090110.json`; on Windows it is
+`C:\Users\<your-user>\btcdata\sample-data\data_20090110.json`. There is no
+`simple_json.json` in this archive.
 
 ### Task 3: Setup the data migration configuration
 
 1. Each extension contains a README document that outlines configuration for the data migration. In this case, locate the configuration for [JSON (Source)](Extensions/Json/README.md) and [Cosmos DB (Sink)](Extensions/Cosmos/README.md).
 
-2. In your text editor, create `migrationsettings.json` in the extracted DMT folder (release) or repository root (source build). Paste the example below, replacing `<your-user>`, `<your-account>`, and `<your-key>` with your actual values. Set **FilePath** to the absolute path of the extracted sample. For Windows, use escaped backslashes, for example `"C:\\Users\\<your-user>\\btcdata\\sample-data\\data_20090110.json"`; for Linux, use your actual home path, for example `/home/<your-user>/btcdata/sample-data/data_20090110.json`. JSON does not expand `~`, `$HOME`, or other shell variables.
+2. In your text editor, create `migrationsettings.json` in the extracted DMT
+   folder (release) or repository root (source build). Paste the example below,
+   replacing `<your-user>`, `<your-account>`, and `<your-key>` with your actual
+   values. Set **FilePath** to the absolute path of the extracted sample. For
+   Windows, use escaped backslashes, for example
+   `"C:\\Users\\<your-user>\\btcdata\\sample-data\\data_20090110.json"`; for
+   Linux, use your actual home path, for example
+   `/home/<your-user>/btcdata/sample-data/data_20090110.json`. JSON does not
+   expand `~`, `$HOME`, or other shell variables.
 
-    Use the connection string from your chosen destination. For the Windows emulator, find **Primary Connection String** on its **Quickstart** screen. For the Docker emulator, use its HTTPS endpoint and key, not the Azure-account placeholders below. Save the settings file locally and keep credentials out of source control.
+   Use the connection string from your chosen destination. For the Windows
+   emulator, find **Primary Connection String** on its **Quickstart** screen.
+   For the Docker emulator, use its HTTPS endpoint and key, not the
+   Azure-account placeholders below. Save the settings file locally and keep
+   credentials out of source control.
 
     >**Note**: The alternate terms *Target* and *Destination* can be used in place of *Sink* in configuration files and command line parameters. For example `"Target"` and `"TargetSettings"` would also be valid in the below example.
 
@@ -320,11 +423,12 @@ Alternatively, extract the downloaded ZIP in File Explorer. The archive contains
     }
     ```
 
-    ![The Windows Cosmos DB Emulator Quickstart screen displays with the Primary Connection String value highlighted.](media/cosmosemulator_primaryconnectionstring.png "Windows Cosmos DB Emulator Primary Connection String")
+   ![The Windows Cosmos DB Emulator Quickstart screen displays with the Primary Connection String value highlighted.](media/cosmosemulator_primaryconnectionstring.png "Windows Cosmos DB Emulator Primary Connection String")
 
 ### Task 4: Run and verify the migration
 
-For a **release**, open a terminal in the extracted DMT folder containing your settings file:
+For a **release**, open a terminal in the extracted DMT folder containing your
+settings file:
 
 **macOS/Linux:**
 
@@ -338,39 +442,63 @@ For a **release**, open a terminal in the extracted DMT folder containing your s
 .\dmt.exe run --settings (Join-Path $PWD "migrationsettings.json")
 ```
 
-For a **source build**, use the corresponding [Run from source](#run-from-source) command from the repository root.
+For a **source build**, use the corresponding
+[Run from source](#run-from-source) command from the repository root.
 
-Wait for **Data transfer complete**. If the tool reports **Data transfer failed**, inspect the error and check the source path, connection settings, permissions, and (for an emulator) HTTPS/certificate setup. In your destination's Data Explorer, refresh `datamigration` > `btcdata` > **Items** and confirm the sample with `Ticker` equal to `BTC` and `Date` equal to `2009-01-10T23:59:00Z` is present. DMT supplies an `id` when the source document has none; repeating this sample migration can therefore add another item.
+Wait for **Data transfer complete**. If the tool reports **Data transfer
+failed**, inspect the error and check the source path, connection settings,
+permissions, and (for an emulator) HTTPS/certificate setup. In your
+destination's Data Explorer, refresh `datamigration` > `btcdata` > **Items** and
+confirm the sample with `Ticker` equal to `BTC` and `Date` equal to
+`2009-01-10T23:59:00Z` is present. DMT supplies an `id` when the source document
+has none; repeating this sample migration can therefore add another item.
 
-If you created Azure resources just for this tutorial, remove only those test resources when finished to avoid ongoing charges.
+If you created Azure resources just for this tutorial, remove only those test
+resources when finished to avoid ongoing charges.
 
 >**Note**: The `Source` and `Sink` properties should match the **DisplayName** set in the code for the extensions.
 
 ## Using the command line
 
-1. Download the [latest release](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases/latest) using [Quick Installation](#quick-installation), or follow [Run from source](#run-from-source) for the .NET CLI equivalent of the commands below.
+1. Download the
+   [latest release](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases/latest)
+   using [Quick Installation](#quick-installation), or follow
+   [Run from source](#run-from-source) for the .NET CLI equivalent of the
+   commands below.
 
-2. Keep the **Extensions** folder and its dependencies beside the executable. Run `./dmt list` on macOS/Linux or `.\dmt.exe list` on Windows to see the [plug-ins available](#extension-documentation).
+2. Keep the **Extensions** folder and its dependencies beside the executable.
+   Run `./dmt list` on macOS/Linux or `.\dmt.exe list` on Windows to see the
+   [plug-ins available](#extension-documentation).
 
-3. Update **migrationsettings.json** as documented in the [tutorial](#task-3-setup-the-data-migration-configuration), [Extension documentation](#extension-documentation), or [example configurations](ExampleConfigs.md). Use absolute file paths to avoid confusion about the working directory.
+3. Update **migrationsettings.json** as documented in the
+   [tutorial](#task-3-setup-the-data-migration-configuration),
+   [Extension documentation](#extension-documentation), or
+   [example configurations](ExampleConfigs.md). Use absolute file paths to avoid
+   confusion about the working directory.
 
 > **Note**: **migrationsettings.json** can also be configured to execute multiple data transfer operations with a single run command. To do this, include an `Operations` property consisting of an array of objects that include `SourceSettings` and `SinkSettings` properties using the same format as those shown above for single operations. Additional details and examples can be found in [this blog post](https://codemindinterface.com/2023/03/cosmos-tool-operations/).
 
-4. From the extracted DMT folder, execute the program using the appropriate command:
+4. From the extracted DMT folder, execute the program using the appropriate
+   command:
 
-    **Using Windows (PowerShell)**
+   **Using Windows (PowerShell)**
 
-    ```powershell
-    .\dmt.exe run --settings (Join-Path $PWD "migrationsettings.json")
-    ```
+   ```powershell
+   .\dmt.exe run --settings (Join-Path $PWD "migrationsettings.json")
+   ```
 
-    **Using macOS/Linux**
+   **Using macOS/Linux**
 
     ```bash
     ./dmt run --settings "$PWD/migrationsettings.json"
     ```
 
-    > **Note**: `--settings` accepts a path to a different settings file. With the default application configuration, omitting it uses **migrationsettings.json** relative to the process's current working directory, not necessarily the executable's folder. Quote paths containing spaces. For macOS first-run permissions and trust guidance, see [Quick Installation](#quick-installation).
+   > **Note**: `--settings` accepts a path to a different settings file. With
+   > the default application configuration, omitting it uses
+   > **migrationsettings.json** relative to the process's current working
+   > directory, not necessarily the executable's folder. Quote paths containing
+   > spaces. For macOS first-run permissions and trust guidance, see
+   > [Quick Installation](#quick-installation).
 
 ## Creating Extensions
 
