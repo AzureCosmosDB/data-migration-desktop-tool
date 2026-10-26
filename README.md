@@ -28,6 +28,13 @@ To access the archived version of the tool, navigate to the [**Archive branch**]
 
 The Azure Cosmos DB Desktop Data Migration Tool is an open-source project containing a command-line application that provides import and export functionality for Azure Cosmos DB.
 
+**Key Features:**
+- Support for multiple data sources and sinks including Cosmos DB, MongoDB, JSON, CSV, SQL Server, and more
+- Write to multiple different Cosmos DB accounts in one run using sequential Operations
+- Batch processing and bulk execution for optimal performance
+- Flexible authentication options including connection strings and RBAC
+- Independent client configurations for each sink operation
+
 ## Quick Installation
 
 **To use a release, you do not need Visual Studio or the .NET SDK/runtime
