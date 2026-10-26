@@ -30,6 +30,17 @@ The following setting is supported for the Source:
 
 #### Query Filter Examples
 
+> **⚠️ Known Limitation — Cosmos DB Table API and Timestamp Filters**
+>
+> If you are using **Azure Cosmos DB Table API** (not Azure Storage Tables), filtering on the system `Timestamp` property is **not supported**. Queries with `Timestamp` filters will silently return 0 results, even when the filter syntax is correct and entities exist in the table. Per [Microsoft's documentation](https://learn.microsoft.com/en-us/azure/cosmos-db/table/tutorial-query#query-by-using-an-odata-filter): *"Azure Cosmos DB blocks the queries on timestamp properties."* See also [Azure SDK #32468](https://github.com/Azure/azure-sdk-for-net/issues/32468).
+>
+> **Workaround**: Store datetime values in a custom property (e.g., `ModifiedDate`, `CreatedAt`) and filter on that property instead:
+> ```json
+> "QueryFilter": "ModifiedDate ge '2023-01-01T00:00:00Z'"
+> ```
+>
+> The `Timestamp` filter examples below work correctly with **Azure Storage Tables** only.
+
 The `QueryFilter` setting supports OData filter syntax for querying Azure Table API entities. Below are examples of common filter patterns:
 
 **Basic Filters:**
@@ -103,6 +114,7 @@ The following table analyzes common mistakes when specifying datetime filters. E
 - No entities exist with timestamps matching the filter criteria
 - The specific timestamp value doesn't match any entity timestamps (especially with `eq` operator)
 - For exact matches with `eq`, consider using `ge` (greater than or equal) or `le` (less than or equal) operators instead, as table timestamps include high-precision fractional seconds
+- **⚠️ Cosmos DB Table API limitation**: Filtering on the system `Timestamp` property is **not supported** on Cosmos DB Table API accounts. Per [Microsoft's documentation](https://learn.microsoft.com/en-us/azure/cosmos-db/table/tutorial-query#query-by-using-an-odata-filter), *"Azure Cosmos DB blocks the queries on timestamp properties."* Queries with `Timestamp` filters will silently return 0 results. See also [Azure SDK #32468](https://github.com/Azure/azure-sdk-for-net/issues/32468). This applies only to Cosmos DB Table API — Azure Storage Tables support `Timestamp` filtering correctly. As a workaround, store dates in a custom property (e.g., `ModifiedDate`) and filter on that instead.
 
 **Key Takeaways:**
 1. Always use `datetime` prefix before the timestamp value
@@ -131,6 +143,12 @@ The AzureTableAPI extension supports two authentication methods for connecting t
 - **Azure RBAC (Role Based Access Control) Authentication**: Set `UseRbacAuth` to `true` to use Entra credentials for authentication. When using RBAC, you must also specify the `AccountEndpoint` property (the Table service endpoint URL). Optionally, set `EnableInteractiveCredentials` to `true` to prompt for login if default credentials are not available (for example, when running locally).
 
 > **Note**: To use RBAC authentication, your Azure account must have the appropriate permissions (such as Storage Table Data Contributor) on the storage account. For more information, see [Authorize access to tables using Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/storage/tables/authorize-access-azure-active-directory).
+
+When `UseRbacAuth` is `true`, the extension authenticates with `DefaultAzureCredential`, which supports Azure CLI sign-in (`az login`) and managed identities. For a service principal, set `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET`. To select a user-assigned managed identity attached to the host, set `AZURE_CLIENT_ID` without service principal secret/certificate variables. These variables are shared across source and sink. For **Azure Storage Tables**, the identity needs the `Storage Table Data Reader` role (source) or `Storage Table Data Contributor` role (sink) on the storage account.
+
+The Storage roles and RBAC examples below apply to Azure Storage Tables. Azure Cosmos DB for Table has separate [native data-plane RBAC roles](https://learn.microsoft.com/azure/cosmos-db/table/how-to-connect-role-based-access-control); Storage Table roles do not grant access to Cosmos DB for Table.
+
+> For supported credential flows, Azure RBAC role requirements, and CI/CD guidance, see the central [Authentication guide](../../docs/authentication.md).
 
 ### Example RBAC Settings
 

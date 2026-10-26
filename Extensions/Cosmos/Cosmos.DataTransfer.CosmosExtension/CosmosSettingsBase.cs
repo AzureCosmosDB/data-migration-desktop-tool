@@ -19,6 +19,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? AccountEndpoint { get; set; }
         public bool EnableInteractiveCredentials { get; set; }
         public bool InitClientEncryption { get; set; } = false;
+        public string? ManagedIdentityClientId { get; set; }
         public string? TenantId { get; set; }
         public string? ClientId { get; set; }
         public string? ClientSecret { get; set; }
@@ -51,6 +52,33 @@ namespace Cosmos.DataTransfer.CosmosExtension
         /// </para>
         /// </summary>
         public bool AllowBulkExecution { get; set; } = false;
+
+        /// <summary>
+        /// Enables .NET HTTP diagnostic event logging for troubleshooting connectivity issues.
+        /// Logs are emitted at Debug level and may include endpoint and request details.
+        /// </summary>
+        public bool EnableNetHttpLogging { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether to return the resource in the Cosmos DB response
+        /// for write item operations like Create, Upsert, Patch and Replace.
+        /// Setting to <c>false</c> will cause the response to have a null resource,
+        /// reducing networking and CPU load by not sending the resource back over the network
+        /// and serializing it on the client.
+        /// <para>
+        /// This setting applies to sink (write) operations.
+        /// </para>
+        /// <para>
+        /// <b>Default:</b> <c>true</c>
+        /// </para>
+        /// <para>
+        /// For more information, see
+        /// <see href="https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.enablecontentresponseonwrite">
+        /// CosmosClientOptions.EnableContentResponseOnWrite Property
+        /// </see>
+        /// </para>
+        /// </summary>
+        public bool EnableContentResponseOnWrite { get; set; } = true;
 
         public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
@@ -135,6 +163,22 @@ namespace Cosmos.DataTransfer.CosmosExtension
                         nameof(ClientCertificatePath),
                         nameof(ClientCertificatePassword)
                     });
+            }
+
+            var managedIdentityClientIdSet = !string.IsNullOrWhiteSpace(ManagedIdentityClientId);
+
+            if (!UseRbacAuth && managedIdentityClientIdSet)
+            {
+                yield return new ValidationResult(
+                    "ManagedIdentityClientId requires UseRbacAuth to be set to true.",
+                    new[] { nameof(UseRbacAuth), nameof(ManagedIdentityClientId) });
+            }
+
+            if (UseRbacAuth && managedIdentityClientIdSet && servicePrincipalSet)
+            {
+                yield return new ValidationResult(
+                    "ManagedIdentityClientId cannot be combined with service principal settings (TenantId/ClientId).",
+                    new[] { nameof(ManagedIdentityClientId), nameof(TenantId), nameof(ClientId) });
             }
         }
     }

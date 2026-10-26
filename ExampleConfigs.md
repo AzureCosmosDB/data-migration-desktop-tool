@@ -93,6 +93,9 @@ The tool supports simultaneous connections to two different Cosmos DB accounts, 
 
 > **Note**: The tool creates separate CosmosClient instances for the source and sink, allowing you to connect to different Cosmos DB accounts simultaneously. Each connection can have its own configuration including connection mode, proxy settings, and authentication method (connection string or RBAC). For RBAC, provision the database and container before running the tool and grant the identity the appropriate Cosmos DB data-plane permissions on each account.
 
+> For Microsoft Entra ID / Azure RBAC authentication details, supported credential flows, and role
+> requirements, see the [Authentication guide](docs/authentication.md).
+
 ## JSON to Cosmos-NoSQL
 
 ```json
@@ -111,6 +114,36 @@ The tool supports simultaneous connections to two different Cosmos DB accounts, 
         "WriteMode": "Insert",
         "CreatedContainerMaxThroughput": 5000,
         "IsServerlessAccount": false
+    }
+}
+```
+
+## Passwordless Cosmos-NoSQL to Cosmos-NoSQL (Microsoft Entra ID / RBAC)
+
+Reads from one Cosmos DB account and writes to another using Azure RBAC — no keys or secrets. The
+identity running the tool (your `az login` user, a managed identity, or a service principal) needs
+the `Cosmos DB Built-in Data Reader` role on the source account and the
+`Cosmos DB Built-in Data Contributor` role on the sink account. See the
+[Authentication guide](docs/authentication.md) for role assignment and other credential flows.
+Both databases and containers must already exist; DMT does not create or recreate them in RBAC
+mode. The example assumes the destination container is partitioned on `/id`.
+
+```json
+{
+    "Source": "Cosmos-nosql",
+    "Sink": "Cosmos-nosql",
+    "SourceSettings": {
+        "UseRbacAuth": true,
+        "AccountEndpoint": "https://source-account.documents.azure.com:443/",
+        "Database": "myDb",
+        "Container": "sourceContainer"
+    },
+    "SinkSettings": {
+        "UseRbacAuth": true,
+        "AccountEndpoint": "https://sink-account.documents.azure.com:443/",
+        "Database": "myDb",
+        "Container": "sinkContainer",
+        "PartitionKeyPath": "/id"
     }
 }
 ```

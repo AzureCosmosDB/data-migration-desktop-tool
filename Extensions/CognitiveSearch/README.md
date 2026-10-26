@@ -14,6 +14,8 @@ The following are the required settings that must be defined for using either th
 - `ApiKey` - The API key credential used to authenticate requests against the Search service. You need to use an admin key to perform Sink. This is required.
 - `Index` - This defines the name of the Index to connect to on the Cognitive Search Index. This is required.
 
+> **Authentication note**: The CognitiveSearch extension authenticates with an **API key only**. Microsoft Entra ID (Azure AD) and Azure RBAC authentication are **not** supported by this extension. For Entra ID / RBAC support in the Cosmos, Azure Blob, and Azure Table API extensions, see the central [Authentication guide](../../docs/authentication.md).
+
 ### Source
 
  > **important**: Only fields marked as retrievable will be output.
