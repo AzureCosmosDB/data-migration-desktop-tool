@@ -150,10 +150,13 @@ public class JsonFormatReaderTests
     }
 
     [DataTestMethod]
-    [DataRow("gz")]
-    [DataRow("br")]
-    [DataRow("zz")]
-    public async Task ParseDataAsync_CompressedSingleObject_IsSupported(string compression)
+    [DataRow("gz", false)]
+    [DataRow("br", false)]
+    [DataRow("zz", false)]
+    [DataRow("gz", true)]
+    [DataRow("br", true)]
+    [DataRow("zz", true)]
+    public async Task ParseDataAsync_CompressedSingleObject_IsSupported(string compression, bool longPrefix)
     {
         using var data = new MemoryStream();
         using (Stream writer = compression switch
@@ -163,7 +166,7 @@ public class JsonFormatReaderTests
             _ => new DeflateStream(data, CompressionMode.Compress, leaveOpen: true)
         })
         {
-            writer.Write(Encoding.UTF8.GetBytes("{\"id\":1}"));
+            writer.Write(Encoding.UTF8.GetBytes((longPrefix ? new string(' ', 128 * 1024) + "\r\n\t" : "") + "{\"id\":1}"));
         }
         data.Position = 0;
         Stream stream = compression switch

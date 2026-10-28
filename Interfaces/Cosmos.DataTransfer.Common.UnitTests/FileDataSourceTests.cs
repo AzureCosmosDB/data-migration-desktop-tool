@@ -74,6 +74,128 @@ public class FileSinkDataSourceTests {
     }
 
     [TestMethod]
+    public async Task ReadSourceAsync_HttpBody_NullByteArrayBuffer_ThrowsEvenForZeroByteReads()
+    {
+        await using var server = new HttpTestServer(HttpStatusCode.OK, "body");
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", server.Url } });
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await using var streams = new FileDataSource().ReadSourceAsync(config, NullLogger.Instance, guard.Token).GetAsyncEnumerator();
+        Assert.IsTrue(await streams.MoveNextAsync());
+        var stream = streams.Current!;
+        Assert.ThrowsException<ArgumentNullException>(() => stream.Read(null!, 0, 0));
+        await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
+            await stream.ReadAsync(null!, 0, 0));
+    }
+
+    [DataTestMethod]
+    [DataRow("memory")]
+    [DataRow("array")]
+    [DataRow("sync")]
+    public async Task ReadSourceAsync_StalledHttpBody_TimesOutWithSafeLocation(string readMethod)
+    {
+        await using var server = new HttpTestServer(HttpStatusCode.OK, "body",
+            (_, cancellation) => Task.Delay(Timeout.InfiniteTimeSpan, cancellation));
+        var uri = new UriBuilder(server.Url) { UserName = "private", Password = "private", Query = "token=private", Fragment = "private" };
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", uri.Uri.AbsoluteUri } });
+        var source = new FileDataSource { HttpReadTimeout = TimeSpan.FromMilliseconds(200) };
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await using var streams = source.ReadSourceAsync(config, NullLogger.Instance, guard.Token).GetAsyncEnumerator();
+        Assert.IsTrue(await streams.MoveNextAsync());
+        var stream = streams.Current!;
+        var buffer = new byte[1];
+        var error = await Assert.ThrowsExceptionAsync<HttpRequestException>(async () =>
+        {
+            if (readMethod == "sync")
+                await Task.Run(() => stream.Read(buffer, 0, buffer.Length));
+            else if (readMethod == "array")
+                await stream.ReadAsync(buffer, 0, buffer.Length, guard.Token);
+            else
+                await stream.ReadAsync(buffer.AsMemory(), guard.Token);
+        });
+        StringAssert.Contains(error.Message, "Timed out");
+        StringAssert.Contains(error.Message, server.Url);
+        Assert.IsFalse(error.ToString().Contains("private"));
+        Assert.IsFalse(guard.IsCancellationRequested);
+        await streams.DisposeAsync();
+        Assert.IsFalse(stream.CanRead);
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ReadSourceAsync_StalledHttpBody_HonorsReadAndMigrationCancellation(bool cancelMigration)
+    {
+        await using var server = new HttpTestServer(HttpStatusCode.OK, "body",
+            (_, cancellation) => Task.Delay(Timeout.InfiniteTimeSpan, cancellation));
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", server.Url } });
+        var source = new FileDataSource { HttpReadTimeout = TimeSpan.FromSeconds(5) };
+        using var migrationCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var readCancellation = new CancellationTokenSource();
+        await using var streams = source.ReadSourceAsync(config, NullLogger.Instance, migrationCancellation.Token).GetAsyncEnumerator();
+        Assert.IsTrue(await streams.MoveNextAsync());
+        var stream = streams.Current!;
+        var read = stream.ReadAsync(new byte[1],
+            cancelMigration ? CancellationToken.None : readCancellation.Token).AsTask();
+        (cancelMigration ? migrationCancellation : readCancellation).Cancel();
+        try
+        {
+            await read;
+            Assert.Fail("The body read should have been canceled.");
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        await streams.DisposeAsync();
+        Assert.IsFalse(stream.CanRead);
+    }
+
+    [TestMethod]
+    public async Task ReadSourceAsync_ProgressingHttpBody_CanExceedReadTimeout()
+    {
+        const string content = "0123456789abcdef";
+        await using var server = new HttpTestServer(HttpStatusCode.OK, content, async (stream, cancellation) =>
+        {
+            foreach (byte value in Encoding.UTF8.GetBytes(content))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellation);
+                await stream.WriteAsync(new[] { value }, cancellation);
+            }
+        });
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", server.Url } });
+        var source = new FileDataSource { HttpReadTimeout = TimeSpan.FromSeconds(1) };
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await using var streams = source.ReadSourceAsync(config, NullLogger.Instance, guard.Token).GetAsyncEnumerator();
+        Assert.IsTrue(await streams.MoveNextAsync());
+        using var received = new MemoryStream();
+        var elapsed = System.Diagnostics.Stopwatch.StartNew();
+        await streams.Current!.CopyToAsync(received, guard.Token);
+        Assert.AreEqual(content, Encoding.UTF8.GetString(received.ToArray()));
+        Assert.IsTrue(elapsed.Elapsed > source.HttpReadTimeout);
+        Assert.IsFalse(await streams.MoveNextAsync());
+    }
+
+    [TestMethod]
+    public async Task ReadSourceAsync_HttpBody_ProcessingPauseDoesNotConsumeReadTimeout()
+    {
+        await using var server = new HttpTestServer(HttpStatusCode.OK, "body");
+        var config = TestHelpers.CreateConfig(new() { { "FilePath", server.Url } });
+        var source = new FileDataSource { HttpReadTimeout = TimeSpan.FromMilliseconds(200) };
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await using var streams = source.ReadSourceAsync(config, NullLogger.Instance, guard.Token).GetAsyncEnumerator();
+        Assert.IsTrue(await streams.MoveNextAsync());
+        var stream = streams.Current!;
+        var buffer = new byte[1];
+        Assert.AreEqual(1, await stream.ReadAsync(buffer.AsMemory(), guard.Token));
+        Assert.AreEqual((byte)'b', buffer[0]);
+        await Task.Delay(TimeSpan.FromMilliseconds(500), guard.Token);
+        using var received = new MemoryStream();
+        await stream.CopyToAsync(received, guard.Token);
+        Assert.AreEqual("ody", Encoding.UTF8.GetString(received.ToArray()));
+        await streams.DisposeAsync();
+        Assert.IsFalse(stream.CanRead);
+    }
+
+    [TestMethod]
     public async Task ReadSourceAsync_LockedFile_PropagatesIOException()
     {
         var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.json");

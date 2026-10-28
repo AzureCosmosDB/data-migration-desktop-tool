@@ -46,10 +46,8 @@ public class JsonFormatReader : IFormattedDataReader
 
     private static async IAsyncEnumerable<Dictionary<string, object?>?> ReadJsonItemsAsync(Stream jsonStream, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        using var prefix = new MemoryStream();
-        var firstToken = await ReadPrefixAsync(jsonStream, prefix, cancellationToken);
-        prefix.Position = 0;
-        using var input = new PrefixReadStream(prefix, jsonStream);
+        await using var input = new PrefixReadStream(jsonStream);
+        var firstToken = await input.ReadFirstTokenAsync(cancellationToken);
         if (firstToken == '{')
         {
             yield return await JsonSerializer.DeserializeAsync<Dictionary<string, object?>>(input, cancellationToken: cancellationToken);
@@ -63,31 +61,86 @@ public class JsonFormatReader : IFormattedDataReader
         }
     }
 
-    private static async Task<int> ReadPrefixAsync(Stream stream, MemoryStream prefix, CancellationToken cancellationToken)
+    internal sealed class PrefixReadStream(Stream source) : Stream
     {
-        var buffer = new byte[4096];
-        int count = await stream.ReadAtLeastAsync(buffer.AsMemory(0, 3), 3, throwOnEndOfStream: false, cancellationToken);
-        int start = count == 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF ? 3 : 0;
-        while (count > 0)
+        private readonly bool rewindSource = source.CanSeek;
+        private byte[]? prefix;
+        private int prefixOffset;
+        private int prefixLength;
+        private int bomRemaining;
+        private long spacesBeforeLineFeedsRemaining;
+        private long lineFeedsRemaining;
+        private long columnRemaining;
+        private bool readSourceBom;
+        private bool disposed;
+
+        private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
+
+        internal async Task<int> ReadFirstTokenAsync(CancellationToken cancellationToken)
         {
-            prefix.Write(buffer, 0, count);
-            for (int i = start; i < count; i++)
+            ObjectDisposedException.ThrowIf(disposed, this);
+            long originalPosition = rewindSource ? source.Position : 0;
+            var buffer = new byte[4096];
+            int count = await source.ReadAtLeastAsync(buffer.AsMemory(0, 3), 3, throwOnEndOfStream: false, cancellationToken);
+            bool hasBom = count == 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF;
+            int start = hasBom ? 3 : 0;
+            int firstToken = -1;
+            int tokenOffset = 0;
+            long whitespaceLength = 0;
+            long lineFeeds = 0;
+            long column = 0;
+            while (count > 0 && firstToken == -1)
             {
-                if (buffer[i] is not ((byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n'))
-                    return buffer[i];
+                cancellationToken.ThrowIfCancellationRequested();
+                for (int i = start; i < count; i++)
+                {
+                    byte value = buffer[i];
+                    if (value is not ((byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n'))
+                    {
+                        firstToken = value;
+                        tokenOffset = i;
+                        break;
+                    }
+
+                    whitespaceLength++;
+                    if (value == '\n')
+                    {
+                        lineFeeds++;
+                        column = 0;
+                    }
+                    else
+                        column++;
+                }
+
+                if (firstToken == -1)
+                {
+                    start = 0;
+                    count = await source.ReadAsync(buffer, cancellationToken);
+                }
             }
 
-            start = 0;
-            count = await stream.ReadAsync(buffer, cancellationToken);
+            if (rewindSource)
+            {
+                source.Position = originalPosition;
+                readSourceBom = hasBom;
+            }
+            else
+            {
+                bomRemaining = hasBom ? 3 : 0;
+                spacesBeforeLineFeedsRemaining = whitespaceLength - lineFeeds - column;
+                lineFeedsRemaining = lineFeeds;
+                columnRemaining = column;
+                if (firstToken != -1)
+                {
+                    prefix = buffer;
+                    prefixOffset = tokenOffset;
+                    prefixLength = count - tokenOffset;
+                }
+            }
+            return firstToken;
         }
-        return -1;
-    }
 
-    // Replay only the sniffed prefix, including the BOM and whitespace, to preserve
-    // the serializer's original error positions without seeking or buffering arrays.
-    private sealed class PrefixReadStream(Stream prefix, Stream source) : Stream
-    {
-        public override bool CanRead => true;
+        public override bool CanRead => !disposed && source.CanRead;
         public override bool CanSeek => false;
         public override bool CanWrite => false;
         public override long Length => throw new NotSupportedException();
@@ -97,17 +150,88 @@ public class JsonFormatReader : IFormattedDataReader
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
+        private int ReadPrefix(Span<byte> buffer)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            int written = 0;
+            int count = Math.Min(buffer.Length, bomRemaining);
+            Utf8Bom.Slice(3 - bomRemaining, count).CopyTo(buffer);
+            bomRemaining -= count;
+            written += count;
+            buffer = buffer[count..];
+
+            // Preserve byte offsets, LF count and final byte column without
+            // retaining the original whitespace.
+            count = (int)Math.Min(buffer.Length, spacesBeforeLineFeedsRemaining);
+            buffer[..count].Fill((byte)' ');
+            spacesBeforeLineFeedsRemaining -= count;
+            written += count;
+            buffer = buffer[count..];
+
+            count = (int)Math.Min(buffer.Length, lineFeedsRemaining);
+            buffer[..count].Fill((byte)'\n');
+            lineFeedsRemaining -= count;
+            written += count;
+            buffer = buffer[count..];
+
+            count = (int)Math.Min(buffer.Length, columnRemaining);
+            buffer[..count].Fill((byte)' ');
+            columnRemaining -= count;
+            written += count;
+            buffer = buffer[count..];
+
+            if (prefix != null)
+            {
+                count = Math.Min(buffer.Length, prefixLength);
+                prefix.AsSpan(prefixOffset, count).CopyTo(buffer);
+                prefixOffset += count;
+                prefixLength -= count;
+                written += count;
+            }
+            return written;
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int read = prefix.Read(buffer, offset, count);
-            return read > 0 ? read : source.Read(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
+            return Read(buffer.AsSpan(offset, count));
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            int read = ReadPrefix(buffer);
+            if (readSourceBom && buffer.Length > 0)
+            {
+                readSourceBom = false;
+                return source.ReadAtLeast(buffer, Math.Min(3, buffer.Length), throwOnEndOfStream: false);
+            }
+            return read > 0 ? read : source.Read(buffer);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            int read = prefix.Read(buffer.Span);
+            int read = ReadPrefix(buffer.Span);
+            // The .NET 8 streaming reader expects a BOM in its first read.
+            if (readSourceBom && buffer.Length > 0)
+            {
+                readSourceBom = false;
+                return source.ReadAtLeastAsync(buffer, Math.Min(3, buffer.Length), throwOnEndOfStream: false, cancellationToken);
+            }
             return read > 0 ? ValueTask.FromResult(read) : source.ReadAsync(buffer, cancellationToken);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                disposed = true;
+            base.Dispose(disposing);
         }
     }
 

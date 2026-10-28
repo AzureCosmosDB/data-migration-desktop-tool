@@ -8,6 +8,8 @@ namespace Cosmos.DataTransfer.Common;
 
 public class FileDataSource : IComposableDataSource
 {
+    internal TimeSpan HttpReadTimeout { get; init; } = TimeSpan.FromSeconds(100);
+
     internal Stream? ReadFile(string filePath, CompressionEnum compression, ILogger logger) {
         logger.LogInformation("Reading file '{FilePath}'", filePath);
         var fileStream = File.OpenRead(filePath);
@@ -62,7 +64,9 @@ public class FileDataSource : IComposableDataSource
                         null, response.StatusCode);
                 }
 
-                yield return await response.Content.ReadAsStreamAsync(cancellationToken);
+                var body = await response.Content.ReadAsStreamAsync(cancellationToken);
+                await using var stream = new HttpReadTimeoutStream(body, HttpReadTimeout, location, cancellationToken);
+                yield return stream;
             }
         }
         else if (Directory.Exists(settings.FilePath))
@@ -89,5 +93,61 @@ public class FileDataSource : IComposableDataSource
     public IEnumerable<IDataExtensionSettings> GetSettings()
     {
         yield return new FileSourceSettings();
+    }
+
+    private sealed class HttpReadTimeoutStream(Stream source, TimeSpan timeout, string location, CancellationToken sourceCancellation) : Stream
+    {
+        public override bool CanRead => source.CanRead;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        // Synchronous consumers need the same deadline; the asynchronous read below
+        // does not capture their synchronization context.
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return ReadAsync(buffer.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(sourceCancellation, cancellationToken);
+            deadline.CancelAfter(timeout);
+            try
+            {
+                return await source.ReadAsync(buffer, deadline.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException ex) when (deadline.IsCancellationRequested &&
+                !sourceCancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                throw new HttpRequestException(
+                    $"Timed out reading HTTP source '{location}': no data was received within {timeout.TotalSeconds} seconds.", ex);
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                source.Dispose();
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            await source.DisposeAsync().ConfigureAwait(false);
+            GC.SuppressFinalize(this);
+        }
     }
 }

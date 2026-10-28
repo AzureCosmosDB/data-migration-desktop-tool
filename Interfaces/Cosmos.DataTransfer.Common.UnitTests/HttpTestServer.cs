@@ -12,14 +12,14 @@ public sealed class HttpTestServer : IAsyncDisposable
 
     public string Url { get; }
 
-    public HttpTestServer(HttpStatusCode statusCode, string content)
+    public HttpTestServer(HttpStatusCode statusCode, string content, Func<Stream, CancellationToken, Task>? writeBody = null)
     {
         listener.Start();
         Url = $"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/source.json";
-        responseTask = RespondAsync(statusCode, content);
+        responseTask = RespondAsync(statusCode, content, writeBody);
     }
 
-    private async Task RespondAsync(HttpStatusCode statusCode, string content)
+    private async Task RespondAsync(HttpStatusCode statusCode, string content, Func<Stream, CancellationToken, Task>? writeBody)
     {
         using var client = await listener.AcceptTcpClientAsync(cancellation.Token);
         await using var stream = client.GetStream();
@@ -32,7 +32,10 @@ public sealed class HttpTestServer : IAsyncDisposable
         var headers = Encoding.ASCII.GetBytes(
             $"HTTP/1.1 {(int)statusCode} {statusCode}\r\nContent-Type: application/json\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
         await stream.WriteAsync(headers, cancellation.Token);
-        await stream.WriteAsync(body, cancellation.Token);
+        if (writeBody == null)
+            await stream.WriteAsync(body, cancellation.Token);
+        else
+            await writeBody(stream, cancellation.Token);
     }
 
     public async ValueTask DisposeAsync()
