@@ -11,94 +11,227 @@ public class JsonFormatReader : IFormattedDataReader
     public async IAsyncEnumerable<IDataItem> ParseDataAsync(IComposableDataSource sourceExtension, IConfiguration config, ILogger logger, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var streams = sourceExtension.ReadSourceAsync(config, logger, cancellationToken);
+        int streamNumber = 0;
 
         await foreach (var stream in streams.WithCancellation(cancellationToken))
         {
+            streamNumber++;
             if (stream != null)
             {
-                var list = ReadJsonItemsAsync(stream, logger, cancellationToken);
-                if (list != null)
+                await using var ownedStream = stream;
+                await using var items = ReadJsonItemsAsync(stream, cancellationToken).GetAsyncEnumerator(cancellationToken);
+                while (true)
                 {
-                    await foreach (var listItem in list.WithCancellation(cancellationToken))
+                    bool hasItem;
+                    try
                     {
-                        if (listItem != null)
-                        {
-                            yield return new JsonDictionaryDataItem(listItem);
-                        }
+                        hasItem = await items.MoveNextAsync();
                     }
+                    catch (JsonException ex)
+                    {
+                        logger.LogError(ex,
+                            "Failed to parse JSON from {SourceType}, stream {StreamNumber}. See the preceding source read log for its location.",
+                            sourceExtension.GetType().Name, streamNumber);
+                        throw;
+                    }
+
+                    if (!hasItem)
+                        break;
+                    if (items.Current != null)
+                        yield return new JsonDictionaryDataItem(items.Current);
                 }
             }
         }
     }
 
-    private static IAsyncEnumerable<Dictionary<string, object?>?>? ReadJsonItemsAsync(Stream jsonStream, ILogger logger, CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<Dictionary<string, object?>?> ReadJsonItemsAsync(Stream jsonStream, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (jsonStream is { CanSeek: true, Length: < 1485760L })
+        await using var input = new PrefixReadStream(jsonStream);
+        var firstToken = await input.ReadFirstTokenAsync(cancellationToken);
+        if (firstToken == '{')
         {
-            // test for single item in JSON
-            var singleItemList = ReadSingleItemAsync(jsonStream, logger);
-            if (singleItemList != null)
+            yield return await JsonSerializer.DeserializeAsync<Dictionary<string, object?>>(input, cancellationToken: cancellationToken);
+        }
+        else
+        {
+            await foreach (var item in JsonArrayReader.ReadAsync(input, cancellationToken))
             {
-                return singleItemList.ToAsyncEnumerable();
+                yield return item;
             }
         }
+    }
 
-        try
+    internal sealed class PrefixReadStream(Stream source) : Stream
+    {
+        private readonly bool rewindSource = source.CanSeek;
+        private byte[]? prefix;
+        private int prefixOffset;
+        private int prefixLength;
+        private int bomRemaining;
+        private long spacesBeforeLineFeedsRemaining;
+        private long lineFeedsRemaining;
+        private long columnRemaining;
+        private bool readSourceBom;
+        private bool disposed;
+
+        private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
+
+        internal async Task<int> ReadFirstTokenAsync(CancellationToken cancellationToken)
         {
-            if (jsonStream is { CanSeek: true })
+            ObjectDisposedException.ThrowIf(disposed, this);
+            long originalPosition = rewindSource ? source.Position : 0;
+            var buffer = new byte[4096];
+            int count = await source.ReadAtLeastAsync(buffer.AsMemory(0, 3), 3, throwOnEndOfStream: false, cancellationToken);
+            bool hasBom = count == 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF;
+            int start = hasBom ? 3 : 0;
+            int firstToken = -1;
+            int tokenOffset = 0;
+            long whitespaceLength = 0;
+            long lineFeeds = 0;
+            long column = 0;
+            while (count > 0 && firstToken == -1)
             {
-                jsonStream.Seek(0, SeekOrigin.Begin);
+                cancellationToken.ThrowIfCancellationRequested();
+                for (int i = start; i < count; i++)
+                {
+                    byte value = buffer[i];
+                    if (value is not ((byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n'))
+                    {
+                        firstToken = value;
+                        tokenOffset = i;
+                        break;
+                    }
+
+                    whitespaceLength++;
+                    if (value == '\n')
+                    {
+                        lineFeeds++;
+                        column = 0;
+                    }
+                    else
+                        column++;
+                }
+
+                if (firstToken == -1)
+                {
+                    start = 0;
+                    count = await source.ReadAsync(buffer, cancellationToken);
+                }
             }
-            return JsonArrayReader.ReadAsync(jsonStream, cancellationToken);
+            if (rewindSource)
+            {
+                source.Position = originalPosition;
+                readSourceBom = hasBom;
+            }
+            else
+            {
+                bomRemaining = hasBom ? 3 : 0;
+                spacesBeforeLineFeedsRemaining = whitespaceLength - lineFeeds - column;
+                lineFeedsRemaining = lineFeeds;
+                columnRemaining = column;
+                if (firstToken != -1)
+                {
+                    prefix = buffer;
+                    prefixOffset = tokenOffset;
+                    prefixLength = count - tokenOffset;
+                }
+            }
+            return firstToken;
         }
-        catch (Exception ex)
+
+        public override bool CanRead => !disposed && source.CanRead;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        private int ReadPrefix(Span<byte> buffer)
         {
-            // list failed
-            logger.LogError(ex, "Failed to read JSON list from '{Content}'", ReadTextForLogging(jsonStream, logger));
+            ObjectDisposedException.ThrowIf(disposed, this);
+            int written = 0;
+            int count = Math.Min(buffer.Length, bomRemaining);
+            Utf8Bom.Slice(3 - bomRemaining, count).CopyTo(buffer);
+            bomRemaining -= count;
+            written += count;
+            buffer = buffer[count..];
+
+            // Preserve byte offsets, LF count and final byte column without
+            // retaining the original whitespace.
+            count = (int)Math.Min(buffer.Length, spacesBeforeLineFeedsRemaining);
+            buffer[..count].Fill((byte)' ');
+            spacesBeforeLineFeedsRemaining -= count;
+            written += count;
+            buffer = buffer[count..];
+
+            count = (int)Math.Min(buffer.Length, lineFeedsRemaining);
+            buffer[..count].Fill((byte)'\n');
+            lineFeedsRemaining -= count;
+            written += count;
+            buffer = buffer[count..];
+
+            count = (int)Math.Min(buffer.Length, columnRemaining);
+            buffer[..count].Fill((byte)' ');
+            columnRemaining -= count;
+            written += count;
+            buffer = buffer[count..];
+
+            if (prefix != null)
+            {
+                count = Math.Min(buffer.Length, prefixLength);
+                prefix.AsSpan(prefixOffset, count).CopyTo(buffer);
+                prefixOffset += count;
+                prefixLength -= count;
+                written += count;
+            }
+            return written;
         }
 
-        return null;
-    }
-
-    private static IEnumerable<Dictionary<string, object?>?>? ReadSingleItemAsync(Stream stream, ILogger logger)
-    {
-        Dictionary<string, object?>? item;
-        try
+        public override int Read(byte[] buffer, int offset, int count)
         {
-            item = JsonSerializer.Deserialize<Dictionary<string, object?>>(stream);
+            ValidateBufferArguments(buffer, offset, count);
+            return Read(buffer.AsSpan(offset, count));
         }
-        catch (Exception)
+
+        public override int Read(Span<byte> buffer)
         {
-            // single item failed
-            return null;
+            int read = ReadPrefix(buffer);
+            if (readSourceBom && buffer.Length > 0)
+            {
+                readSourceBom = false;
+                return source.ReadAtLeast(buffer, Math.Min(3, buffer.Length), throwOnEndOfStream: false);
+            }
+            return read > 0 ? read : source.Read(buffer);
         }
 
-        if (item != null)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return new[] { item };
+            ValidateBufferArguments(buffer, offset, count);
+            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
-        logger.LogWarning("No records read from '{Content}'", ReadTextForLogging(stream, logger));
-
-        return null;
-    }
-
-    private static string ReadTextForLogging(Stream stream, ILogger logger)
-    {
-        string textContent;
-        try
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            var chars = new char[50];
-            new StreamReader(stream).ReadBlock(chars, 0, chars.Length);
-            textContent = new string(chars);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to read stream");
-            textContent = "<error>";
+            cancellationToken.ThrowIfCancellationRequested();
+            int read = ReadPrefix(buffer.Span);
+            // The .NET 8 streaming reader expects a BOM in its first read.
+            if (readSourceBom && buffer.Length > 0)
+            {
+                readSourceBom = false;
+                return source.ReadAtLeastAsync(buffer, Math.Min(3, buffer.Length), throwOnEndOfStream: false, cancellationToken);
+            }
+            return read > 0 ? ValueTask.FromResult(read) : source.ReadAsync(buffer, cancellationToken);
         }
 
-        return textContent;
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                disposed = true;
+            base.Dispose(disposing);
+        }
     }
 
     public IEnumerable<IDataExtensionSettings> GetSettings()
