@@ -1,7 +1,10 @@
 ﻿using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Globalization;
 using System.Net;
+using System.Numerics;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.Json;
 using Cosmos.DataTransfer.Interfaces;
@@ -157,6 +160,16 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             await CosmosExtensionServices.VerifyContainerAccess(container, settings.Container, logger, cancellationToken);
 
+            var convertedObjects = dataItems
+                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, ignoreNullValues: settings.IgnoreNullValues, preserveMixedCaseIds: settings.PreserveMixedCaseIds, transformations: settings.Transformations))
+                .Where(o => o != null)
+                .OfType<ExpandoObject>();
+            await WriteItemsAsync(container, convertedObjects, settings, logger, cancellationToken);
+        }
+
+        internal static async Task WriteItemsAsync(Container container, IAsyncEnumerable<ExpandoObject> items,
+            CosmosSinkSettings settings, ILogger logger, CancellationToken cancellationToken)
+        {
             int addedCount = 0;
             int inputCount = 0;
 
@@ -170,22 +183,30 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 }
             }
 
-            var convertedObjects = dataItems
-                .Select(di => di.BuildDynamicObjectTree(requireStringId: true, ignoreNullValues: settings.IgnoreNullValues, preserveMixedCaseIds: settings.PreserveMixedCaseIds, transformations: settings.Transformations))
-                .Where(o => o != null)
-                .OfType<ExpandoObject>();
-            var batches = convertedObjects.Buffer(settings.BatchSize);
+            var batches = items.Buffer(settings.BatchSize);
             IReadOnlyList<string> partitionKeyPaths = settings.PartitionKeyPaths is not null
                 ? settings.PartitionKeyPaths
                 : settings.PartitionKeyPath is not null ? new[] { settings.PartitionKeyPath } : Array.Empty<string>();
             var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
-            await foreach (var batch in batches.WithCancellation(cancellationToken))
+            try
             {
-                var addTasks = batch.Select(item => AddItemAsync(container, item, partitionKeyPaths, settings.WriteMode, retry, logger, cancellationToken)).ToList();
-
-                var results = await Task.WhenAll(addTasks);
-                ReportCount(results.Sum(i => i.ItemCount));
-                inputCount += results.Length;
+                await foreach (var batch in batches.WithCancellation(cancellationToken))
+                {
+                    inputCount += batch.Count;
+                    await WriteBatchAsync(container, batch, partitionKeyPaths,
+                        settings.WriteMode, retry, logger, ReportCount, cancellationToken);
+                }
+            }
+            catch (Exception exception)
+            {
+                logger.LogWarning("Cosmos sink stopped after {AddedCount} successful writes out of {TotalCount} records in started batches. Other records may be unattempted or have an unknown outcome.", addedCount, inputCount);
+                if (exception is CosmosException cosmosException)
+                {
+                    throw new DataTransferException(
+                        $"Cosmos sink {settings.WriteMode} failed with status {(int)cosmosException.StatusCode} and substatus {cosmosException.SubStatusCode}. See preceding retry and progress messages.",
+                        cosmosException);
+                }
+                throw;
             }
 
             if (addedCount != inputCount)
@@ -197,46 +218,143 @@ namespace Cosmos.DataTransfer.CosmosExtension
             logger.LogInformation("Added {AddedCount} total records in {TotalSeconds}s ({AddRate} records/s)", addedCount, $"{timer.ElapsedMilliseconds / 1000.0:F2}", $"{(int)(addedCount / (timer.ElapsedMilliseconds / 1000.0))}");
         }
 
-        private static AsyncRetryPolicy GetRetryPolicy(int maxRetryCount, int initialRetryDuration)
+        internal static async Task WriteBatchAsync(Container container, IEnumerable<ExpandoObject> batch,
+            IReadOnlyList<string> partitionKeyPaths, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger,
+            Action<int> reportCount, CancellationToken cancellationToken)
         {
-            int retryDelayBaseMs = initialRetryDuration / 2;
-            var jitter = new Random();
-            var retryPolicy = Policy
-                .Handle<CosmosException>(c => c.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                .WaitAndRetryAsync(maxRetryCount,
-                    retryAttempt => TimeSpan.FromMilliseconds(Math.Pow(2, retryAttempt) * retryDelayBaseMs + jitter.Next(0, retryDelayBaseMs))
-                );
+            using var batchCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            ExceptionDispatchInfo? failure = null;
+            int successfulCount = 0;
+            int startedCount = 0;
+            async Task WriteItem(ExpandoObject item)
+            {
+                Interlocked.Increment(ref startedCount);
+                try
+                {
+                    var result = await AddItemAsync(container, item, partitionKeyPaths, mode, retryPolicy, logger, batchCancellation.Token);
+                    if (!result.IsSuccess)
+                    {
+                        throw new InvalidOperationException($"Cosmos sink {mode} failed with status {(int)result.StatusCode}.");
+                    }
+                    Interlocked.Add(ref successfulCount, result.ItemCount);
+                }
+                catch (Exception exception)
+                {
+                    if (Interlocked.CompareExchange(ref failure, ExceptionDispatchInfo.Capture(exception), null) == null)
+                    {
+                        await batchCancellation.CancelAsync();
+                    }
+                    throw;
+                }
+            }
 
-            return retryPolicy;
+            try
+            {
+                await Task.WhenAll(batch.Select(WriteItem).ToArray());
+            }
+            catch
+            {
+                logger.LogWarning("Cosmos sink batch stopped with {SuccessfulCount} confirmed successful writes out of {StartedCount} records. Remaining outcomes may be unknown.", successfulCount, startedCount);
+                // All tasks have drained; sibling cancellation must not replace the original failure.
+                failure?.Throw();
+                throw;
+            }
+            finally
+            {
+                reportCount(successfulCount);
+            }
         }
 
-        private static Task<ItemResult> AddItemAsync(Container container, ExpandoObject item, IReadOnlyList<string> partitionKeyPaths, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger, CancellationToken cancellationToken)
+        internal static AsyncRetryPolicy GetRetryPolicy(int maxRetryCount, int initialRetryDuration,
+            Func<int, CosmosException, TimeSpan>? retryDelayProvider = null)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(maxRetryCount);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(initialRetryDuration);
+            return Policy
+                .Handle<CosmosException>(c => c.StatusCode == HttpStatusCode.TooManyRequests)
+                .WaitAndRetryAsync(maxRetryCount,
+                    (attempt, exception, _) => retryDelayProvider != null
+                        ? retryDelayProvider(attempt, (CosmosException)exception)
+                        : GetRetryDelay((CosmosException)exception, attempt, initialRetryDuration),
+                    (_, _, attempt, context) =>
+                    {
+                        context["RetryCount"] = attempt;
+                        return Task.CompletedTask;
+                    });
+        }
+
+        internal static TimeSpan GetRetryDelay(CosmosException exception, int retryAttempt, int initialRetryDuration)
+        {
+            // The SDK returns null for headers outside Int64, which must not turn an
+            // oversized positive service delay into a short fallback wait.
+            if (BigInteger.TryParse(exception.Headers.Get("x-ms-retry-after-ms"), NumberStyles.Number,
+                    CultureInfo.InvariantCulture, out var serviceDelayMs) && serviceDelayMs > uint.MaxValue - 1)
+            {
+                throw new NotSupportedException("Cosmos sink retry-after exceeds the supported delay range; refusing to retry early.");
+            }
+
+            TimeSpan? retryAfter;
+            try
+            {
+                retryAfter = exception.RetryAfter;
+            }
+            catch (OverflowException)
+            {
+                throw new NotSupportedException("Cosmos sink retry-after exceeds the supported delay range; refusing to retry early.");
+            }
+
+            if (retryAfter > TimeSpan.Zero)
+            {
+                // Task.Delay on .NET 8 supports at most uint.MaxValue - 1 milliseconds.
+                if (retryAfter.Value.TotalMilliseconds > uint.MaxValue - 1)
+                {
+                    throw new NotSupportedException("Cosmos sink retry-after exceeds the supported delay range; refusing to retry early.");
+                }
+
+                return retryAfter.Value;
+            }
+
+            // Only fallback delays are capped. Limit the exponent before calculating it to avoid overflow.
+            const int maxFallbackDelayMs = 30_000;
+            double exponentialDelayMs = Math.Min(maxFallbackDelayMs,
+                initialRetryDuration * Math.Pow(2, Math.Min(retryAttempt - 1, 15)));
+            int jitterMs = Random.Shared.Next(0, Math.Max(1, Math.Min(initialRetryDuration, maxFallbackDelayMs) / 2));
+            return TimeSpan.FromMilliseconds(Math.Min(maxFallbackDelayMs, exponentialDelayMs + jitterMs));
+        }
+
+        internal static async Task<ItemResult> AddItemAsync(Container container, ExpandoObject item, IReadOnlyList<string> partitionKeyPaths, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger, CancellationToken cancellationToken)
         {
             string? id = GetPropertyValue(item, "id");
-            logger.LogTrace("Adding item {Id}", id);
-
-            var task = retryPolicy.ExecuteAsync(() => PopulateItem(container, item, partitionKeyPaths, mode, id, cancellationToken))
-                .ContinueWith(t =>
+            var context = new Context();
+            try
+            {
+                var result = await retryPolicy.ExecuteAsync(
+                    (_, token) => PopulateItem(container, item, partitionKeyPaths, mode, id, token),
+                    context, cancellationToken);
+                if (!result.IsSuccess)
                 {
-                    bool requestSucceeded = t.Result.IsSuccess;
-                    if (t.IsCompletedSuccessfully && requestSucceeded)
-                    {
-                        return t.Result;
-                    }
-
-                    if (t.IsFaulted)
-                    {
-                        logger.LogWarning(t.Exception, "Error adding record: {ErrorMessage}", t.Exception?.Message);
-                    }
-                    else if (!requestSucceeded)
-                    {
-                        logger.LogWarning(t.Exception, "Error adding record {Id}: {ErrorMessage}", t.Result.Id, t.Result.StatusCode);
-                        return t.Result;
-                    }
-
-                    return new ItemResult(null, mode, HttpStatusCode.InternalServerError);
-                }, cancellationToken);
-            return task;
+                    logger.LogWarning("Cosmos sink {WriteMode} failed with status {StatusCode}.", mode, (int)result.StatusCode);
+                }
+                return result;
+            }
+            catch (CosmosException exception)
+            {
+                var retries = context.TryGetValue("RetryCount", out var count) ? (int)count : 0;
+                if (exception.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    logger.LogWarning("Cosmos sink {WriteMode} exhausted {RetryCount} additional application retries with status 429. SDK retries also apply; consider reducing BatchSize or increasing available throughput.", mode, retries);
+                }
+                else
+                {
+                    logger.LogWarning("Cosmos sink {WriteMode} failed with status {StatusCode}; not retried by the application.", mode, (int)exception.StatusCode);
+                }
+                throw;
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogWarning("Cosmos sink {WriteMode} failed with {ErrorType}.", mode, exception.GetType().Name);
+                throw;
+            }
         }
 
         private static async Task<ItemResult> PopulateItem(Container container, ExpandoObject item, IReadOnlyList<string> partitionKeyPaths, DataWriteMode mode, string? itemId, CancellationToken cancellationToken)
@@ -249,28 +367,41 @@ namespace Cosmos.DataTransfer.CosmosExtension
             switch (mode)
             {
                 case DataWriteMode.InsertStream:
-                    var insertMessage = await container.CreateItemStreamAsync(itemStream, partitionKey, cancellationToken: cancellationToken);
-                    statusCode = insertMessage.StatusCode;
+                    using (var insertMessage = await container.CreateItemStreamAsync(itemStream, partitionKey, cancellationToken: cancellationToken))
+                    {
+                        statusCode = GetStreamStatusCode(insertMessage);
+                    }
                     break;
                 case DataWriteMode.Insert:
                     var insertResponse = await container.CreateItemAsync(item, cancellationToken: cancellationToken);
                     statusCode = insertResponse.StatusCode;
                     break;
                 case DataWriteMode.UpsertStream:
-                    var upsertMessage = await container.UpsertItemStreamAsync(itemStream, partitionKey, cancellationToken: cancellationToken);
-                    statusCode = upsertMessage.StatusCode;
+                    using (var upsertMessage = await container.UpsertItemStreamAsync(itemStream, partitionKey, cancellationToken: cancellationToken))
+                    {
+                        statusCode = GetStreamStatusCode(upsertMessage);
+                    }
                     break;
                 case DataWriteMode.Upsert:
                     var upsertResponse = await container.UpsertItemAsync(item, cancellationToken: cancellationToken);
                     statusCode = upsertResponse.StatusCode;
                     break;
                 case DataWriteMode.DeleteStream:
-                    var deleteMessage = await container.DeleteItemStreamAsync(itemId, partitionKey, cancellationToken: cancellationToken);
-                    statusCode = deleteMessage.StatusCode;
+                    using (var deleteMessage = await container.DeleteItemStreamAsync(itemId, partitionKey, cancellationToken: cancellationToken))
+                    {
+                        statusCode = GetStreamStatusCode(deleteMessage);
+                    }
                     break;
                 case DataWriteMode.Delete:
-                    var deleteResponse = await container.DeleteItemAsync<ExpandoObject>(itemId, partitionKey, cancellationToken: cancellationToken);
-                    statusCode = deleteResponse.StatusCode;
+                    try
+                    {
+                        var deleteResponse = await container.DeleteItemAsync<ExpandoObject>(itemId, partitionKey, cancellationToken: cancellationToken);
+                        statusCode = deleteResponse.StatusCode;
+                    }
+                    catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound && exception.SubStatusCode == 0)
+                    {
+                        statusCode = HttpStatusCode.NotFound;
+                    }
                     break;
             }
 
@@ -280,6 +411,20 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             return new ItemResult(itemId, mode, statusCode.Value);
+        }
+
+        private static HttpStatusCode GetStreamStatusCode(ResponseMessage response)
+        {
+            // Stream APIs return service failures instead of throwing.
+            // A nonzero (or malformed) 404 substatus is not proof that the item is absent.
+            var subStatus = response.Headers.Get("x-ms-substatus");
+            if (response.StatusCode == HttpStatusCode.TooManyRequests ||
+                (response.StatusCode == HttpStatusCode.NotFound && subStatus != null &&
+                 (!int.TryParse(subStatus, NumberStyles.Integer, CultureInfo.InvariantCulture, out var code) || code != 0)))
+            {
+                response.EnsureSuccessStatusCode();
+            }
+            return response.StatusCode;
         }
 
         private static MemoryStream CreateItemStream(ExpandoObject item)
@@ -376,31 +521,38 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         private static string? GetPropertyValue(ExpandoObject item, string propertyName)
         {
+            return TryGetPropertyValue(item, propertyName, out var value) ? value?.ToString() : null;
+        }
+
+        private static bool TryGetPropertyValue(ExpandoObject item, string propertyName, out object? value)
+        {
             // Handle nested property paths (e.g., "property1/property2/property3")
             // Note: Calling code uses TrimStart('/') to remove leading slash before calling this method
             var pathSegments = propertyName.Split('/');
             object? current = item;
+            value = null;
             
             foreach (var segment in pathSegments)
             {
                 if (current == null)
                 {
-                    return null;
+                    return false;
                 }
                 
                 if (current is not ExpandoObject expandoObj)
                 {
-                    return null;
+                    return false;
                 }
                 
                 var dict = (IDictionary<string, object?>)expandoObj;
                 if (!dict.TryGetValue(segment, out current))
                 {
-                    return null;
+                    return false;
                 }
             }
             
-            return current?.ToString();
+            value = current;
+            return true;
         }
 
         public IEnumerable<IDataExtensionSettings> GetSettings()

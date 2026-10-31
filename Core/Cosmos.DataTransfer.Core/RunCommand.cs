@@ -218,7 +218,14 @@ namespace Cosmos.DataTransfer.Core
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Data transfer failed");
+                    if (ex is DataTransferException)
+                    {
+                        _logger.LogError("Data transfer failed: {ErrorMessage}", ex.Message);
+                    }
+                    else
+                    {
+                        _logger.LogError(ex, "Data transfer failed");
+                    }
                     return false;
                 }
             }
