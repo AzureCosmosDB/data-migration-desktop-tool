@@ -5,6 +5,10 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   build-package:
     name: Build self-contained executables
