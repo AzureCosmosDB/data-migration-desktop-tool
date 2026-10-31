@@ -119,6 +119,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.MongoEx
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.ParquetExtension.UnitTests", "Extensions\Parquet\Cosmos.DataTransfer.ParquetExtension.UnitTests\Cosmos.DataTransfer.ParquetExtension.UnitTests.csproj", "{730020B9-2E78-42E2-9462-B7AF3EC1919D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cosmos.DataTransfer.AzureBlobStorage.UnitTests", "Extensions\AzureBlob\Cosmos.DataTransfer.AzureBlobStorage.UnitTests\Cosmos.DataTransfer.AzureBlobStorage.UnitTests.csproj", "{D2F6832D-A7AC-4572-AC2D-A1B3941EE9FB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -229,6 +231,10 @@ Global
 		{730020B9-2E78-42E2-9462-B7AF3EC1919D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{730020B9-2E78-42E2-9462-B7AF3EC1919D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{730020B9-2E78-42E2-9462-B7AF3EC1919D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2F6832D-A7AC-4572-AC2D-A1B3941EE9FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2F6832D-A7AC-4572-AC2D-A1B3941EE9FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2F6832D-A7AC-4572-AC2D-A1B3941EE9FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2F6832D-A7AC-4572-AC2D-A1B3941EE9FB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -267,6 +273,7 @@ Global
 		{8C755891-38F4-4155-9A60-51BC6841FA36} = {AC56D40C-6A65-42E5-8881-D126FD080774}
 		{3139E1AA-189A-4E62-8358-0507F503CEFF} = {F18E789A-D32D-48D3-B75F-1196D7215F74}
 		{730020B9-2E78-42E2-9462-B7AF3EC1919D} = {2BD63BEE-CEE8-4FF3-8A2E-373D9F4E2FE8}
+		{D2F6832D-A7AC-4572-AC2D-A1B3941EE9FB} = {9627A42A-BEB0-4A39-B49C-C3C6D54E705A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {662B3F27-70D8-45E6-A1C0-1438A9C8A542}
