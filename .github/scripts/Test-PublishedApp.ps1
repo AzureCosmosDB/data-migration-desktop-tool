@@ -49,6 +49,7 @@ try {
     $settingsPath = Join-Path $scratch 'settings.json'
     $expectedJson = '[{"id":"one","value":42,"nullable":null},{"id":"two","value":-1,"active":true}]'
     $expectedJson | Set-Content -LiteralPath $inputPath -Encoding utf8NoBOM
+    '[{"id":"previous-output"}]' | Set-Content -LiteralPath $outputPath -Encoding utf8NoBOM
     @{
         Source = 'JSON'; Sink = 'JSON'
         SourceSettings = @{ FilePath = $inputPath }
@@ -58,6 +59,9 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Published JSON migration failed.' }
     & "$PSScriptRoot/Assert-JsonRoundTrip.ps1" -ExpectedJson $expectedJson `
         -ActualJson (Get-Content -LiteralPath $outputPath -Raw)
+    if (@(Get-ChildItem -LiteralPath $scratch -Filter '.dmt-*.tmp' -Force).Count -ne 0) {
+        throw 'Published overwrite migration left temporary output behind.'
+    }
     Write-Host "Published application passed: .NET $expectedRuntime; 15 sources; 15 sinks; JSON round trip."
 } finally {
     Remove-Item -LiteralPath $scratch -Recurse -Force
