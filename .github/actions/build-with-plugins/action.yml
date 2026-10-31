@@ -180,6 +180,7 @@ runs:
         dependency_dir=$(dotnet msbuild Core/Cosmos.DataTransfer.Core/Cosmos.DataTransfer.Core.csproj \
           -p:Configuration=Release -p:RuntimeIdentifier=${{ inputs.runtime }} \
           -getProperty:IntermediateOutputPath)
+        dependency_dir=${dependency_dir//\\//}
         cp "Core/Cosmos.DataTransfer.Core/${dependency_dir}dmt.deps.json" \
           ${{ inputs.runtime }}/dependency-info.json
     - name: Upload package
