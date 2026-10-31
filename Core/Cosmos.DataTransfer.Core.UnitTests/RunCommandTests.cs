@@ -10,6 +10,7 @@ using System.ComponentModel.Composition.Hosting;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Cosmos.DataTransfer.Core.UnitTests
 {
@@ -133,6 +134,102 @@ namespace Cosmos.DataTransfer.Core.UnitTests
 
             sourceExtension.Verify(se => se.ReadAsync(It.Is<IConfiguration>(c => c["FilePath"] == sourceFile), It.IsAny<ILogger>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
             sinkExtension.Verify(se => se.WriteAsync(It.IsAny<IAsyncEnumerable<IDataItem>>(), It.IsAny<IConfiguration>(), sourceExtension.Object, It.IsAny<ILogger>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
+        }
+
+        [TestMethod]
+        public async Task InvokeAsync_WithMultipleAccounts_AwaitsEachSinkAndRereadsSourceWithIndependentSettings()
+        {
+            const string sourceName = "JSON";
+            const string sinkName = "Cosmos-nosql";
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "SourceSettings:FilePath", "source.json" },
+                    { "SinkSettings:PartitionKeyPath", "/id" },
+                    { "SinkSettings:WriteMode", "UpsertStream" },
+                    { "SinkSettings:AllowBulkExecution", "false" },
+                    { "Operations:0:SinkSettings:ConnectionString", "account1-connection" },
+                    { "Operations:0:SinkSettings:Database", "db1" },
+                    { "Operations:0:SinkSettings:Container", "container1" },
+                    { "Operations:0:SinkSettings:AllowBulkExecution", "true" },
+                    { "Operations:1:SinkSettings:ConnectionString", "account2-connection" },
+                    { "Operations:1:SinkSettings:Database", "db2" },
+                    { "Operations:1:SinkSettings:Container", "container2" }
+                }).Build();
+            var events = new List<string>();
+            var sinkConfigs = new List<IConfiguration>();
+            var sourcePaths = new List<string?>();
+            var releaseFirstSink = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var item = new Mock<IDataItem>().Object;
+
+            async IAsyncEnumerable<IDataItem> ReadSource(IConfiguration config)
+            {
+                sourcePaths.Add(config["FilePath"]);
+                events.Add("read");
+                yield return item;
+                await Task.CompletedTask;
+            }
+
+            var source = new Mock<IDataSourceExtension>();
+            source.SetupGet(s => s.DisplayName).Returns(sourceName);
+            source.Setup(s => s.ReadAsync(It.IsAny<IConfiguration>(), It.IsAny<ILogger>(), It.IsAny<CancellationToken>()))
+                .Returns((IConfiguration config, ILogger logger, CancellationToken token) => ReadSource(config));
+            var sink = new Mock<IDataSinkExtension>();
+            sink.SetupGet(s => s.DisplayName).Returns(sinkName);
+            sink.Setup(s => s.WriteAsync(It.IsAny<IAsyncEnumerable<IDataItem>>(), It.IsAny<IConfiguration>(),
+                    source.Object, It.IsAny<ILogger>(), It.IsAny<CancellationToken>()))
+                .Returns(async (IAsyncEnumerable<IDataItem> data, IConfiguration config,
+                    IDataSourceExtension dataSource, ILogger logger, CancellationToken token) =>
+                {
+                    sinkConfigs.Add(config);
+                    await foreach (var record in data)
+                    {
+                        Assert.AreSame(item, record);
+                        events.Add($"write:{config["Database"]}");
+                    }
+                    if (config["Database"] == "db1")
+                    {
+                        await releaseFirstSink.Task;
+                    }
+                    events.Add($"complete:{config["Database"]}");
+                });
+            var loader = new Mock<IExtensionLoader>();
+            loader.Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSourceExtension> { source.Object });
+            loader.Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+                .Returns(new List<IDataSinkExtension> { sink.Object });
+            var handler = new RunCommand.CommandHandler(loader.Object, configuration, NullLoggerFactory.Instance)
+            {
+                Source = sourceName,
+                Sink = sinkName
+            };
+
+            var run = handler.InvokeAsync(new InvocationContext(new RootCommand().Parse(Array.Empty<string>())));
+            try
+            {
+                Assert.IsFalse(run.IsCompleted, "The command must await the first sink.");
+                Assert.AreEqual(1, sinkConfigs.Count, "The second sink must not start before the first completes.");
+                Assert.AreEqual(1, sourcePaths.Count, "The source must not be reread until the first operation completes.");
+            }
+            finally
+            {
+                releaseFirstSink.TrySetResult();
+            }
+
+            Assert.AreEqual(0, await run.WaitAsync(TimeSpan.FromSeconds(5)));
+            CollectionAssert.AreEqual(new[] { "read", "write:db1", "complete:db1", "read", "write:db2", "complete:db2" }, events);
+            CollectionAssert.AreEqual(new[] { "source.json", "source.json" }, sourcePaths);
+            Assert.AreEqual(2, sinkConfigs.Count);
+            for (int i = 0; i < sinkConfigs.Count; i++)
+            {
+                Assert.AreEqual($"account{i + 1}-connection", sinkConfigs[i]["ConnectionString"]);
+                Assert.AreEqual($"db{i + 1}", sinkConfigs[i]["Database"]);
+                Assert.AreEqual($"container{i + 1}", sinkConfigs[i]["Container"]);
+                Assert.AreEqual("/id", sinkConfigs[i]["PartitionKeyPath"]);
+                Assert.AreEqual("UpsertStream", sinkConfigs[i]["WriteMode"]);
+            }
+            Assert.IsTrue(sinkConfigs[0].GetValue<bool>("AllowBulkExecution"));
+            Assert.IsFalse(sinkConfigs[1].GetValue<bool>("AllowBulkExecution"), "First-operation overrides must not leak into later operations.");
         }
 
         [TestMethod]

@@ -13,13 +13,13 @@ jobs:
       - name: Check .NET version
         run: dotnet --version
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build project
         run: dotnet build
       - name: Run unit tests
         run: dotnet test --logger "console;verbosity=detailed" -graphBuild:True
       - name: Code Coverage Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
+        uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
         with:
           filename: ./**/coverage.cobertura.xml
           badge: true

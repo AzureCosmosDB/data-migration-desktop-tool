@@ -24,6 +24,16 @@ See storage extension documentation for any storage specific settings needed ([e
 
 Source does not require any formatter specific settings.
 
+A source may contain a single JSON object or an array of objects, including on non-seekable HTTP/cloud streams and in compressed files. Arrays are read incrementally. A valid empty array (`[]`) is an empty source; an empty file or malformed JSON fails the migration (CLI exit code `1`).
+
+Leading spaces, tabs, and line breaks are supported, including large amounts before the first JSON object or array. Format detection uses a fixed-size buffer and does not require temporary disk space. Reported JSON error locations remain relative to the original source.
+
+Parse failures retain the JSON path, zero-based line number, and byte position reported by the JSON parser. The error log identifies the source type and stream number; the preceding source read log identifies the file or resource. Document contents are not dumped for diagnostics. Parsing still uses the default JSON rules (for example, no comments or trailing commas).
+
+For errors in streamed arrays, use the line number and byte position to locate the error; the parser's JSON path can be less precise.
+
+Sinks are not transactional: a source failure can leave partial output. Do not use that output as a completed migration.
+
 ```json
 {
 }
@@ -45,6 +55,12 @@ Additionally, an optional `ItemProgressFrequency` parameter (`1000` by default) 
 ```
 
 ## Notes
+
+### Streamed array parse errors
+
+For failures within streamed array items, the primary `JsonException.Path` and error message report the global zero-based array index, including any preceding `null` entries. The parser's property-path suffix, zero-based line number, and byte position are preserved. Arrays still stream incrementally with the default JSON parsing rules.
+
+System.Text.Json currently reports a batch-relative outer array index after streaming buffers have been drained. The JSON reader corrects that structured index without reparsing the source or rewriting the parser's error message. When a correction is needed, the original parser exception is retained as the inner exception for its detailed cause; its path still contains the SDK's batch-relative index. Property-path detail remains limited to what the parser supplies (for example, an error inside a nested `JsonElement` value can identify its containing property).
 
 ### Multi-dimensional arrays
 

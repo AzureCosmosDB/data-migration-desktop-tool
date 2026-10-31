@@ -4,6 +4,27 @@ The Cosmos data transfer extension provides source and sink capabilities for rea
 
 > **Note**: When specifying the JSON extension as the Source or Sink property in configuration, utilize the name **Cosmos-nosql**.
 
+## Multi-Account Sink Support
+
+The tool supports writing to multiple different Cosmos DB accounts in one run. Each sink operation creates its own independent CosmosClient instance with separate configurations. The `Operations` list runs sequentially, not concurrently, and the source is read again for each operation. Use a stable source when destinations must receive identical data; operations do not share a snapshot or transaction.
+
+**Key capabilities:**
+- Write to multiple different Cosmos DB sink accounts in a single execution using the `Operations` feature
+- Each sink connection uses an independent CosmosClient instance
+- Each sink can use different authentication methods (connection string or RBAC)
+- Independent configuration for connection mode, proxy settings, and client options per sink
+- Each sink can target the same or different Cosmos DB accounts
+
+Top-level source and sink settings are inherited by each operation, with operation-specific settings taking precedence. Keep account-specific connection and authentication settings inside each operation when mixing accounts or authentication methods. RBAC destinations must already have the target database and container provisioned, with appropriate data-plane permissions granted to the identity.
+
+**Example use cases:**
+- Replicate data from one source to multiple destination accounts (disaster recovery, geo-distribution)
+- Copy a stable source to multiple regional accounts in sequence
+- Data synchronization across development, staging, and production environments
+- Multi-tenant scenarios where data needs to be written to different customer accounts
+
+See the [Multiple Cosmos-NoSQL Sinks configuration example](../../ExampleConfigs.md#multiple-cosmos-nosql-sinks-different-accounts) for details.
+
 ## JSON Metadata Property Preservation
 
 The Cosmos extension preserves all JSON properties during data migration, including properties that start with special characters like `$type`, `$id`, and `$ref`. These properties are commonly used by serialization libraries (such as Newtonsoft.Json) to store type information for polymorphic objects or reference tracking.
