@@ -17,6 +17,18 @@ When `UseRbacAuth` is `true`, the extension authenticates with `DefaultAzureCred
 
 ### Source
 
+`ContainerName` and `BlobName` identify a specific source blob. If it does not
+exist, or an access/read request fails (including while streaming its contents),
+the migration fails and the CLI returns a nonzero exit code instead of reporting
+`Data transfer complete`. Check the container/blob names and the credential's read
+access. Source diagnostics identify the container and blob without connection
+strings, URL credentials, or signed URL queries; service failures include the HTTP
+status when available.
+
+An existing blob containing valid empty JSON (`[]`) remains a successful empty
+input for the JSON formatter. Source-read failure handling does not guarantee
+destination-file atomicity or rollback of records already written.
+
 An optional `ReadBufferSizeInKB` parameter can be used to control stream buffering.
 
 ```json

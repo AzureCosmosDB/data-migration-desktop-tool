@@ -13,6 +13,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Cosmos.DataTransfer.AzureBlobStorage.UnitTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
     <ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Common\Cosmos.DataTransfer.Common.csproj" />
   </ItemGroup>
