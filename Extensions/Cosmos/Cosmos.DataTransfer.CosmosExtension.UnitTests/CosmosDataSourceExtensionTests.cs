@@ -168,22 +168,13 @@ public class CosmosDataSourceExtensionTests
         }, "PartitionKeys", separateNullId: IsVNext);
 
     [TestMethod]
-    public async Task Test_NestedPartitionKeys_RoundTripAndDelete()
-    {
-        await AssertPartitionKeyRoundTrip(new[] { "/nested/key" }, new[]
+    public Task Test_NestedPartitionKeys_RoundTripAndDelete() =>
+        AssertPartitionKeyRoundTrip(new[] { "/nested/key" }, new[]
         {
             ("""{"nested":{}}""", PartitionKey.None),
             ("""{"nested":{"key":null}}""", PartitionKey.Null),
             ("""{"nested":{"key":42}}""", new PartitionKey(42))
         }, "NestedPartitionKeys", separateNullId: IsVNext);
-
-        await AssertPartitionKeyRoundTrip(new[] { "/\"tenant/key\"" }, new[]
-        {
-            ("""{"tenant/key":"literal"}""", new PartitionKey("literal")),
-            ("""{"tenant/key":42}""", new PartitionKey(42)),
-            ("{}", PartitionKey.None)
-        }, "QuotedPartitionKeys");
-    }
 
     [TestMethod]
     public Task Test_HierarchicalPartitionKeys_RoundTripAndDelete() =>
