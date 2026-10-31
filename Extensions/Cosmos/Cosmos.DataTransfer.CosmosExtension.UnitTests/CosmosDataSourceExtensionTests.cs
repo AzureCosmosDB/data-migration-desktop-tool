@@ -205,6 +205,7 @@ public class CosmosDataSourceExtensionTests
         {
             ["ConnectionString"] = connectionString,
             ["ConnectionMode"] = "Gateway",
+            ["UseDefaultCredentials"] = "true",
             ["AllowBulkExecution"] = "false",
             ["Database"] = database.Id,
             ["Container"] = containerName
@@ -226,6 +227,7 @@ public class CosmosDataSourceExtensionTests
         var container = database.GetContainer(containerName);
         foreach (var mode in new[] { DataWriteMode.Insert, DataWriteMode.Upsert, DataWriteMode.InsertStream, DataWriteMode.UpsertStream })
         {
+            Console.WriteLine($"{containerName}: testing {mode} with pooled HTTP transport.");
             string GetId(int index) => separateNullId && cases[index].key.Equals(PartitionKey.Null)
                 ? $"{mode}-null"
                 : mode.ToString();
