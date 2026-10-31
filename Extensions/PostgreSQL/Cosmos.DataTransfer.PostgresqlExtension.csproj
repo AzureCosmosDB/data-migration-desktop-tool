@@ -24,7 +24,7 @@
 			Projects="$(MSBuildProjectFile)"
 			Targets="Publish"
 			Properties="Configuration=$(Configuration);
-									PublishProfile=PublishToExtensionsFolder;
+									PublishProfile=FolderProfile;
 									BuildProjectReferences=false;
 									PublishingToExtensionsFolder=true" />
 	</Target>
