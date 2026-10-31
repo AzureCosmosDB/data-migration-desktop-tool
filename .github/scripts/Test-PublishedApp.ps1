@@ -8,13 +8,21 @@ $PSNativeCommandUseErrorActionPreference = $false
 $package = (Resolve-Path -LiteralPath $PackagePath).Path
 $executable = Join-Path $package $(if ($IsWindows) { 'dmt.exe' } else { 'dmt' })
 $expectedRuntime = ([xml](Get-Content -LiteralPath "$PSScriptRoot/../../Directory.Build.props" -Raw)).Project.PropertyGroup.RuntimeFrameworkVersion
-$runtime = Get-Content -LiteralPath (Join-Path $package 'runtime-info.json') -Raw | ConvertFrom-Json
+$runtimeJson = Get-Content -LiteralPath (Join-Path $package 'runtime-info.json') -Raw
+$runtime = $runtimeJson | ConvertFrom-Json
 if ($runtime.runtimeOptions.tfm -ne 'net10.0' -or
     @($runtime.runtimeOptions.includedFrameworks | Where-Object {
         $_.name -eq 'Microsoft.NETCore.App' -and $_.version -eq $expectedRuntime
     }).Count -ne 1) {
     throw "Package does not contain the expected self-contained .NET $expectedRuntime runtime configuration."
 }
+# Single-file bundles retain runtimeconfig JSON uncompressed. Check the executable,
+# not just a sidecar that could be copied from an unrelated build.
+$bundle = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($executable))
+if (-not $bundle.Contains($runtimeJson)) {
+    throw 'Runtime metadata does not match the configuration embedded in the executable.'
+}
+$bundle = $null
 
 $expectedExtensions = @(
     'AzureTableAPI', 'CognitiveSearch', 'Cosmos-nosql', 'CSV', 'CSV-AWSS3',

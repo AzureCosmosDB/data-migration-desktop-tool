@@ -100,7 +100,8 @@ probing of the executable directory.
 `internal-test-build.yml` builds all six self-contained packages, then runs
 native discovery and synthetic JSON round trips on each OS/architecture.
 `runtime-info.json` retains the runtime configuration used to create each
-single-file executable so the bundled runtime can be inspected. Docker
+single-file executable so the bundled runtime can be inspected; native smoke
+checks also require that exact configuration to be embedded in the executable. Docker
 validation builds a local image and runs discovery plus a migration with mounted
 configuration/data; it does not push an image. Cross-publishing alone is not
 native execution. Cloud CI results, not merely the existence of these jobs,

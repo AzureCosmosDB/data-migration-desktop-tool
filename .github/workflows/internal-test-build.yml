@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/dotnet/sdk:10.0.403-noble
     strategy:
+      fail-fast: false
       matrix:
         include:
           - platform: windows
