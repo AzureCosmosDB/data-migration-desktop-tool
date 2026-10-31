@@ -301,9 +301,9 @@ public class FileSinkDataSourceTests {
         });
 
         var result = await fileSource.ReadSourceAsync(config, NullLogger.Instance)
-            .SelectAwait(async stream => {
+            .Select(async (Stream? stream, CancellationToken cancellationToken) => {
                 var buffer = new byte[100];
-                await stream!.ReadAsync(buffer.AsMemory(0, buffer.Length));
+                await stream!.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken);
                 return Encoding.UTF8.GetString(buffer).TrimEnd('\0');
             }).ToArrayAsync();
         var expected = new string[files.Length];

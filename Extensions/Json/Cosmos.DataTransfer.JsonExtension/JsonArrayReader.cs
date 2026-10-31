@@ -48,8 +48,8 @@ internal static class JsonArrayReader
         if (end < 0 || !long.TryParse(path.AsSpan(2, end - 2), NumberStyles.None, CultureInfo.InvariantCulture, out long batchIndex))
             return false;
 
-        // System.Text.Json 8 drains its queue after each successful streaming read, but
-        // ReadStack.JsonPath uses that queue's Count. Only the outer index is batch-relative.
+        // System.Text.Json 10 clears its list after each successful streaming read, but
+        // ReadStack.JsonPath uses that list's Count. Only the outer index is batch-relative.
         // Recheck this invariant when upgrading System.Text.Json; never rewrite Message.
         globalPath = "$[" + (itemsRead + batchIndex).ToString(CultureInfo.InvariantCulture) + path[end..];
         return true;

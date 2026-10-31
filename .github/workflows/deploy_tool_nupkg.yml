@@ -7,7 +7,7 @@ jobs:
   build:
     name:  Create dotnet tool NuGet package
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/dotnet/sdk:8.0
+    container: mcr.microsoft.com/dotnet/sdk:10.0.403-noble
     steps:
     - name: Check out repository
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -34,7 +34,7 @@ jobs:
         $fileName = $pkg.Name
         Rename-Item -Path $fileName -NewName "$($fileName).zip"
         Expand-Archive -Path "$($fileName).zip" -DestinationPath $fileName.Split('.')[0]
-        Copy-Item "./net6.0/Extensions" -Destination "./$($fileName.Split('.')[0])/tools/net6.0/any/Extensions" -Recurse
+        Copy-Item "./net10.0/Extensions" -Destination "./$($fileName.Split('.')[0])/tools/net10.0/any/Extensions" -Recurse
         Compress-Archive -Path "$($fileName.Split('.')[0])\*" -DestinationPath "$($fileName).zip" -Force
         Rename-Item -Path "$($fileName).zip" -NewName $fileName
       shell: pwsh

@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.403-noble AS build
 WORKDIR /src
 
 # Set build arguments
@@ -9,6 +9,8 @@ ARG BUILD_VERSION=1.0.0
 # Copy solution file and project files
 COPY ["CosmosDbDataMigrationTool.sln", "."]
 COPY ["Directory.Packages.props", "."]
+COPY ["Directory.Build.props", "."]
+COPY ["global.json", "."]
 COPY ["Core/", "Core/"]
 COPY ["Interfaces/", "Interfaces/"]
 COPY ["Extensions/", "Extensions/"]
@@ -156,8 +158,10 @@ RUN dotnet publish \
     -p:PublishTrimmed=false \
     -p:Version=${BUILD_VERSION}
 
-# Runtime stage - use minimal base image since we have self-contained build
-FROM mcr.microsoft.com/dotnet/runtime-deps:8.0 AS runtime
+RUN cp Core/Cosmos.DataTransfer.Core/bin/Release/net10.0/${RUNTIME}/dmt.runtimeconfig.json /app/${RUNTIME}/runtime-info.json
+
+# Runtime stage - explicit Ubuntu 24.04 base includes ICU, OpenSSL and CA roots.
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0.14-noble AS runtime
 WORKDIR /app
 
 # Enable this section for local development verification to use Microsoft Entra ID authentication
@@ -171,7 +175,7 @@ ARG RUNTIME=linux-x64
 COPY --from=build /app/${RUNTIME} ./
 
 # Verify the contents of the final image
-RUN echo "=== Final image contents ===" && ls -la ./ && echo "=== Extensions directory ===" && ls -la ./Extensions/ || echo "No Extensions directory"
+RUN echo "=== Final image contents ===" && ls -la ./ && echo "=== Extensions directory ===" && ls -la ./Extensions/
 
 # Create volumes for configuration and data
 VOLUME /config

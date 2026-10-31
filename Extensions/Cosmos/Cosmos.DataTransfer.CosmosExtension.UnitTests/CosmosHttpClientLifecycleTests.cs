@@ -250,7 +250,7 @@ public class CosmosHttpClientLifecycleTests
         var request = new CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
         // Import the key for Windows Schannel as well as OpenSSL.
-        using var serverCertificate = new X509Certificate2(certificate.Export(X509ContentType.Pfx));
+        using var serverCertificate = X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pfx), null);
         using var server = new LoopbackServer();
         var served = server.ServeAsync(1, serverCertificate, expectTlsRejection: !disableSslValidation);
         var settings = CreateSettings<CosmosSourceSettings>(false, false);

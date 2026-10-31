@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>c7432a3a-5dc1-4e86-a1f0-b2363bf5c77f</UserSecretsId>
@@ -29,7 +29,6 @@
     <PackageReference Include="System.CommandLine.Hosting" />
     <PackageReference Include="System.ComponentModel.Composition" />
     <PackageReference Include="System.Configuration.ConfigurationManager" />
-    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>

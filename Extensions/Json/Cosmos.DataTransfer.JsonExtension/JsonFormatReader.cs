@@ -217,7 +217,7 @@ public class JsonFormatReader : IFormattedDataReader
         {
             cancellationToken.ThrowIfCancellationRequested();
             int read = ReadPrefix(buffer.Span);
-            // The .NET 8 streaming reader expects a BOM in its first read.
+            // The streaming reader expects a BOM in its first read.
             if (readSourceBom && buffer.Length > 0)
             {
                 readSourceBom = false;

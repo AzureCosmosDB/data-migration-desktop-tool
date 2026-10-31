@@ -16,6 +16,9 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Verify pinned SDK
+      shell: bash
+      run: dotnet --version
     - name: Build Core app package
       shell: bash
       run: |
@@ -166,6 +169,11 @@ runs:
         -p:PublishReadyToRun=false \
         -p:PublishTrimmed=false \
         -p:Version=${{ inputs.build-version }}
+    - name: Retain bundled runtime metadata
+      shell: bash
+      run: |
+        cp Core/Cosmos.DataTransfer.Core/bin/Release/net10.0/${{ inputs.runtime }}/dmt.runtimeconfig.json \
+          ${{ inputs.runtime }}/runtime-info.json
     - name: Upload package
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:

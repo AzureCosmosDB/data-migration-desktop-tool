@@ -9,7 +9,7 @@ jobs:
   build-package:
     name: Build self-contained executables
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/dotnet/sdk:8.0
+    container: mcr.microsoft.com/dotnet/sdk:10.0.403-noble
     strategy:
       matrix:
         include:
@@ -46,3 +46,60 @@ jobs:
         env:
           PLATFORM: ${{ matrix.platform }}
           RUNTIME: ${{ matrix.runtime }}
+
+  smoke-package:
+    name: Native smoke (${{ matrix.runtime }})
+    needs: build-package
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            runtime: win-x64
+          - os: windows-11-arm
+            runtime: win-arm64
+          - os: ubuntu-24.04
+            runtime: linux-x64
+          - os: ubuntu-24.04-arm
+            runtime: linux-arm64
+          - os: macos-15-intel
+            runtime: osx-x64
+          - os: macos-latest
+            runtime: osx-arm64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ matrix.runtime }}-package
+          path: package
+      - name: Restore executable permission
+        if: runner.os != 'Windows'
+        run: chmod +x package/dmt
+      - name: Verify runtime, MEF discovery and JSON migration
+        shell: pwsh
+        run: ./.github/scripts/Test-PublishedApp.ps1 -PackagePath package
+
+  smoke-container:
+    name: Build and smoke container (no publication)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build local image
+        run: docker build --tag dmt-smoke .
+      - name: Verify runtime and extension discovery
+        run: |
+          docker run --rm --entrypoint cat dmt-smoke /app/runtime-info.json > runtime-info.json
+          expected=$(sed -n 's/.*<RuntimeFrameworkVersion>\(.*\)<\/RuntimeFrameworkVersion>.*/\1/p' Directory.Build.props)
+          jq -e --arg version "$expected" '.runtimeOptions.tfm == "net10.0" and any(.runtimeOptions.includedFrameworks[]; .name == "Microsoft.NETCore.App" and .version == $version)' runtime-info.json
+          docker run --rm dmt-smoke list > extensions.txt
+          cat extensions.txt
+          grep -F '15 Source Extensions' extensions.txt
+          grep -F '15 Sink Extensions' extensions.txt
+      - name: Migrate synthetic JSON through mounted files
+        run: |
+          mkdir -p "$RUNNER_TEMP/dmt-smoke/config" "$RUNNER_TEMP/dmt-smoke/data"
+          printf '%s' '[{"id":"one","value":42},{"id":"two","value":-1}]' > "$RUNNER_TEMP/dmt-smoke/data/input.json"
+          printf '%s' '{"Source":"JSON","Sink":"JSON","SourceSettings":{"FilePath":"/data/input.json"},"SinkSettings":{"FilePath":"/data/output.json"}}' > "$RUNNER_TEMP/dmt-smoke/config/settings.json"
+          docker run --rm -v "$RUNNER_TEMP/dmt-smoke/config:/config:ro" -v "$RUNNER_TEMP/dmt-smoke/data:/data" dmt-smoke run --settings /config/settings.json
+          jq -e '. == [{"id":"one","value":42},{"id":"two","value":-1}]' "$RUNNER_TEMP/dmt-smoke/data/output.json"
