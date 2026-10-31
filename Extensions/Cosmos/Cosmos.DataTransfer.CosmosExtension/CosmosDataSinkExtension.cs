@@ -296,13 +296,13 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             // Read the serialized JSON so dates, numeric conversions, and omitted fields match the payload.
-            using var document = JsonDocument.Parse(itemStream);
+            using var document = JsonDocument.Parse(itemStream, new JsonDocumentOptions { MaxDepth = 128 });
             itemStream.Position = 0;
             var builder = new PartitionKeyBuilder();
             foreach (var path in partitionKeyPaths)
             {
                 var value = document.RootElement;
-                foreach (var segment in path.TrimStart('/').Split('/'))
+                foreach (var segment in ParsePartitionKeyPath(path))
                 {
                     if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(segment, out value))
                     {
@@ -335,6 +335,43 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             return builder.Build();
+        }
+
+        private static IReadOnlyList<string> ParsePartitionKeyPath(string path)
+        {
+            var segments = new List<string>();
+            int position = 0;
+            while (position < path.Length)
+            {
+                if (path[position] != '/')
+                    throw new ArgumentException($"Invalid partition key path at position {position}.", nameof(path));
+                position++;
+                if (position == path.Length)
+                    break;
+
+                char quote = path[position];
+                if (quote is '"' or '\'')
+                {
+                    int start = ++position;
+                    while (position < path.Length && (path[position] != quote || path[position - 1] == '\\'))
+                        position++;
+                    if (position == path.Length)
+                        throw new ArgumentException("Partition key path contains an unterminated quoted segment.", nameof(path));
+
+                    // SDK 3.49 PathParser retains escape characters inside quoted segments.
+                    segments.Add(path[start..position]);
+                    position++;
+                }
+                else
+                {
+                    int start = position;
+                    while (position < path.Length && path[position] != '/')
+                        position++;
+                    segments.Add(path[start..position].Trim());
+                }
+            }
+
+            return segments;
         }
 
         private static string? GetPropertyValue(ExpandoObject item, string propertyName)

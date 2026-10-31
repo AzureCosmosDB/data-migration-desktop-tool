@@ -307,6 +307,13 @@ property (including a missing nested component) is **undefined**, not JSON
 in which case it becomes undefined. Object and array partition-key values are
 rejected with a path/type error, without logging their contents.
 
+Quoted path segments follow the Cosmos SDK syntax: `/"tenant/key"` selects the
+literal property `tenant/key`, while `/tenant/key` traverses two nested properties.
+Single-quoted segments are also supported; quoted contents retain their whitespace
+and escape characters, matching SDK 3.49. Malformed quoted paths fail before an
+explicit-key request is sent. Key extraction supports the Cosmos document nesting
+limit of 128 levels, including unrelated deep subtrees.
+
 For example, with `/partitionKey`, `{"id":"1"}` uses
 [`PartitionKey.None`](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.partitionkey.none),
 while `{"id":"1","partitionKey":null}` uses

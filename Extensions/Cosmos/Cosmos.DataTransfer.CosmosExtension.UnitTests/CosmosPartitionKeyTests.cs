@@ -6,7 +6,6 @@ using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
 using Moq;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 
@@ -52,6 +51,97 @@ public class CosmosPartitionKeyTests
     {
         DataWriteMode.InsertStream, DataWriteMode.UpsertStream, DataWriteMode.DeleteStream, DataWriteMode.Delete
     };
+
+    [TestMethod]
+    public async Task PopulateItem_UsesQuotedPathSegmentsAcrossAllExplicitKeyModes()
+    {
+        var item = new ExpandoObject();
+        var values = (IDictionary<string, object?>)item;
+        values["tenant/key"] = "literal";
+        values[" spaced "] = true;
+        values["escaped\\\"quote"] = 42;
+        values[""] = "empty";
+        var child = new ExpandoObject();
+        ((IDictionary<string, object?>)child)["region/name"] = "west";
+        values["parent"] = child;
+        var cases = new[]
+        {
+            (new[] { "/\"tenant/key\"" }, new PartitionKey("literal")),
+            (new[] { "/'tenant/key'" }, new PartitionKey("literal")),
+            (new[] { "/\" spaced \"" }, new PartitionKey(true)),
+            (new[] { "/\"escaped\\\"quote\"" }, new PartitionKey(42)),
+            (new[] { "/\"\"" }, new PartitionKey("empty")),
+            (new[] { "//" }, new PartitionKey("empty")),
+            (new[] { "/ parent /'region/name'/" }, new PartitionKey("west")),
+            (new[] { "/\"tenant/key\"", "/parent/\"region/name\"", "/'absent/field'" },
+                new PartitionKeyBuilder().Add("literal").Add("west").AddNoneType().Build())
+        };
+        foreach (var (paths, expected) in cases)
+        {
+            foreach (var mode in ExplicitKeyModes)
+                await AssertRequest(item, paths, expected.ToString(), mode, "quoted path");
+        }
+    }
+
+    [DataTestMethod]
+    [DataRow("/\"unterminated")]
+    [DataRow("/'unterminated")]
+    [DataRow("/\"tenant/key\"suffix")]
+    [DataRow("/absent/\"unterminated")]
+    public async Task PopulateItem_RejectsMalformedPathsBeforeSending(string path)
+    {
+        foreach (var mode in ExplicitKeyModes)
+        {
+            var container = new Mock<Container>(MockBehavior.Strict);
+            await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => PopulateItem(container.Object, new ExpandoObject(), new[] { path }, mode));
+            Assert.AreEqual(0, container.Invocations.Count);
+        }
+    }
+
+    [DataTestMethod]
+    [DataRow(65)]
+    [DataRow(128)]
+    public async Task PopulateItem_AcceptsSupportedDocumentDepth(int depth)
+    {
+        var item = CreateDeepItem(depth);
+        foreach (var mode in ExplicitKeyModes)
+            await AssertRequest(item, new[] { "/pk" }, new PartitionKey("shallow").ToString(), mode, $"depth {depth}");
+    }
+
+    [TestMethod]
+    public async Task PopulateItem_RejectsDocumentsBeyondSupportedDepth()
+    {
+        foreach (var mode in ExplicitKeyModes)
+        {
+            var container = new Mock<Container>(MockBehavior.Strict);
+            try
+            {
+                await PopulateItem(container.Object, CreateDeepItem(129), new[] { "/pk" }, mode);
+                Assert.Fail("Documents deeper than 128 must be rejected before sending.");
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // JsonReaderException is internal; assert through its public base type.
+            }
+            Assert.AreEqual(0, container.Invocations.Count);
+        }
+    }
+
+    private static ExpandoObject CreateDeepItem(int depth)
+    {
+        var item = new ExpandoObject();
+        ((IDictionary<string, object?>)item)["pk"] = "shallow";
+        var current = item;
+        for (int level = 1; level < depth; level++)
+        {
+            var child = new ExpandoObject();
+            ((IDictionary<string, object?>)current)["child"] = child;
+            current = child;
+        }
+        ((IDictionary<string, object?>)current)["value"] = true;
+        return item;
+    }
 
     [TestMethod]
     public async Task PopulateItem_PreservesHierarchicalOrderAndMissingComponents()
@@ -200,9 +290,8 @@ public class CosmosPartitionKeyTests
         if (mode is DataWriteMode.InsertStream or DataWriteMode.UpsertStream)
         {
             Assert.IsNotNull(capturedBody);
-            Assert.IsTrue(JToken.DeepEquals(
-                JToken.Parse(JsonConvert.SerializeObject(item, RawJsonCosmosSerializer.GetDefaultSettings())),
-                JToken.Parse(capturedBody)), $"Payload changed: {scenario}, {mode}");
+            Assert.AreEqual(JsonConvert.SerializeObject(item, RawJsonCosmosSerializer.GetDefaultSettings()),
+                capturedBody, $"Payload changed: {scenario}, {mode}");
         }
         else
         {
