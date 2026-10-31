@@ -280,6 +280,13 @@ mode. The example assumes the destination container is partitioned on `/id`.
 
 > **Note**: When using DateTime filters in the `QueryFilter` property, single quotes around the datetime value must be JSON-escaped as `\u0027`. The datetime must be in ISO 8601 format with the `datetime` prefix.
 
+## Bundled JSON sample to SqlServer
+
+For an end-to-end import of `resources/sample-data.zip`, see the
+[JSON-to-SQL walkthrough](resources/json-to-sql/README.md). It includes the
+`dbo.DmtSnapshot` table schema, all 80 field mappings, single-file and full-folder
+commands, and verification queries.
+
 ## Cosmos-NoSQL to SqlServer
 
 ```json
