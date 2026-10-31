@@ -302,6 +302,79 @@ For development purposes with SSL validation disabled:
   - `Insert`
   - `UpsertStream`
   - `Upsert`
+  - `DeleteStream`
+  - `Delete`
+
+#### **Rate-Limit Retries (HTTP 429)**
+
+The Cosmos DB SDK already honors service-directed retry delays internally. Its
+documented defaults are [9 retries](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.maxretryattemptsonratelimitedrequests)
+and [30 seconds of cumulative retry wait](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.maxretrywaittimeonratelimitedrequests)
+per SDK operation. DMT leaves these SDK settings unchanged.
+
+DMT's additional sink retry layer applies after an SDK operation still returns
+or throws 429, for **all six write modes** above:
+
+- **`MaxRetryCount`**: Defaults to `5`. Number of additional application attempts
+  per item, beyond the initial SDK call. Must be nonnegative; `0` disables only
+  these additional retries, not the SDK's internal retries.
+- **`InitialRetryDurationMs`**: Defaults to `200`. Positive initial fallback
+  delay in milliseconds, used only when there is no usable service delay.
+
+For each 429, DMT reads the latest `CosmosException.RetryAfter`, backed by the
+`x-ms-retry-after-ms` response header. Stream 429 responses are converted to SDK
+exceptions to use the same path. A positive, supported service delay takes
+priority over `InitialRetryDurationMs`, with no shortening or jitter. For
+example, a 61-second service hint waits 61 seconds, even though fallback waits
+are capped at 30 seconds. A different hint on the next attempt replaces the
+previous one; retry state is not shared across items.
+
+Missing, malformed, zero, or negative hints that the SDK represents without
+overflow use bounded exponential backoff. Zero is not treated as permission for
+an immediate retry (the SDK also substitutes a nonzero wait for zero).
+The fallback starts at `InitialRetryDurationMs`, doubles for each additional
+attempt, and adds nonnegative, thread-safe jitter of less than half the initial
+delay (the jitter range itself is bounded using 30,000 ms). **The total fallback
+delay is capped at 30 seconds per wait**, avoiding overflow and excessively long
+exponential schedules with large retry counts. With defaults, the first waits
+are 200-299 ms, 400-499 ms, and 800-899 ms. This cap never applies to a service
+hint. If a service delay overflows the SDK's `TimeSpan` conversion or exceeds
+.NET 8's supported single wait of 4,294,967,294 ms, the write fails explicitly
+instead of retrying early.
+
+Cancellation interrupts application waits and is passed to SDK calls. Each
+stream attempt gets a fresh complete payload; owned request streams and
+responses are disposed even on failure. Successful items are counted once.
+Partition keys retain their JSON scalar types (string, number, boolean, null,
+or undefined) rather than converting numbers and booleans to strings.
+Delete-not-found is treated as success for both delete modes only for a 404 with
+substatus zero (or an absent stream substatus). Session-related 404s such as
+404/1002 remain failures. Non-429 failures are not retried by this application
+layer.
+
+When a batch encounters a permanent failure or exhausts retries, DMT cancels
+the other calls and retry waits in that batch, drains their tasks, and propagates
+the original failure rather than a sibling cancellation. It does not shorten a
+service delay and retry early. Confirmed successes in the failed batch are
+counted once, and both batch progress and cumulative totals for started batches
+are reported before failure or cancellation propagates. Unconfirmed outcomes
+are not claimed to be failures or successes: cancellation cannot undo writes
+already accepted by the service.
+
+After retry exhaustion, the sink logs the write mode, status, and number of
+additional application retries, then propagates the final 429. These messages
+do not include document payloads, IDs, credentials, or raw exception bodies.
+At the sink transfer boundary, Cosmos failures are wrapped in a
+`DataTransferException` with a safe status/substatus message and the original
+exception retained as `InnerException` for programmatic inspection. Core logs
+only that safe message, not the exception object or its inner diagnostics.
+Ordinary file, HTTP, and JSON source failures keep their original diagnostics.
+Each additional attempt can itself incur SDK retries, so `MaxRetryCount` is
+**not an elapsed-time budget**. Large values can still make migrations take a
+long time. Retries do not guarantee completion against insufficient throughput;
+consider reducing `BatchSize` or increasing available RU/s. Adaptive concurrency,
+unlimited retries, source retries, and resumable migrations are not provided by
+this setting. See [troubleshooting 429 responses](https://learn.microsoft.com/azure/cosmos-db/troubleshoot-request-rate-too-large).
 
 #### **Connection Settings**
 

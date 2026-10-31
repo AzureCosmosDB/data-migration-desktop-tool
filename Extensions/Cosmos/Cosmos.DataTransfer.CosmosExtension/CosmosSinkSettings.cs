@@ -8,7 +8,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
         public string? PartitionKeyPath { get; set; }
         public bool RecreateContainer { get; set; }
         public int BatchSize { get; set; } = 100;
+        [Range(0, int.MaxValue)]
         public int MaxRetryCount { get; set; } = 5;
+        [Range(1, int.MaxValue)]
         public int InitialRetryDurationMs { get; set; } = 200;
         public int? CreatedContainerMaxThroughput { get; set; }
 
