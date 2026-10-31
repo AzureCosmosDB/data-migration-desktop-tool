@@ -486,8 +486,8 @@ this setting. See [troubleshooting 429 responses](https://learn.microsoft.com/az
 
 - **`WebProxy`**: Optional. Specifies the proxy server URL to use for connections (e.g., `http://yourproxy.server.com/`).
 - **`UseDefaultProxyCredentials`**: Optional, defaults to `false`. When `true`, includes default credentials in the WebProxy request. Use this when connecting through an authenticated proxy that returns `407 Proxy Authentication Required`. See [WebProxy.Credentials Property](https://learn.microsoft.com/dotnet/api/system.net.webproxy.credentials).
-- **`UseDefaultCredentials`**: Optional, defaults to `false`. When `true`, configures the underlying HttpClient with default network credentials. Use this when the connection to CosmosDB requires authentication through a proxy.
-- **`PreAuthenticate`**: Optional, defaults to `false`. When `true`, enables pre-authentication on the HttpClient, which sends credentials with the initial request rather than waiting for a 401/407 challenge. This can save extra round-trips but should only be used when the endpoint is trusted.
+- **`UseDefaultCredentials`**: Optional, defaults to `false`. Configures HTTP server authentication with the current user's default network credentials, independently of Cosmos account authentication. It is **not required for RBAC**. For an explicit authenticated `WebProxy`, use `UseDefaultProxyCredentials`.
+- **`PreAuthenticate`**: Optional, defaults to `false`. With `UseDefaultCredentials`, enables HTTP pre-authentication for matching URIs after authentication has succeeded. It does not eliminate the first authentication challenge and does not acquire an Entra token.
 - **`EnableNetHttpLogging`**: Optional, defaults to `false`. When `true`, enables `.NET` `System.Net.Http` diagnostic events for troubleshooting. Events are logged at Debug level and may include endpoint/request details.
 
 - **`LimitToEndpoint`**: Optional, defaults to `false`. When the value of this property is false, the Cosmos DB SDK will automatically discover

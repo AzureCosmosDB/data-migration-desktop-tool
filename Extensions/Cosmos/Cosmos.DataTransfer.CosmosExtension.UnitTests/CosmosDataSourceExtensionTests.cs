@@ -9,6 +9,7 @@ using System.ComponentModel.Composition.Hosting;
 using Cosmos.DataTransfer.Core;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -343,12 +344,15 @@ public class CosmosDataSourceExtensionTests
         }
         values["SourceSettings:Container"] = sourceContainer;
         values["SinkSettings:PartitionKeyPath"] = "/partitionKey";
+        // Reuse two destinations across pre-auth variants to stay within the current emulator's partition limit.
+        values["SinkSettings:WriteMode"] = "Upsert";
         for (var i = 0; i < 2; i++)
         {
-            values[$"Operations:{i}:SinkSettings:Container"] = $"operation-{preAuthenticate}-{i}";
+            values[$"Operations:{i}:SinkSettings:Container"] = $"operation-{i}";
         }
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
-        var command = new RunCommand.CommandHandler(loader.Object, configuration, NullLoggerFactory.Instance)
+        using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+        var command = new RunCommand.CommandHandler(loader.Object, configuration, loggerFactory)
         {
             Source = source.DisplayName,
             Sink = sink.DisplayName,
