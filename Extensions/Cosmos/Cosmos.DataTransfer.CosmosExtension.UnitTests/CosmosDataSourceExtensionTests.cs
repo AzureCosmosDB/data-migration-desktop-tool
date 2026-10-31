@@ -10,6 +10,8 @@ using Cosmos.DataTransfer.Core;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 
@@ -19,6 +21,17 @@ public class CosmosDataSourceExtensionTests
     private static Database? testDatabase;
     private static CosmosClient? cosmosClient;
     private static string? connectionString;
+
+    private static bool IsVNext =>
+        string.Equals(Environment.GetEnvironmentVariable("Cosmos_EmulatorVariant"), "vnext", StringComparison.OrdinalIgnoreCase);
+
+    private static void RequireMissingNullConformance()
+    {
+        if (IsVNext)
+        {
+            Assert.Inconclusive("[vNext missing/null capability] The preview aliases undefined and null partition keys and accepts mismatched key headers, independently reproduced with regular SDK writes. Strict conformance runs on current Linux and Windows.");
+        }
+    }
 
     [ClassInitialize]
     public static async Task Initialize(TestContext context) {
@@ -71,6 +84,192 @@ public class CosmosDataSourceExtensionTests
             cosmosClient ?? throw new InvalidOperationException("Cosmos DB client was not initialized."),
             testDatabase ?? throw new InvalidOperationException("Cosmos DB test database was not initialized."),
             connectionString ?? throw new InvalidOperationException("Cosmos DB connection string was not initialized."));
+    }
+
+    [TestMethod]
+    public async Task Test_SdkPartitionKeys_DistinguishMissingAndNull()
+    {
+        RequireMissingNullConformance();
+        var (_, database, _) = GetSetup();
+        var failures = new List<string>();
+        foreach (var nested in new[] { false, true })
+        {
+            var path = nested ? "/nested/key" : "/partitionKey";
+            var container = (await database.CreateContainerAsync(
+                nested ? "SdkNestedKeyControl" : "SdkKeyControl", path, throughput: 400)).Container;
+            var missing = new Dictionary<string, object?> { ["id"] = "missing" };
+            var explicitNull = new Dictionary<string, object?> { ["id"] = "null" };
+            explicitNull[nested ? "nested" : "partitionKey"] = nested
+                ? new Dictionary<string, object?> { ["key"] = null }
+                : null;
+
+            // Use the SDK's default serializer and inferred keys, without the DMT sink or its batching.
+            await CheckWrite(missing, "missing write");
+            await CheckWrite(explicitNull, "null write with distinct id");
+            await CheckRead("missing", PartitionKey.None, HttpStatusCode.OK, "missing read with undefined");
+            await CheckRead("null", PartitionKey.Null, HttpStatusCode.OK, "null read with null");
+            await CheckRead("missing", PartitionKey.Null, HttpStatusCode.NotFound, "missing read with null");
+            await CheckRead("null", PartitionKey.None, HttpStatusCode.NotFound, "null read with undefined");
+            explicitNull["id"] = "missing";
+            await CheckWrite(explicitNull, "null write with same id as missing");
+
+            async Task CheckWrite(Dictionary<string, object?> item, string operation)
+            {
+                HttpStatusCode status;
+                try
+                {
+                    status = (await container.CreateItemAsync(item)).StatusCode;
+                }
+                catch (CosmosException exception)
+                {
+                    status = exception.StatusCode;
+                }
+                CheckStatus(operation, HttpStatusCode.Created, status);
+            }
+
+            async Task CheckRead(string id, PartitionKey key, HttpStatusCode expected, string operation)
+            {
+                using var response = await container.ReadItemStreamAsync(id, key);
+                CheckStatus(operation, expected, response.StatusCode);
+            }
+
+            void CheckStatus(string operation, HttpStatusCode expected, HttpStatusCode actual)
+            {
+                var result = $"{path}: {operation}: expected {(int)expected}, actual {(int)actual}";
+                Console.WriteLine(result);
+                if (expected != actual)
+                    failures.Add(result);
+            }
+        }
+        Assert.AreEqual(0, failures.Count, string.Join(Environment.NewLine, failures));
+    }
+
+    [TestMethod]
+    public async Task Test_StreamPartitionKeyMismatch_IsRejected()
+    {
+        RequireMissingNullConformance();
+        var (_, database, _) = GetSetup();
+        var container = await database.CreateContainerAsync("MissingKeyRepro", "/partitionKey", throughput: 400);
+        foreach (var upsert in new[] { false, true })
+        {
+            using var payload = new MemoryStream(Encoding.UTF8.GetBytes("""{"id":"missing-key","name":"sample"}"""));
+            using var response = upsert
+                ? await container.Container.UpsertItemStreamAsync(payload, PartitionKey.Null)
+                : await container.Container.CreateItemStreamAsync(payload, PartitionKey.Null);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode, "The old explicit-null key must not match a missing field.");
+        }
+    }
+
+    [TestMethod]
+    public Task Test_PartitionKeys_RoundTripAndDelete() =>
+        AssertPartitionKeyRoundTrip(new[] { "/partitionKey" }, new[]
+        {
+            ("{}", PartitionKey.None),
+            ("""{"partitionKey":null}""", PartitionKey.Null),
+            ("""{"partitionKey":"example"}""", new PartitionKey("example")),
+            ("""{"partitionKey":42}""", new PartitionKey(42)),
+            ("""{"partitionKey":-12.75}""", new PartitionKey(-12.75)),
+            ("""{"partitionKey":true}""", new PartitionKey(true)),
+            ("""{"partitionKey":false}""", new PartitionKey(false))
+        }, "PartitionKeys", separateNullId: IsVNext);
+
+    [TestMethod]
+    public Task Test_NestedPartitionKeys_RoundTripAndDelete() =>
+        AssertPartitionKeyRoundTrip(new[] { "/nested/key" }, new[]
+        {
+            ("""{"nested":{}}""", PartitionKey.None),
+            ("""{"nested":{"key":null}}""", PartitionKey.Null),
+            ("""{"nested":{"key":42}}""", new PartitionKey(42))
+        }, "NestedPartitionKeys", separateNullId: IsVNext);
+
+    [TestMethod]
+    public Task Test_HierarchicalPartitionKeys_RoundTripAndDelete() =>
+        AssertPartitionKeyRoundTrip(new[] { "/tenant", "/nested/key", "/active" }, new[]
+        {
+            ("""{"tenant":"one","nested":{"key":42},"active":true}""", new PartitionKeyBuilder().Add("one").Add(42).Add(true).Build()),
+            ("""{"tenant":"one","nested":{"key":null},"active":false}""", new PartitionKeyBuilder().Add("one").AddNullValue().Add(false).Build()),
+            ("""{"tenant":"one","active":true}""", new PartitionKeyBuilder().Add("one").AddNoneType().Add(true).Build()),
+            ("""{"active":false}""", new PartitionKeyBuilder().AddNoneType().AddNoneType().Add(false).Build()),
+            ("{}", new PartitionKeyBuilder().AddNoneType().AddNoneType().AddNoneType().Build())
+        }, "HierarchicalPartitionKeys");
+
+    private static async Task AssertPartitionKeyRoundTrip(string[] paths, (string json, PartitionKey key)[] cases, string containerName, bool separateNullId = false)
+    {
+        if (separateNullId)
+        {
+            Console.WriteLine("[vNext missing/null capability] Only the explicit-null case uses a separate ID to avoid the preview's undefined/null aliasing. All key values, write modes, read checks, and delete modes still execute; other partition keys retain the same ID.");
+        }
+        var (_, database, connectionString) = GetSetup();
+        var configValues = new Dictionary<string, string>
+        {
+            ["ConnectionString"] = connectionString,
+            ["ConnectionMode"] = "Gateway",
+            ["AllowBulkExecution"] = "false",
+            ["Database"] = database.Id,
+            ["Container"] = containerName
+        };
+        if (paths.Length == 1)
+        {
+            configValues["PartitionKeyPath"] = paths[0];
+        }
+        else
+        {
+            for (int i = 0; i < paths.Length; i++)
+                configValues[$"PartitionKeyPaths:{i}"] = paths[i];
+            // Container creation and every explicit-key operation must agree on plural precedence.
+            configValues["PartitionKeyPath"] = "/ignored";
+        }
+
+        var source = new CosmosDataSourceExtension();
+        var sink = new CosmosDataSinkExtension();
+        var container = database.GetContainer(containerName);
+        foreach (var mode in new[] { DataWriteMode.Insert, DataWriteMode.Upsert, DataWriteMode.InsertStream, DataWriteMode.UpsertStream })
+        {
+            string GetId(int index) => separateNullId && cases[index].key.Equals(PartitionKey.Null)
+                ? $"{mode}-null"
+                : mode.ToString();
+
+            var items = cases.Select((c, index) =>
+            {
+                var values = JsonConvert.DeserializeObject<Dictionary<string, object?>>(c.json, RawJsonCosmosSerializer.GetDefaultSettings())!;
+                values["id"] = GetId(index);
+                return new CosmosDictionaryDataItem(values);
+            }).ToArray();
+            configValues["WriteMode"] = mode.ToString();
+            var config = TestHelpers.CreateConfig(configValues);
+            await sink.WriteAsync(items.ToAsyncEnumerable(), config, source, NullLogger.Instance);
+            if (mode is DataWriteMode.Upsert or DataWriteMode.UpsertStream)
+            {
+                foreach (var item in items)
+                    item.Items["updated"] = true;
+                await sink.WriteAsync(items.ToAsyncEnumerable(), config, source, NullLogger.Instance);
+            }
+
+            for (int i = 0; i < cases.Length; i++)
+            {
+                var result = await container.ReadItemAsync<JObject>(GetId(i), cases[i].key);
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode, $"{mode}, case {i}");
+                var expected = JObject.FromObject(items[i].BuildDynamicObjectTree(requireStringId: true)!);
+                foreach (var property in expected.Properties())
+                    Assert.IsTrue(JToken.DeepEquals(property.Value, result.Resource[property.Name]), $"{mode}, case {i}, {property.Name}");
+                if (paths.Length == 1 && cases[i].key.Equals(PartitionKey.None))
+                    Assert.IsFalse(result.Resource.ContainsKey("partitionKey"));
+            }
+
+            // Verify deletion by reading the original key, so a mistaken 404-as-success cannot hide a remaining document.
+            foreach (var deleteMode in new[] { DataWriteMode.Delete, DataWriteMode.DeleteStream })
+            {
+                if (deleteMode == DataWriteMode.DeleteStream)
+                    await sink.WriteAsync(items.ToAsyncEnumerable(), config, source, NullLogger.Instance);
+                configValues["WriteMode"] = deleteMode.ToString();
+                await sink.WriteAsync(items.ToAsyncEnumerable(), TestHelpers.CreateConfig(configValues), source, NullLogger.Instance);
+                for (int i = 0; i < cases.Length; i++)
+                {
+                    using var result = await container.ReadItemStreamAsync(GetId(i), cases[i].key);
+                    Assert.AreEqual(HttpStatusCode.NotFound, result.StatusCode, $"{mode}, {deleteMode}");
+                }
+            }
+        }
     }
 
 

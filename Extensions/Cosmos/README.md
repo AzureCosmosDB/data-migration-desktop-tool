@@ -4,6 +4,27 @@ The Cosmos data transfer extension provides source and sink capabilities for rea
 
 > **Note**: When specifying the JSON extension as the Source or Sink property in configuration, utilize the name **Cosmos-nosql**.
 
+## Multi-Account Sink Support
+
+The tool supports writing to multiple different Cosmos DB accounts in one run. Each sink operation creates its own independent CosmosClient instance with separate configurations. The `Operations` list runs sequentially, not concurrently, and the source is read again for each operation. Use a stable source when destinations must receive identical data; operations do not share a snapshot or transaction.
+
+**Key capabilities:**
+- Write to multiple different Cosmos DB sink accounts in a single execution using the `Operations` feature
+- Each sink connection uses an independent CosmosClient instance
+- Each sink can use different authentication methods (connection string or RBAC)
+- Independent configuration for connection mode, proxy settings, and client options per sink
+- Each sink can target the same or different Cosmos DB accounts
+
+Top-level source and sink settings are inherited by each operation, with operation-specific settings taking precedence. Keep account-specific connection and authentication settings inside each operation when mixing accounts or authentication methods. RBAC destinations must already have the target database and container provisioned, with appropriate data-plane permissions granted to the identity.
+
+**Example use cases:**
+- Replicate data from one source to multiple destination accounts (disaster recovery, geo-distribution)
+- Copy a stable source to multiple regional accounts in sequence
+- Data synchronization across development, staging, and production environments
+- Multi-tenant scenarios where data needs to be written to different customer accounts
+
+See the [Multiple Cosmos-NoSQL Sinks configuration example](../../ExampleConfigs.md#multiple-cosmos-nosql-sinks-different-accounts) for details.
+
 ## JSON Metadata Property Preservation
 
 The Cosmos extension preserves all JSON properties during data migration, including properties that start with special characters like `$type`, `$id`, and `$ref`. These properties are commonly used by serialization libraries (such as Newtonsoft.Json) to store type information for polymorphic objects or reference tracking.
@@ -30,7 +51,7 @@ These properties will be preserved exactly as they appear in the source when mig
 
 ### Emulator integration tests
 
-Set both `Cosmos_Endpoint` and `Cosmos_Key` to run the two integration tests in
+Set both `Cosmos_Endpoint` and `Cosmos_Key` to run the seven integration tests in
 `CosmosDataSourceExtensionTests`. They create a temporary database and delete it
 after the class finishes. With neither variable set, these tests are skipped so
 ordinary local unit tests do not require an emulator. Partial configuration or
@@ -56,12 +77,46 @@ RBAC constructor tests inject an offline credential that fails token requests
 locally: the SDK eagerly requests tokens during construction, even before a test
 sends a request. These tests never use developer sign-ins or real identity providers.
 
-Both Linux and Windows emulator workflows retain TRX results and require
-`Test_Json_RoundTrip_WithLongValues` and `Test_FromJson_WithLongValues` to each
-execute and pass. Missing, skipped, duplicate, or failed results fail the job.
+These tests cover JSON round trips, the missing-field/explicit-null request mismatch,
+and typed/stream insert, upsert, and delete with single, nested, and hierarchical
+partition keys. They do not cover bulk execution or authentication enforcement.
+An independent SDK control uses regular `CreateItemAsync` with inferred keys,
+sequential writes, and correct/wrong-key reads to verify that missing and null
+remain separate partitions without involving the DMT sink or serializer.
+
+Both Linux and Windows emulator workflows retain TRX results. Current Linux and
+Windows require all seven integration tests to execute and pass, including
+missing/null partition identity and incorrect-key rejection. Missing, skipped,
+duplicate, or failed required results fail the job.
 The Linux preview job remains advisory; the current emulator and the separate
 failure-guard regression job are mandatory. Check each matrix job's outcome,
 summary, and artifacts rather than relying on the overall workflow status.
+
+#### Preview partition-key capabilities
+
+The vNext preview currently aliases undefined and null for single/nested partition
+keys. The independent SDK control reproduced wrong-key reads returning `200`
+instead of `404`, and a null-key write sharing an ID with an undefined-key document
+returning `409` instead of `201`. It also accepts a mismatched explicit-null stream
+request for a missing field (`201` rather than `400`).
+
+The Linux matrix explicitly sets `Cosmos_EmulatorVariant=vnext` for that image.
+Only `Test_SdkPartitionKeys_DistinguishMissingAndNull` and
+`Test_StreamPartitionKeyMismatch_IsRejected` are intentionally skipped there, with
+a `[vNext missing/null capability]` reason. All five other integration tests must
+pass. Single/nested positive transfer tests still run every missing/null/string/
+number/boolean case, all four insert/upsert modes, point reads, and both delete
+modes. Only the explicit-null document gets a separate ID on preview; other keys
+share an ID. Current Linux and Windows retain the original same-ID fixture for
+all keys. Hierarchical tests and exact outgoing-key request-capture regressions
+remain unchanged and run everywhere.
+
+The result gate accepts only these two named, reason-marked preview skips;
+unexpected skips or failures still fail it. Guard regressions verify both profiles.
+This approved capability-specific coverage is not a claim that preview satisfies
+missing/null identity or incorrect-header conformance. To recheck those capabilities
+after an emulator update, omit `Cosmos_EmulatorVariant` or set it to `current`,
+which runs all strict assertions.
 
 ### Main Settings
 
@@ -294,8 +349,41 @@ For development purposes with SSL validation disabled:
 
 #### **Partition Key Settings**
 
-- **`PartitionKeyPath`**: Specifies the partition key path when creating the container (e.g., `/id`) if it does not exist.
-- **`PartitionKeyPaths`**: Use this to supply an array of up to 3 paths for hierarchical partition keys.
+- **`PartitionKeyPath`**: Specifies the partition key path (e.g., `/id` or `/address/country`) for container creation and explicit-key operations.
+- **`PartitionKeyPaths`**: An array of 1 to 3 paths in hierarchical order. When supplied, this takes precedence over `PartitionKeyPath` for both container creation and operations. Empty lists and blank entries are rejected; all paths must start with `/`.
+
+`InsertStream`, `UpsertStream`, `DeleteStream`, and `Delete` require one of these
+settings, matching the destination container's partition key definition. All
+configured hierarchical components are used, in order. Regular `Insert` and
+`Upsert` continue to let the Cosmos SDK infer keys from the document.
+
+Explicit keys are extracted from the serialized document after transformations
+and `IgnoreNullValues` processing. Strings, numbers, and booleans retain their
+JSON types; numbers use the SDK's double-precision representation. A missing
+property (including a missing nested component) is **undefined**, not JSON
+`null`. An explicit `null` remains null unless `IgnoreNullValues` removes it,
+in which case it becomes undefined. Object and array partition-key values are
+rejected with a path/type error, without logging their contents.
+
+Quoted path segments follow the Cosmos SDK syntax: `/"tenant/key"` selects the
+literal property `tenant/key`, while `/tenant/key` traverses two nested properties.
+Single-quoted segments are also supported; quoted contents retain their whitespace
+and escape characters, matching SDK 3.49. Malformed quoted paths fail before an
+explicit-key request is sent. Key extraction supports the Cosmos document nesting
+limit of 128 levels, including unrelated deep subtrees.
+
+For example, with `/partitionKey`, `{"id":"1"}` uses
+[`PartitionKey.None`](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.partitionkey.none),
+while `{"id":"1","partitionKey":null}` uses
+[`PartitionKey.Null`](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.partitionkey.null).
+This distinction matters for stream imports of documents that omit the configured
+partition-key field.
+
+When building CLI arguments, separate each option with whitespace and do not put
+a space after `=`. For example:
+`--SinkSettings:MaxRetryCount=2 --SinkSettings:BatchSize=100 --SinkSettings:WriteMode=InsertStream`.
+Concatenating `2--SinkSettings:BatchSize=100` is a separate argument-formatting
+error, not a stream-specific limitation.
 
 #### **Database Management**
 
@@ -316,6 +404,79 @@ For development purposes with SSL validation disabled:
   - `Insert`
   - `UpsertStream`
   - `Upsert`
+  - `DeleteStream`
+  - `Delete`
+
+#### **Rate-Limit Retries (HTTP 429)**
+
+The Cosmos DB SDK already honors service-directed retry delays internally. Its
+documented defaults are [9 retries](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.maxretryattemptsonratelimitedrequests)
+and [30 seconds of cumulative retry wait](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions.maxretrywaittimeonratelimitedrequests)
+per SDK operation. DMT leaves these SDK settings unchanged.
+
+DMT's additional sink retry layer applies after an SDK operation still returns
+or throws 429, for **all six write modes** above:
+
+- **`MaxRetryCount`**: Defaults to `5`. Number of additional application attempts
+  per item, beyond the initial SDK call. Must be nonnegative; `0` disables only
+  these additional retries, not the SDK's internal retries.
+- **`InitialRetryDurationMs`**: Defaults to `200`. Positive initial fallback
+  delay in milliseconds, used only when there is no usable service delay.
+
+For each 429, DMT reads the latest `CosmosException.RetryAfter`, backed by the
+`x-ms-retry-after-ms` response header. Stream 429 responses are converted to SDK
+exceptions to use the same path. A positive, supported service delay takes
+priority over `InitialRetryDurationMs`, with no shortening or jitter. For
+example, a 61-second service hint waits 61 seconds, even though fallback waits
+are capped at 30 seconds. A different hint on the next attempt replaces the
+previous one; retry state is not shared across items.
+
+Missing, malformed, zero, or negative hints that the SDK represents without
+overflow use bounded exponential backoff. Zero is not treated as permission for
+an immediate retry (the SDK also substitutes a nonzero wait for zero).
+The fallback starts at `InitialRetryDurationMs`, doubles for each additional
+attempt, and adds nonnegative, thread-safe jitter of less than half the initial
+delay (the jitter range itself is bounded using 30,000 ms). **The total fallback
+delay is capped at 30 seconds per wait**, avoiding overflow and excessively long
+exponential schedules with large retry counts. With defaults, the first waits
+are 200-299 ms, 400-499 ms, and 800-899 ms. This cap never applies to a service
+hint. If a service delay overflows the SDK's `TimeSpan` conversion or exceeds
+.NET 8's supported single wait of 4,294,967,294 ms, the write fails explicitly
+instead of retrying early.
+
+Cancellation interrupts application waits and is passed to SDK calls. Each
+stream attempt gets a fresh complete payload; owned request streams and
+responses are disposed even on failure. Successful items are counted once.
+Partition keys retain their JSON scalar types (string, number, boolean, null,
+or undefined) rather than converting numbers and booleans to strings.
+Delete-not-found is treated as success for both delete modes only for a 404 with
+substatus zero (or an absent stream substatus). Session-related 404s such as
+404/1002 remain failures. Non-429 failures are not retried by this application
+layer.
+
+When a batch encounters a permanent failure or exhausts retries, DMT cancels
+the other calls and retry waits in that batch, drains their tasks, and propagates
+the original failure rather than a sibling cancellation. It does not shorten a
+service delay and retry early. Confirmed successes in the failed batch are
+counted once, and both batch progress and cumulative totals for started batches
+are reported before failure or cancellation propagates. Unconfirmed outcomes
+are not claimed to be failures or successes: cancellation cannot undo writes
+already accepted by the service.
+
+After retry exhaustion, the sink logs the write mode, status, and number of
+additional application retries, then propagates the final 429. These messages
+do not include document payloads, IDs, credentials, or raw exception bodies.
+At the sink transfer boundary, Cosmos failures are wrapped in a
+`DataTransferException` with a safe status/substatus message and the original
+exception retained as `InnerException` for programmatic inspection. Core logs
+only that safe message, not the exception object or its inner diagnostics.
+Ordinary file, HTTP, and JSON source failures keep their original diagnostics.
+Each additional attempt can itself incur SDK retries, so `MaxRetryCount` is
+**not an elapsed-time budget**. Large values can still make migrations take a
+long time. Retries do not guarantee completion against insufficient throughput;
+consider reducing `BatchSize` or increasing available RU/s. Adaptive concurrency,
+unlimited retries, source retries, and resumable migrations are not provided by
+this setting. See [troubleshooting 429 responses](https://learn.microsoft.com/azure/cosmos-db/troubleshoot-request-rate-too-large).
 
 #### **Connection Settings**
 

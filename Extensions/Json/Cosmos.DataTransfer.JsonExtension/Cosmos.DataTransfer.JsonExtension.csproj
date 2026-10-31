@@ -21,6 +21,12 @@
 		<ProjectReference Include="..\..\..\Interfaces\Cosmos.DataTransfer.Interfaces\Cosmos.DataTransfer.Interfaces.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Cosmos.DataTransfer.JsonExtension.UnitTests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
 	<Target Name="PublishToExtensionsFolder"
 					AfterTargets="Build"
 					Condition=" '$(Configuration)' == 'Debug' AND '$(PublishingToExtensionsFolder)' != 'true' ">

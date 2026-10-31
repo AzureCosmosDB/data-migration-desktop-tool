@@ -4,6 +4,10 @@ The SQL Server data transfer extension provides source and sink capabilities for
 
 > **Note**: When specifying the SQL Server extension as the Source or Sink property in configuration, utilize the name **SqlServer**.
 
+For a complete example using the bundled `sample-data.zip`, follow the
+[JSON-to-SQL walkthrough](../../resources/json-to-sql/README.md), including table
+creation, connection setup, single-file or full-folder imports, and verification.
+
 ## Settings
 
 Source and sink settings both require a `ConnectionString` parameter.
