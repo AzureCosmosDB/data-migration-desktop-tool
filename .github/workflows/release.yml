@@ -36,7 +36,7 @@ jobs:
       - name: Check .NET version
         run: dotnet --version
       - name: Checkout source code
-        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Execute Action build-with-plugins ${{ matrix.runtime }}
         uses: ./.github/actions/build-with-plugins
         with:
@@ -53,7 +53,7 @@ jobs:
       contents: write
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: .
       - name: Package output files
@@ -73,7 +73,7 @@ jobs:
             tar -czvf dmt-${{ inputs.release-tag }}-linux-x64.tar.gz linux-x64-package/*
             tar -czvf dmt-${{ inputs.release-tag }}-linux-arm64.tar.gz linux-arm64-package/*
       - name: Create GitHub release ${{ inputs.release-tag }}
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ inputs.release-tag }}
           files: |
