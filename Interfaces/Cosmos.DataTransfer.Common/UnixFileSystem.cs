@@ -20,7 +20,7 @@ internal static class UnixFileSystem
 
     // Use the runtime's normalized ABI, not the platform/architecture-specific libc stat layout.
     // Contract: dotnet/runtime src/native/libs/System.Native/pal_io.h (FileStatus and SystemNative_LStat).
-    [DllImport("System.Native", EntryPoint = "SystemNative_LStat", SetLastError = true)]
+    [DllImport("libSystem.Native", EntryPoint = "SystemNative_LStat", SetLastError = true)]
     private static extern int LStat([MarshalAs(UnmanagedType.LPUTF8Str)] string path, out FileStatus status);
 
     [StructLayout(LayoutKind.Sequential)]

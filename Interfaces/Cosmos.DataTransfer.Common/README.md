@@ -47,7 +47,10 @@ new file, but file identity, ownership, timestamps, and hard-link relationships
 are not guaranteed to be preserved. Unix staging is created atomically with
 owner-only read/write permissions (`0600`, subject to the process umask), before
 applying an existing destination's mode bits. New Unix output files retain those
-owner-only permissions. On Windows an existing destination's DACL is supplied at
+owner-only permissions. For Linux container bind mounts, run as the host user
+(for example, `docker run --user "$(id -u):$(id -g)" ...`) so that user owns and can
+read the output; change completed-file permissions explicitly if sharing is needed.
+On Windows an existing destination's DACL is supplied at
 staging-file creation, rather than applied afterward.
 Read-only destinations, symbolic-link/reparse-point destinations, and Unix
 special files (including FIFOs, sockets, and devices) are rejected
