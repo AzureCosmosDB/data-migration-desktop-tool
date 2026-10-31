@@ -3,6 +3,9 @@ name: Deploy dotnet tool NuGet package
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name:  Create dotnet tool NuGet package

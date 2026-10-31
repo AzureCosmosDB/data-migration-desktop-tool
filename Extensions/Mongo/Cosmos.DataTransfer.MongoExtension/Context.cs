@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Authentication.AWS;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Encryption;
 
@@ -7,6 +8,11 @@ namespace Cosmos.DataTransfer.MongoExtension;
 public class Context
 {
     private readonly IMongoDatabase database = null!;
+
+    static Context()
+    {
+        MongoClientSettings.Extensions.AddAWSAuthentication().AddAutoEncryption();
+    }
 
     public Context(string connectionString, string databaseName, 
         string? keyVaultNamespace = null, Dictionary<string, IReadOnlyDictionary<string, object>>? kmsProviders = null)

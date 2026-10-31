@@ -1,6 +1,9 @@
 name: .NET test with Cosmos DB Emulator
 on:
     workflow_dispatch:
+permissions:
+  contents: read
+
 jobs:
   unit_tests:
     name: Run .NET unit tests

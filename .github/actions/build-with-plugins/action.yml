@@ -176,6 +176,9 @@ runs:
           -p:Configuration=Release -p:RuntimeIdentifier=${{ inputs.runtime }} \
           -getProperty:ProjectRuntimeConfigFilePath)
         cp "$runtime_config" ${{ inputs.runtime }}/runtime-info.json
+        # Single-file publishing removes bundled native assets from the build manifest.
+        cp Core/Cosmos.DataTransfer.Core/obj/Release/net10.0/${{ inputs.runtime }}/dmt.deps.json \
+          ${{ inputs.runtime }}/dependency-info.json
     - name: Upload package
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:

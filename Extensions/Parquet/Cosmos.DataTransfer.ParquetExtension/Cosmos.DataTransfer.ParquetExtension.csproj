@@ -9,6 +9,7 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
 		<PackageReference Include="Parquet.Net" />
+		<PackageReference Include="Snappier" />
 		<PackageReference Include="System.ComponentModel.Composition" />
 	</ItemGroup>
 	<ItemGroup>
