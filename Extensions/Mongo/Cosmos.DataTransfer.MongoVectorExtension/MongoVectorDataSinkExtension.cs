@@ -59,7 +59,7 @@ public class MongoVectorDataSinkExtension : IDataSinkExtensionWithSettings
                         }
                     }
                 }
-                objects.Add(new BsonDocument(dict));
+                objects.Add(MongoBsonMapper.ToDocument(dict));
                 itemCount++;
 
                 if (objects.Count == batchSize)

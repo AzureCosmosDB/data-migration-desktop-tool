@@ -19,6 +19,6 @@ public class MongoDataItem : IDataItem
     public object? GetValue(string fieldName)
     {
         var value = record.GetValue(fieldName);
-        return BsonTypeMapper.MapToDotNetValue(value);
+        return MongoBsonMapper.ToDotNetValue(value);
     }
 }
