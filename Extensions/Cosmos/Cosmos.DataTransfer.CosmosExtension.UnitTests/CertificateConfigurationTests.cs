@@ -51,7 +51,7 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
                 DisableSslValidation = true
             };
 
-            var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
+            using var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
 
             // Verify warning was logged when DisableSslValidation is true
             loggerMock.Verify(
@@ -79,7 +79,7 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
                 DisableSslValidation = false
             };
 
-            var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
+            using var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
 
             // Verify warning was NOT logged when DisableSslValidation is false
             loggerMock.Verify(
@@ -116,7 +116,8 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests
                 AllowBulkExecution = true
             };
 
-            using var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object);
+            using var client = CosmosExtensionServices.CreateClient(settings, "TestDisplay", loggerMock.Object,
+                null, (_, _) => new OfflineTokenCredential());
 
             loggerMock.Verify(
                 x => x.Log(

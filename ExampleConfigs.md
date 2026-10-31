@@ -1,5 +1,98 @@
 # Example `migrationsettings.json` Files
 
+## Multiple Cosmos-NoSQL Sinks (Different Accounts)
+
+The tool supports writing to multiple different Cosmos DB accounts in a single execution using the `Operations` feature. Operations run sequentially in the order listed, reading the source again for each destination; they are not concurrent writes or a single-read broadcast.
+
+```json
+{
+    "Source": "JSON",
+    "Sink": "Cosmos-nosql",
+    "SourceSettings": {
+        "FilePath": "C:\\data\\sample-data.json"
+    },
+    "SinkSettings": {
+        "PartitionKeyPath": "/id",
+        "WriteMode": "UpsertStream"
+    },
+    "Operations": [
+        {
+            "SinkSettings": {
+                "ConnectionString": "AccountEndpoint=https://account1.documents.azure.com:443/;AccountKey=<key1>;",
+                "Database": "db1",
+                "Container": "container1"
+            }
+        },
+        {
+            "SinkSettings": {
+                "ConnectionString": "AccountEndpoint=https://account2.documents.azure.com:443/;AccountKey=<key2>;",
+                "Database": "db2",
+                "Container": "container2"
+            }
+        }
+    ]
+}
+```
+
+> **Note**: Each operation inherits the top-level source and sink settings, then applies its own overrides. The tool creates a separate CosmosClient for each operation's sink. Keep account-specific connection and authentication settings inside each operation when targeting different accounts or mixing connection-string and RBAC authentication. Use a stable source if each destination must receive identical data; the operations do not share a snapshot or transaction.
+
+## Cosmos-NoSQL to Cosmos-NoSQL (Different Accounts)
+
+The tool supports simultaneous connections to two different Cosmos DB accounts, allowing you to migrate data directly from one account to another.
+
+### Using Connection Strings
+
+```json
+{
+    "Source": "Cosmos-nosql",
+    "Sink": "Cosmos-nosql",
+    "SourceSettings": {
+        "ConnectionString": "AccountEndpoint=https://source-account.documents.azure.com:443/;AccountKey=<source-key>;",
+        "Database": "sourceDatabase",
+        "Container": "sourceContainer",
+        "IncludeMetadataFields": false
+    },
+    "SinkSettings": {
+        "ConnectionString": "AccountEndpoint=https://destination-account.documents.azure.com:443/;AccountKey=<destination-key>;",
+        "Database": "destinationDatabase",
+        "Container": "destinationContainer",
+        "PartitionKeyPath": "/id",
+        "RecreateContainer": false,
+        "WriteMode": "UpsertStream",
+        "CreatedContainerMaxThroughput": 10000,
+        "UseAutoscaleForCreatedContainer": true
+    }
+}
+```
+
+### Using RBAC Authentication (Passwordless)
+
+```json
+{
+    "Source": "Cosmos-nosql",
+    "Sink": "Cosmos-nosql",
+    "SourceSettings": {
+        "UseRbacAuth": true,
+        "AccountEndpoint": "https://source-account.documents.azure.com:443/",
+        "EnableInteractiveCredentials": true,
+        "Database": "sourceDatabase",
+        "Container": "sourceContainer",
+        "IncludeMetadataFields": false
+    },
+    "SinkSettings": {
+        "UseRbacAuth": true,
+        "AccountEndpoint": "https://destination-account.documents.azure.com:443/",
+        "EnableInteractiveCredentials": true,
+        "Database": "destinationDatabase",
+        "Container": "destinationContainer",
+        "PartitionKeyPath": "/id",
+        "WriteMode": "UpsertStream"
+    }
+}
+```
+
+> **Note**: The tool creates separate CosmosClient instances for the source and sink, allowing you to connect to different Cosmos DB accounts simultaneously. Each connection can have its own configuration including connection mode, proxy settings, and authentication method (connection string or RBAC). For RBAC, provision the database and container before running the tool and grant the identity the appropriate Cosmos DB data-plane permissions on each account.
+
 > For Microsoft Entra ID / Azure RBAC authentication details, supported credential flows, and role
 > requirements, see the [Authentication guide](docs/authentication.md).
 
@@ -186,6 +279,13 @@ mode. The example assumes the destination container is partitioned on `/id`.
 ```
 
 > **Note**: When using DateTime filters in the `QueryFilter` property, single quotes around the datetime value must be JSON-escaped as `\u0027`. The datetime must be in ISO 8601 format with the `datetime` prefix.
+
+## Bundled JSON sample to SqlServer
+
+For an end-to-end import of `resources/sample-data.zip`, see the
+[JSON-to-SQL walkthrough](resources/json-to-sql/README.md). It includes the
+`dbo.DmtSnapshot` table schema, all 80 field mappings, single-file and full-folder
+commands, and verification queries.
 
 ## Cosmos-NoSQL to SqlServer
 
