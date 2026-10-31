@@ -6,6 +6,52 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 public class CosmosSinkSettingsTests
 {
     [DataTestMethod]
+    [DataRow(DataWriteMode.InsertStream)]
+    [DataRow(DataWriteMode.UpsertStream)]
+    [DataRow(DataWriteMode.DeleteStream)]
+    [DataRow(DataWriteMode.Delete)]
+    public void ExplicitPartitionKeyModes_RequirePaths(DataWriteMode mode)
+    {
+        var settings = new CosmosSinkSettings
+        {
+            ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+            Database = "db",
+            Container = "container",
+            WriteMode = mode
+        };
+        Assert.IsTrue(settings.GetValidationErrors().Any(e => e.Contains(nameof(CosmosSinkSettings.WriteMode))));
+        settings.PartitionKeyPaths = new List<string> { "/tenant", "/id" };
+        Assert.AreEqual(0, settings.GetValidationErrors().Count());
+        settings.PartitionKeyPath = "ignored-because-plural-takes-precedence";
+        Assert.AreEqual(0, settings.GetValidationErrors().Count());
+    }
+
+    [TestMethod]
+    public void PartitionKeyPaths_RejectsInvalidListsEvenWithSingularFallback()
+    {
+        foreach (var paths in new[]
+        {
+            new List<string>(),
+            new List<string> { "/a", "/b", "/c", "/d" },
+            new List<string> { "/a", "" },
+            new List<string> { "/a", " " },
+            new List<string> { "/a", null! },
+            new List<string> { "/a", "b" }
+        })
+        {
+            var settings = new CosmosSinkSettings
+            {
+                ConnectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=",
+                Database = "db",
+                Container = "container",
+                PartitionKeyPath = "/fallback",
+                PartitionKeyPaths = paths
+            };
+            Assert.IsTrue(settings.GetValidationErrors().Any(e => e.Contains(nameof(CosmosSinkSettings.PartitionKeyPaths))));
+        }
+    }
+
+    [DataTestMethod]
     [DataRow(-1, 200, nameof(CosmosSinkSettings.MaxRetryCount))]
     [DataRow(5, 0, nameof(CosmosSinkSettings.InitialRetryDurationMs))]
     [DataRow(5, -1, nameof(CosmosSinkSettings.InitialRetryDurationMs))]

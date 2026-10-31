@@ -40,7 +40,7 @@ public class CosmosWriteRetryTests
             item.nested = new ExpandoObject();
             item.nested.pk = value;
             var container = CreateContainer(mode, () => SuccessStatus(mode));
-            var result = await CosmosDataSinkExtension.AddItemAsync(container.Object, item, "/nested/pk", mode,
+            var result = await CosmosDataSinkExtension.AddItemAsync(container.Object, item, new[] { "/nested/pk" }, mode,
                 CosmosDataSinkExtension.GetRetryPolicy(0, 200), NullLogger.Instance, CancellationToken.None);
             Assert.AreEqual(expected, container.Invocations.Single().Arguments[1]);
             Assert.AreEqual(1, result.ItemCount);
@@ -48,7 +48,7 @@ public class CosmosWriteRetryTests
         dynamic missing = new ExpandoObject();
         missing.id = "test";
         var missingContainer = CreateContainer(mode, () => SuccessStatus(mode));
-        await CosmosDataSinkExtension.AddItemAsync(missingContainer.Object, missing, "/missing", mode,
+        await CosmosDataSinkExtension.AddItemAsync(missingContainer.Object, missing, new[] { "/missing" }, mode,
             CosmosDataSinkExtension.GetRetryPolicy(0, 200), NullLogger.Instance, CancellationToken.None);
         Assert.AreEqual(PartitionKey.None, missingContainer.Invocations.Single().Arguments[1]);
     }
@@ -89,7 +89,7 @@ public class CosmosWriteRetryTests
         int reported = -1;
         int reports = 0;
         var batch = Enumerable.Range(0, 3).Select(_ => new ExpandoObject()).ToArray();
-        var task = CosmosDataSinkExtension.WriteBatchAsync(container.Object, batch, "/id", mode, policy, logger,
+        var task = CosmosDataSinkExtension.WriteBatchAsync(container.Object, batch, new[] { "/id" }, mode, policy, logger,
             count => { reported = count; reports++; }, CancellationToken.None);
         if (IsStream(mode))
         {
@@ -133,7 +133,7 @@ public class CosmosWriteRetryTests
                 }
             });
         var task = CosmosDataSinkExtension.WriteBatchAsync(container.Object,
-            new[] { new ExpandoObject(), new ExpandoObject() }, "/id", DataWriteMode.Insert,
+            new[] { new ExpandoObject(), new ExpandoObject() }, new[] { "/id" }, DataWriteMode.Insert,
             CosmosDataSinkExtension.GetRetryPolicy(0, 200), NullLogger.Instance, _ => { }, CancellationToken.None);
         var actual = await Assert.ThrowsExceptionAsync<CosmosException>(() => task.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.AreSame(failure, actual);
@@ -166,7 +166,7 @@ public class CosmosWriteRetryTests
             });
         int reported = -1;
         var task = CosmosDataSinkExtension.WriteBatchAsync(container.Object,
-            new[] { new ExpandoObject(), new ExpandoObject() }, "/id", DataWriteMode.Insert,
+            new[] { new ExpandoObject(), new ExpandoObject() }, new[] { "/id" }, DataWriteMode.Insert,
             CosmosDataSinkExtension.GetRetryPolicy(0, 200), NullLogger.Instance, count => reported = count, CancellationToken.None);
         var actual = await Assert.ThrowsExceptionAsync<CosmosException>(() => task.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.AreSame(failure, actual);
@@ -189,7 +189,7 @@ public class CosmosWriteRetryTests
         });
         int reported = -1;
         var task = CosmosDataSinkExtension.WriteBatchAsync(container.Object,
-            new[] { new ExpandoObject(), new ExpandoObject() }, "/id", mode,
+            new[] { new ExpandoObject(), new ExpandoObject() }, new[] { "/id" }, mode,
             policy, NullLogger.Instance, count => reported = count, cancellation.Token);
         await waiting.Task.WaitAsync(TimeSpan.FromSeconds(5));
         cancellation.Cancel();
@@ -741,7 +741,7 @@ public class CosmosWriteRetryTests
         dynamic item = new ExpandoObject();
         item.id = "test";
         item.value = "private-payload";
-        return CosmosDataSinkExtension.AddItemAsync(container, item, "/id", mode, policy, logger ?? NullLogger.Instance, cancellationToken);
+        return CosmosDataSinkExtension.AddItemAsync(container, item, new[] { "/id" }, mode, policy, logger ?? NullLogger.Instance, cancellationToken);
     }
 
     private sealed class TrackedResponse : ResponseMessage

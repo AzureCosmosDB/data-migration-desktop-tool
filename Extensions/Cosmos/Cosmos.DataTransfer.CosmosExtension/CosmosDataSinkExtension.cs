@@ -6,6 +6,7 @@ using System.Net;
 using System.Numerics;
 using System.Runtime.ExceptionServices;
 using System.Text;
+using System.Text.Json;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Encryption;
@@ -183,13 +184,16 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
 
             var batches = items.Buffer(settings.BatchSize);
+            IReadOnlyList<string> partitionKeyPaths = settings.PartitionKeyPaths is not null
+                ? settings.PartitionKeyPaths
+                : settings.PartitionKeyPath is not null ? new[] { settings.PartitionKeyPath } : Array.Empty<string>();
             var retry = GetRetryPolicy(settings.MaxRetryCount, settings.InitialRetryDurationMs);
             try
             {
                 await foreach (var batch in batches.WithCancellation(cancellationToken))
                 {
                     inputCount += batch.Count;
-                    await WriteBatchAsync(container, batch, settings.PartitionKeyPath ?? settings.PartitionKeyPaths?.FirstOrDefault(),
+                    await WriteBatchAsync(container, batch, partitionKeyPaths,
                         settings.WriteMode, retry, logger, ReportCount, cancellationToken);
                 }
             }
@@ -215,7 +219,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
         }
 
         internal static async Task WriteBatchAsync(Container container, IEnumerable<ExpandoObject> batch,
-            string? partitionKeyPath, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger,
+            IReadOnlyList<string> partitionKeyPaths, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger,
             Action<int> reportCount, CancellationToken cancellationToken)
         {
             using var batchCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -227,7 +231,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 Interlocked.Increment(ref startedCount);
                 try
                 {
-                    var result = await AddItemAsync(container, item, partitionKeyPath, mode, retryPolicy, logger, batchCancellation.Token);
+                    var result = await AddItemAsync(container, item, partitionKeyPaths, mode, retryPolicy, logger, batchCancellation.Token);
                     if (!result.IsSuccess)
                     {
                         throw new InvalidOperationException($"Cosmos sink {mode} failed with status {(int)result.StatusCode}.");
@@ -318,14 +322,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
             return TimeSpan.FromMilliseconds(Math.Min(maxFallbackDelayMs, exponentialDelayMs + jitterMs));
         }
 
-        internal static async Task<ItemResult> AddItemAsync(Container container, ExpandoObject item, string? partitionKeyPath, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger, CancellationToken cancellationToken)
+        internal static async Task<ItemResult> AddItemAsync(Container container, ExpandoObject item, IReadOnlyList<string> partitionKeyPaths, DataWriteMode mode, AsyncRetryPolicy retryPolicy, ILogger logger, CancellationToken cancellationToken)
         {
             string? id = GetPropertyValue(item, "id");
             var context = new Context();
             try
             {
                 var result = await retryPolicy.ExecuteAsync(
-                    (_, token) => PopulateItem(container, item, partitionKeyPath, mode, id, token),
+                    (_, token) => PopulateItem(container, item, partitionKeyPaths, mode, id, token),
                     context, cancellationToken);
                 if (!result.IsSuccess)
                 {
@@ -353,15 +357,17 @@ namespace Cosmos.DataTransfer.CosmosExtension
             }
         }
 
-        private static async Task<ItemResult> PopulateItem(Container container, ExpandoObject item, string? partitionKeyPath, DataWriteMode mode, string? itemId, CancellationToken cancellationToken)
+        private static async Task<ItemResult> PopulateItem(Container container, ExpandoObject item, IReadOnlyList<string> partitionKeyPaths, DataWriteMode mode, string? itemId, CancellationToken cancellationToken)
         {
+            using var itemStream = mode is DataWriteMode.InsertStream or DataWriteMode.UpsertStream or DataWriteMode.DeleteStream or DataWriteMode.Delete
+                ? CreateItemStream(item)
+                : null;
+            var partitionKey = itemStream is not null ? CreatePartitionKey(itemStream, partitionKeyPaths) : default;
             HttpStatusCode? statusCode = null;
             switch (mode)
             {
                 case DataWriteMode.InsertStream:
-                    ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
-                    using (var payload = CreateItemStream(item))
-                    using (var insertMessage = await container.CreateItemStreamAsync(payload, GetPartitionKey(item, partitionKeyPath), cancellationToken: cancellationToken))
+                    using (var insertMessage = await container.CreateItemStreamAsync(itemStream, partitionKey, cancellationToken: cancellationToken))
                     {
                         statusCode = GetStreamStatusCode(insertMessage);
                     }
@@ -371,9 +377,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     statusCode = insertResponse.StatusCode;
                     break;
                 case DataWriteMode.UpsertStream:
-                    ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
-                    using (var payload = CreateItemStream(item))
-                    using (var upsertMessage = await container.UpsertItemStreamAsync(payload, GetPartitionKey(item, partitionKeyPath), cancellationToken: cancellationToken))
+                    using (var upsertMessage = await container.UpsertItemStreamAsync(itemStream, partitionKey, cancellationToken: cancellationToken))
                     {
                         statusCode = GetStreamStatusCode(upsertMessage);
                     }
@@ -383,17 +387,15 @@ namespace Cosmos.DataTransfer.CosmosExtension
                     statusCode = upsertResponse.StatusCode;
                     break;
                 case DataWriteMode.DeleteStream:
-                    ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
-                    using (var deleteMessage = await container.DeleteItemStreamAsync(itemId, GetPartitionKey(item, partitionKeyPath), cancellationToken: cancellationToken))
+                    using (var deleteMessage = await container.DeleteItemStreamAsync(itemId, partitionKey, cancellationToken: cancellationToken))
                     {
                         statusCode = GetStreamStatusCode(deleteMessage);
                     }
                     break;
                 case DataWriteMode.Delete:
-                    ArgumentNullException.ThrowIfNull(partitionKeyPath, nameof(partitionKeyPath));
                     try
                     {
-                        var deleteResponse = await container.DeleteItemAsync<ExpandoObject>(itemId, GetPartitionKey(item, partitionKeyPath), cancellationToken: cancellationToken);
+                        var deleteResponse = await container.DeleteItemAsync<ExpandoObject>(itemId, partitionKey, cancellationToken: cancellationToken);
                         statusCode = deleteResponse.StatusCode;
                     }
                     catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound && exception.SubStatusCode == 0)
@@ -431,26 +433,95 @@ namespace Cosmos.DataTransfer.CosmosExtension
             return new MemoryStream(Encoding.UTF8.GetBytes(json));
         }
 
+        private static PartitionKey CreatePartitionKey(MemoryStream itemStream, IReadOnlyList<string> partitionKeyPaths)
+        {
+            if (partitionKeyPaths.Count == 0)
+            {
+                throw new ArgumentException("At least one partition key path is required.", nameof(partitionKeyPaths));
+            }
+
+            // Read the serialized JSON so dates, numeric conversions, and omitted fields match the payload.
+            using var document = JsonDocument.Parse(itemStream, new JsonDocumentOptions { MaxDepth = 128 });
+            itemStream.Position = 0;
+            var builder = new PartitionKeyBuilder();
+            foreach (var path in partitionKeyPaths)
+            {
+                var value = document.RootElement;
+                foreach (var segment in ParsePartitionKeyPath(path))
+                {
+                    if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(segment, out value))
+                    {
+                        value = default;
+                        break;
+                    }
+                }
+
+                switch (value.ValueKind)
+                {
+                    case JsonValueKind.Undefined:
+                        builder.AddNoneType();
+                        break;
+                    case JsonValueKind.Null:
+                        builder.AddNullValue();
+                        break;
+                    case JsonValueKind.String:
+                        builder.Add(value.GetString());
+                        break;
+                    case JsonValueKind.Number:
+                        builder.Add(value.GetDouble());
+                        break;
+                    case JsonValueKind.True:
+                    case JsonValueKind.False:
+                        builder.Add(value.GetBoolean());
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Partition key path '{path}' must resolve to a string, number, boolean, null, or missing value; found {value.ValueKind}.");
+                }
+            }
+
+            return builder.Build();
+        }
+
+        private static IReadOnlyList<string> ParsePartitionKeyPath(string path)
+        {
+            var segments = new List<string>();
+            int position = 0;
+            while (position < path.Length)
+            {
+                if (path[position] != '/')
+                    throw new ArgumentException($"Invalid partition key path at position {position}.", nameof(path));
+                position++;
+                if (position == path.Length)
+                    break;
+
+                char quote = path[position];
+                if (quote is '"' or '\'')
+                {
+                    int start = ++position;
+                    while (position < path.Length && (path[position] != quote || path[position - 1] == '\\'))
+                        position++;
+                    if (position == path.Length)
+                        throw new ArgumentException("Partition key path contains an unterminated quoted segment.", nameof(path));
+
+                    // SDK 3.49 PathParser retains escape characters inside quoted segments.
+                    segments.Add(path[start..position]);
+                    position++;
+                }
+                else
+                {
+                    int start = position;
+                    while (position < path.Length && path[position] != '/')
+                        position++;
+                    segments.Add(path[start..position].Trim());
+                }
+            }
+
+            return segments;
+        }
+
         private static string? GetPropertyValue(ExpandoObject item, string propertyName)
         {
             return TryGetPropertyValue(item, propertyName, out var value) ? value?.ToString() : null;
-        }
-
-        private static PartitionKey GetPartitionKey(ExpandoObject item, string path)
-        {
-            if (!TryGetPropertyValue(item, path.TrimStart('/'), out var value))
-            {
-                return PartitionKey.None;
-            }
-            return value switch
-            {
-                null => PartitionKey.Null,
-                string text => new PartitionKey(text),
-                bool boolean => new PartitionKey(boolean),
-                byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal
-                    => new PartitionKey(Convert.ToDouble(value, CultureInfo.InvariantCulture)),
-                _ => throw new InvalidOperationException("Cosmos sink partition key must be a string, number, boolean, null, or undefined.")
-            };
         }
 
         private static bool TryGetPropertyValue(ExpandoObject item, string propertyName, out object? value)

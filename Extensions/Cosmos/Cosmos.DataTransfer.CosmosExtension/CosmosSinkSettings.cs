@@ -71,9 +71,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 yield return new ValidationResult("Serverless accounts cannot have shared throughput", new[] { nameof(CreatedContainerMaxThroughput), nameof(UseSharedThroughput) });
             }
 
-            if (PartitionKeyPaths?.Any(p => !string.IsNullOrEmpty(p)) == true)
+            if (PartitionKeyPaths != null)
             {
-                if (PartitionKeyPaths.Any(p => !p.StartsWith("/")))
+                if (PartitionKeyPaths.Count is < 1 or > 3)
+                {
+                    yield return new ValidationResult("PartitionKeyPaths must contain between 1 and 3 paths", new[] { nameof(PartitionKeyPaths) });
+                }
+
+                if (PartitionKeyPaths.Any(p => string.IsNullOrWhiteSpace(p) || !p.StartsWith("/")))
                 {
                     yield return new ValidationResult("PartitionKeyPaths values must start with /", new[] { nameof(PartitionKeyPaths) });
                 }
@@ -86,9 +91,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
                 }
             }
 
-            if (MissingPartitionKeys() && WriteMode is DataWriteMode.InsertStream or DataWriteMode.UpsertStream)
+            if (MissingPartitionKeys() && WriteMode is DataWriteMode.InsertStream or DataWriteMode.UpsertStream or DataWriteMode.DeleteStream or DataWriteMode.Delete)
             {
-                yield return new ValidationResult("PartitionKeyPath must be specified when WriteMode is set to InsertStream or UpsertStream", new[] { nameof(PartitionKeyPath), nameof(PartitionKeyPaths), nameof(WriteMode) });
+                yield return new ValidationResult("PartitionKeyPath or PartitionKeyPaths must be specified when WriteMode is set to InsertStream, UpsertStream, DeleteStream, or Delete", new[] { nameof(PartitionKeyPath), nameof(PartitionKeyPaths), nameof(WriteMode) });
             }
 
             if (HasInvalidTransformations())
@@ -99,13 +104,9 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         private bool MissingPartitionKeys()
         {
-            if (!string.IsNullOrWhiteSpace(PartitionKeyPath))
-                return false;
-
-            if (PartitionKeyPaths?.Any(p => !string.IsNullOrEmpty(p)) == true)
-                return false;
-
-            return true;
+            return PartitionKeyPaths != null
+                ? PartitionKeyPaths.Count == 0
+                : string.IsNullOrWhiteSpace(PartitionKeyPath);
         }
 
         private bool HasInvalidTransformations()
