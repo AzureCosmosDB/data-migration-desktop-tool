@@ -54,7 +54,7 @@ public class JsonFormatReader : IFormattedDataReader
         }
         else
         {
-            await foreach (var item in JsonSerializer.DeserializeAsyncEnumerable<Dictionary<string, object?>>(input, cancellationToken: cancellationToken))
+            await foreach (var item in JsonArrayReader.ReadAsync(input, cancellationToken))
             {
                 yield return item;
             }
@@ -118,7 +118,6 @@ public class JsonFormatReader : IFormattedDataReader
                     count = await source.ReadAsync(buffer, cancellationToken);
                 }
             }
-
             if (rewindSource)
             {
                 source.Position = originalPosition;
