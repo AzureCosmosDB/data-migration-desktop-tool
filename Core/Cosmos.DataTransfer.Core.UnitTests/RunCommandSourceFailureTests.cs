@@ -21,11 +21,15 @@ namespace Cosmos.DataTransfer.Core.UnitTests;
 public class RunCommandSourceFailureTests
 {
     [DataTestMethod]
-    [DataRow("missing")]
-    [DataRow("http")]
-    [DataRow("json")]
-    [DataRow("empty")]
-    public async Task InvokeAsync_EnumeratesSource_ReportsFailureOrValidEmptySuccess(string scenario)
+    [DataRow("missing", "sink")]
+    [DataRow("http", "sink")]
+    [DataRow("json", "sink")]
+    [DataRow("empty", "sink")]
+    [DataRow("missing", "Cosmos-nosql")]
+    [DataRow("http", "Cosmos-nosql")]
+    [DataRow("json", "Cosmos-nosql")]
+    [DataRow("empty", "Cosmos-nosql")]
+    public async Task InvokeAsync_EnumeratesSource_ReportsFailureOrValidEmptySuccess(string scenario, string sinkName)
     {
         Exception? failure = scenario switch
         {
@@ -39,7 +43,7 @@ public class RunCommandSourceFailureTests
         source.Setup(s => s.ReadAsync(It.IsAny<IConfiguration>(), It.IsAny<ILogger>(), It.IsAny<CancellationToken>()))
             .Returns(EnumerateAsync(failure));
         var sink = new Mock<IDataSinkExtension>();
-        sink.SetupGet(s => s.DisplayName).Returns("sink");
+        sink.SetupGet(s => s.DisplayName).Returns(sinkName);
         int consumed = 0;
         sink.Setup(s => s.WriteAsync(It.IsAny<IAsyncEnumerable<IDataItem>>(), It.IsAny<IConfiguration>(),
                 source.Object, It.IsAny<ILogger>(), It.IsAny<CancellationToken>()))
@@ -61,7 +65,7 @@ public class RunCommandSourceFailureTests
         var handler = new RunCommand.CommandHandler(loader.Object, new ConfigurationBuilder().Build(), loggerFactory.Object)
         {
             Source = "source",
-            Sink = "sink"
+            Sink = sinkName
         };
         var result = await handler.InvokeAsync(new InvocationContext(new RootCommand().Parse(Array.Empty<string>())));
 
