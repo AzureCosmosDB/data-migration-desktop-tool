@@ -32,7 +32,12 @@ Parse failures retain the JSON path, zero-based line number, and byte position r
 
 For errors in streamed arrays, use the line number and byte position to locate the error; the parser's JSON path can be less precise.
 
-Sinks are not transactional: a source failure can leave partial output. Do not use that output as a completed migration.
+Local file sinks in overwrite mode stage output and publish it only after successful
+completion, preserving any existing destination on source failure. This also applies
+to compressed output. See the [file-output lifecycle and append policy](../../Interfaces/Cosmos.DataTransfer.Common/README.md#sink)
+for temporary-file cleanup, cancellation, and replacement details. Direct append,
+cloud-storage, and database sinks are not made transactional by this policy: failures
+can leave partial data, which must not be treated as a completed migration.
 
 ```json
 {

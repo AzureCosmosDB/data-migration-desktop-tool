@@ -30,9 +30,51 @@ Gzip, bzip2, and zlib compressed files are automatically detected by file extens
 Use parameter `Compression` to enable compression of output file. 
 The relevant extension is automatically added to the file name, if missing.
 
-It is possible to build further upon a file by setting the `Append` parameter
-to `true`. Note however that it is not compatible with any compression methods,
-as the result a concatenation of multiple compressed files.
+With `Append: false` (the default), local file sinks (JSON, CSV, and Parquet)
+write to a uniquely named `.dmt-<id>.tmp` sibling in the destination directory.
+The configured output is published only after the source has been consumed and
+formatting, compression, and stream disposal have succeeded. Source/parse errors,
+cancellation observed before publication, and write/finalization failures leave an
+existing destination unchanged, or leave no destination if it did not exist.
+These failures retain CLI exit code `1`. Compression uses the same policy for
+Gzip, Brotli, and Deflate, including the automatically added file extension.
+
+The destination directory must allow creating and replacing files, and have
+space for the entire new output alongside any old destination. Existing files
+are replaced, not truncated in place: Windows replacement preserves destination
+metadata supported by `File.Replace`; on Unix, permission bits are copied to the
+new file, but file identity, ownership, timestamps, and hard-link relationships
+are not guaranteed to be preserved. Unix staging is created atomically with
+owner-only read/write permissions (`0600`, subject to the process umask), before
+applying an existing destination's mode bits. New Unix output files retain those
+owner-only permissions. For Linux container bind mounts, run as the host user
+(for example, `docker run --user "$(id -u):$(id -g)" ...`) so that user owns and can
+read the output; change completed-file permissions explicitly if sharing is needed.
+On Windows an existing destination's DACL is supplied at
+staging-file creation, rather than applied afterward.
+Read-only destinations, symbolic-link/reparse-point destinations, and Unix
+special files (including FIFOs, sockets, and devices) are rejected
+with an error; links and their targets are left unchanged. To overwrite a link's
+target, explicitly configure the regular target file path instead.
+Ordinary same-path file source/destination migrations read the original before
+replacement. Directory sources do not read `.tmp` staging files. Do not have
+multiple processes modify the destination during a migration. Unix special-file
+checks inspect metadata without opening the destination.
+
+Temporary files are removed on handled failure. If cleanup fails, the error log
+identifies the temporary path for manual removal without hiding the original
+failure. A process kill or machine failure can leave `.dmt-*.tmp` files; these are
+**not completed outputs** and can be removed after confirming the owning
+migration is no longer running. Stale files are never automatically reused or
+deleted by a later migration. Publication is a per-file filesystem operation,
+not a multi-operation transaction or a power-loss durability guarantee.
+
+With `Append: true`, output is written **directly** to the destination, retaining
+the existing byte-append behavior. Failure or cancellation can leave partial
+appended data (or a new partial file), and the error log explicitly warns that
+no rollback occurred. Retrying can duplicate data. Append concatenates formatter
+output; it does not merge JSON arrays or repair other structured file formats.
+Append remains incompatible with all compression methods.
 
 ```json
 {

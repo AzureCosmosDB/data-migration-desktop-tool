@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Cosmos.DataTransfer.Core\Cosmos.DataTransfer.Core.csproj" />
+    <ProjectReference Include="..\..\Extensions\Json\Cosmos.DataTransfer.JsonExtension\Cosmos.DataTransfer.JsonExtension.csproj" />
   </ItemGroup>
 
 </Project>

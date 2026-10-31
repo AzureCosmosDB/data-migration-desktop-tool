@@ -109,5 +109,5 @@ jobs:
           mkdir -p "$RUNNER_TEMP/dmt-smoke/config" "$RUNNER_TEMP/dmt-smoke/data"
           printf '%s' '[{"id":"one","value":42},{"id":"two","value":-1}]' > "$RUNNER_TEMP/dmt-smoke/data/input.json"
           printf '%s' '{"Source":"JSON","Sink":"JSON","SourceSettings":{"FilePath":"/data/input.json"},"SinkSettings":{"FilePath":"/data/output.json"}}' > "$RUNNER_TEMP/dmt-smoke/config/settings.json"
-          docker run --rm -v "$RUNNER_TEMP/dmt-smoke/config:/config:ro" -v "$RUNNER_TEMP/dmt-smoke/data:/data" dmt-smoke run --settings /config/settings.json
+          docker run --rm --user "$(id -u):$(id -g)" -v "$RUNNER_TEMP/dmt-smoke/config:/config:ro" -v "$RUNNER_TEMP/dmt-smoke/data:/data" dmt-smoke run --settings /config/settings.json
           jq -e '. == [{"id":"one","value":42},{"id":"two","value":-1}]' "$RUNNER_TEMP/dmt-smoke/data/output.json"
