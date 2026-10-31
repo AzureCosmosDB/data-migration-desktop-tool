@@ -140,6 +140,39 @@ public class CosmosWriteRetryTests
         Assert.IsTrue(drained);
     }
 
+    [TestMethod]
+    public async Task WriteBatch_WriteCompletesWhileDraining_CountsConfirmedSuccess()
+    {
+        var failure = new CosmosException("private-payload", HttpStatusCode.Forbidden, 0, "activity", 0);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int calls = 0;
+        var container = new Mock<Container>();
+        container.Setup(c => c.CreateItemAsync(It.IsAny<ExpandoObject>(), It.IsAny<PartitionKey?>(),
+                It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+            .Returns<ExpandoObject, PartitionKey?, ItemRequestOptions, CancellationToken>(async (_, _, _, token) =>
+            {
+                if (Interlocked.Increment(ref calls) == 2)
+                {
+                    await started.Task;
+                    throw failure;
+                }
+                var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                using var registration = token.Register(() => cancelled.TrySetResult());
+                started.SetResult();
+                await cancelled.Task;
+                var response = new Mock<ItemResponse<ExpandoObject>>();
+                response.SetupGet(r => r.StatusCode).Returns(HttpStatusCode.Created);
+                return response.Object;
+            });
+        int reported = -1;
+        var task = CosmosDataSinkExtension.WriteBatchAsync(container.Object,
+            new[] { new ExpandoObject(), new ExpandoObject() }, "/id", DataWriteMode.Insert,
+            CosmosDataSinkExtension.GetRetryPolicy(0, 200), NullLogger.Instance, count => reported = count, CancellationToken.None);
+        var actual = await Assert.ThrowsExceptionAsync<CosmosException>(() => task.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.AreSame(failure, actual);
+        Assert.AreEqual(1, reported);
+    }
+
     [DataTestMethod]
     [DataRow(DataWriteMode.Insert)]
     [DataRow(DataWriteMode.InsertStream)]

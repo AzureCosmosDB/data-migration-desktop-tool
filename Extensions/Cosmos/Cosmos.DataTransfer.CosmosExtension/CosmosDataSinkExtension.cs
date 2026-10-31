@@ -413,7 +413,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
         private static HttpStatusCode GetStreamStatusCode(ResponseMessage response)
         {
-            // Stream APIs return service failures instead of throwing. Normalize only throttling
+            // Stream APIs return service failures instead of throwing.
             // A nonzero (or malformed) 404 substatus is not proof that the item is absent.
             var subStatus = response.Headers.Get("x-ms-substatus");
             if (response.StatusCode == HttpStatusCode.TooManyRequests ||
