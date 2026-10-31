@@ -81,6 +81,9 @@ jobs:
       - name: Restore executable permission
         if: runner.os != 'Windows'
         run: chmod +x package/dmt
+      - name: Verify JSON round-trip failure guards
+        shell: pwsh
+        run: ./.github/scripts/Test-JsonRoundTripGuard.ps1
       - name: Verify runtime, MEF discovery and JSON migration
         shell: pwsh
         run: ./.github/scripts/Test-PublishedApp.ps1 -PackagePath package

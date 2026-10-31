@@ -47,21 +47,17 @@ try {
     $inputPath = Join-Path $scratch 'input.json'
     $outputPath = Join-Path $scratch 'output.json'
     $settingsPath = Join-Path $scratch 'settings.json'
-    '[{"id":"one","value":42,"nullable":null},{"id":"two","value":-1,"active":true}]' |
-        Set-Content -LiteralPath $inputPath -Encoding utf8NoBOM
+    $expectedJson = '[{"id":"one","value":42,"nullable":null},{"id":"two","value":-1,"active":true}]'
+    $expectedJson | Set-Content -LiteralPath $inputPath -Encoding utf8NoBOM
     @{
         Source = 'JSON'; Sink = 'JSON'
         SourceSettings = @{ FilePath = $inputPath }
-        SinkSettings = @{ FilePath = $outputPath }
+        SinkSettings = @{ FilePath = $outputPath; IncludeNullFields = $true }
     } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $settingsPath -Encoding utf8NoBOM
     & $executable run --settings $settingsPath
     if ($LASTEXITCODE -ne 0) { throw 'Published JSON migration failed.' }
-    $actual = Get-Content -LiteralPath $outputPath -Raw | ConvertFrom-Json
-    if ($actual.Count -ne 2 -or $actual[0].id -ne 'one' -or $actual[0].value -ne 42 -or
-        $actual[0].nullable -ne $null -or $actual[1].id -ne 'two' -or
-        $actual[1].value -ne -1 -or $actual[1].active -ne $true) {
-        throw 'Published JSON migration did not preserve the synthetic records.'
-    }
+    & "$PSScriptRoot/Assert-JsonRoundTrip.ps1" -ExpectedJson $expectedJson `
+        -ActualJson (Get-Content -LiteralPath $outputPath -Raw)
     Write-Host "Published application passed: .NET $expectedRuntime; 15 sources; 15 sinks; JSON round trip."
 } finally {
     Remove-Item -LiteralPath $scratch -Recurse -Force
