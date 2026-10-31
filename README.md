@@ -43,6 +43,14 @@ your operating system and processor from the
 [latest release](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases/latest),
 not the **Source code** archives.
 
+The source on this branch targets **.NET 10 LTS**. Existing releases and images
+do not change when the source is upgraded: installing .NET 10 on your computer
+does **not** update a self-contained DMT download or container. Use a release
+explicitly identified as .NET 10-based when it becomes available, and replace
+the entire installation, including `Extensions`. See
+[runtime support and servicing](docs/runtime-support.md) for platform requirements
+and custom-extension compatibility.
+
 |Platform|Archive name|
 |---|---|
 |macOS, Apple Silicon (M-series)|`dmt-<version>-mac-arm64.zip`|
@@ -104,6 +112,14 @@ To build the Docker image locally:
 ```bash
 docker build -t data-migration-tool .
 ```
+
+The Dockerfile pins the .NET 10 SDK and runtime-dependencies images to Ubuntu
+24.04 (`noble`), with ICU, OpenSSL and CA certificates. Its default target is
+`linux-x64`. For a **native ARM64 Linux** Docker host, use
+`docker build --build-arg RUNTIME=linux-arm64 -t data-migration-tool .`.
+Do not treat an emulated build or a successful image build as native execution
+validation. No credentials or Azure CLI installation are needed for
+`docker run --rm data-migration-tool list`.
 
 ### Running the Container
 
@@ -192,10 +208,16 @@ only want to run a migration, use [Quick Installation](#quick-installation)
 instead.
 
 Install [Git](https://git-scm.com/downloads) and the
-[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) for your
+[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) for your
 operating system and processor (Arm64 for Apple Silicon, x64 for Intel Macs). An
 IDE is optional; the commands below work in Terminal on macOS/Linux and
 PowerShell on Windows.
+
+Install the exact stable SDK in [`global.json`](global.json) (currently
+**10.0.403**). SDK roll-forward and preview selection are disabled, so local
+builds, CI and containers use the same compiler. `Directory.Build.props` pins the
+bundled runtime to **10.0.14**. An SDK-selection error means that the pinned SDK
+must be installed; do not remove `global.json` to bypass it.
 
 ### Clone the source code repository
 
@@ -219,12 +241,13 @@ dotnet build CosmosDbDataMigrationTool.sln --configuration Debug
 The build restores NuGet dependencies and builds both the **Core** application
 and the extension projects. Use the full solution and **Debug** configuration:
 the extension projects publish their assemblies and dependencies into
-`Core/Cosmos.DataTransfer.Core/bin/Debug/net8.0/Extensions`. Building only the
+`Core/Cosmos.DataTransfer.Core/bin/Debug/net10.0/Extensions`. Building only the
 Core project does not build the extensions. Keep that folder alongside the Core
 output.
 
 On Windows, you can alternatively open `CosmosDbDataMigrationTool.sln` in Visual
-Studio 2022 and build the solution in Debug with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>.
+Studio with support for the pinned .NET 10 SDK (Visual Studio 2026 or later) and
+build the solution in Debug with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>.
 [Visual Studio for Mac is retired](https://learn.microsoft.com/lifecycle/announcements/visual-studio-mac-end-of-servicing);
 use the CLI above or an editor such as Visual Studio Code on macOS. This
 repository does not include a VS Code build task, so <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> alone is not
@@ -521,13 +544,20 @@ resources when finished to avoid ongoing charges.
 
 2. Create the extension project and an accompanying test project.
     - The naming convention for extension projects is `Cosmos.DataTransfer.<Name>Extension`.
-    - Extension projects should use .NET 6 framework and **Console Application** type. A Program.cs file must be included in order to build the console project. A Console Application Project is required to have the build include NuGet referenced packages.
-    > Binary File Storage extensions are only used in combination with other extensions so should be placed in a .NET 6 **Class Library** without the additional debugging configuration needed below.
+    - Extension projects should target `net10.0` and use the **Console Application** type, following the existing projects and central package versions. Include a Program.cs file so the project can publish its dependencies.
+    > Binary File Storage extensions are only used in combination with other extensions so should be placed in a .NET 10 **Class Library** without the additional debugging configuration needed below.
+
+    Rebuild custom extensions against this release's shared interfaces/common
+    assemblies, and test discovery and actual transfers with the published DMT
+    executable on each intended platform. Older `net8.0` binaries are not
+    categorically unloadable, but binary, dependency and behavioral compatibility
+    is not guaranteed. Do not copy old shared/runtime assemblies over the new
+    distribution. See [extension compatibility](docs/runtime-support.md#extensions).
   
 3. Add the new projects to the `CosmosDbDataMigrationTool` solution.
 
-4. In order to facilitate local debugging the extension build output along with any dependencies needs to be copied into the `Core\Cosmos.DataTransfer.Core\bin\Debug\net8.0\Extensions` folder. To set up the project to automatically copy add the following changes.
-    - Add a Publish Profile to Folder named `LocalDebugFolder` with a Target Location of `..\..\..\Core\Cosmos.DataTransfer.Core\bin\Debug\net8.0\Extensions`
+4. In order to facilitate local debugging the extension build output along with any dependencies needs to be copied into the `Core\Cosmos.DataTransfer.Core\bin\Debug\net10.0\Extensions` folder. To set up the project to automatically copy add the following changes.
+    - Add a Publish Profile to Folder named `LocalDebugFolder` with a Target Location of `..\..\..\Core\Cosmos.DataTransfer.Core\bin\Debug\net10.0\Extensions`
     - To publish every time the project builds, edit the .csproj file to add a new post-build step:
 
     ```xml

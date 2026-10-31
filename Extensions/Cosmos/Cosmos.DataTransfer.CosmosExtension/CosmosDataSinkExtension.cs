@@ -305,7 +305,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
 
             if (retryAfter > TimeSpan.Zero)
             {
-                // Task.Delay on .NET 8 supports at most uint.MaxValue - 1 milliseconds.
+                // Task.Delay supports at most uint.MaxValue - 1 milliseconds.
                 if (retryAfter.Value.TotalMilliseconds > uint.MaxValue - 1)
                 {
                     throw new NotSupportedException("Cosmos sink retry-after exceeds the supported delay range; refusing to retry early.");

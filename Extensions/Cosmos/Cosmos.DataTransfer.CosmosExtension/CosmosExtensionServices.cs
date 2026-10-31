@@ -135,13 +135,14 @@ namespace Cosmos.DataTransfer.CosmosExtension
                                 section);
                         }
 
-                        var certificate = new X509Certificate2(
-                            settings.ClientCertificatePath!,
-                            certificatePassword,
-                            X509KeyStorageFlags.EphemeralKeySet);
+                        var certificate = X509Certificate2.GetCertContentType(settings.ClientCertificatePath!) == X509ContentType.Pkcs12
+                            ? X509CertificateLoader.LoadPkcs12FromFile(
+                                settings.ClientCertificatePath!, certificatePassword, X509KeyStorageFlags.EphemeralKeySet)
+                            : X509CertificateLoader.LoadCertificateFromFile(settings.ClientCertificatePath!);
 
                         if (!certificate.HasPrivateKey)
                         {
+                            certificate.Dispose();
                             throw new CryptographicException("Client certificate must contain a private key.");
                         }
 

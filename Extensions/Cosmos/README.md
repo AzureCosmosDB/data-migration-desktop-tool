@@ -441,7 +441,7 @@ delay is capped at 30 seconds per wait**, avoiding overflow and excessively long
 exponential schedules with large retry counts. With defaults, the first waits
 are 200-299 ms, 400-499 ms, and 800-899 ms. This cap never applies to a service
 hint. If a service delay overflows the SDK's `TimeSpan` conversion or exceeds
-.NET 8's supported single wait of 4,294,967,294 ms, the write fails explicitly
+.NET's supported single wait of 4,294,967,294 ms, the write fails explicitly
 instead of retrying early.
 
 Cancellation interrupts application waits and is passed to SDK calls. Each

@@ -60,6 +60,17 @@ Depending on how large the project is, you may want to outsource the questioning
 
 ## I Want To Contribute
 
+Source builds require the stable .NET 10 SDK pinned in `global.json`; follow
+the [source-build instructions](README.md#getting-started). Build the whole
+solution in Debug to populate the Core application's extension directory.
+Run `dotnet test CosmosDbDataMigrationTool.sln` for the local suite. Live Cosmos
+emulator and SQL tests require explicit disposable test-service configuration;
+unconfigured skips are not evidence of integration coverage. RBAC client
+constructor tests must inject `OfflineTokenCredential`, never a signed-in
+developer's credential chain.
+
+For framework/dependency updates, see [runtime support and servicing](docs/runtime-support.md).
+
 > ### Legal Notice <!-- omit in toc -->
 > When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the project license.
 

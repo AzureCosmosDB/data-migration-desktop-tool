@@ -16,6 +16,11 @@ They do not create a database or change the importer's behavior.
 - Download and fully extract the [DMT release](https://github.com/AzureCosmosDB/data-migration-desktop-tool/releases)
   for your platform, keeping its `Extensions` directory. The `JSON` source and
   `SqlServer` sink must be available (`dmt list`).
+- For a .NET 10-based DMT build, use a supported platform and the complete matching
+  extension set; see [runtime support](../../docs/runtime-support.md).
+  Installing a newer host SDK does not update an older self-contained DMT
+  download. If building from source instead, follow the
+  [pinned SDK instructions](../../README.md#getting-started).
 - Use an existing SQL Server instance and an **explicitly selected disposable/test
   database**. You need permission to create the table and insert/select its rows.
   Never use a production database for this walkthrough.

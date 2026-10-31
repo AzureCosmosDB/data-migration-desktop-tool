@@ -1,10 +1,38 @@
 ﻿using Cosmos.DataTransfer.Interfaces;
+using Microsoft.Extensions.Configuration;
+using System.Text;
 
 namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 
 [TestClass]
 public class CosmosSinkSettingsTests
 {
+    [DataTestMethod]
+    [DataRow("[]", true)]
+    [DataRow("[\"/tenant\",null]", false)]
+    public void JsonConfiguration_PartitionKeyArrays_PreserveFallbackAndValidation(string paths, bool usesFallback)
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(
+            $$"""{"ConnectionString":"AccountEndpoint=https://localhost:8081/;AccountKey=","Database":"db","Container":"container","PartitionKeyPath":"/fallback","PartitionKeyPaths":{{paths}}}"""));
+        var config = new ConfigurationBuilder().AddJsonStream(stream).Build();
+        var settings = config.Get<CosmosSinkSettings>();
+
+        Assert.IsNotNull(settings);
+        if (usesFallback)
+        {
+            // The binder leaves an empty JSON array unbound for List<string>.
+            Assert.IsNull(settings.PartitionKeyPaths);
+            Assert.AreEqual("/fallback", settings.PartitionKeyPath);
+            Assert.IsFalse(settings.GetValidationErrors().Any());
+        }
+        else
+        {
+            Assert.IsNotNull(settings.PartitionKeyPaths);
+            Assert.IsTrue(settings.GetValidationErrors().Any(error =>
+                error.Contains(nameof(CosmosSinkSettings.PartitionKeyPaths))));
+        }
+    }
+
     [DataTestMethod]
     [DataRow(DataWriteMode.InsertStream)]
     [DataRow(DataWriteMode.UpsertStream)]

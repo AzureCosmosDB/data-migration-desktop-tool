@@ -75,9 +75,11 @@ public class CosmosMultiAccountSupportTests
             EnableInteractiveCredentials = false
         };
 
-        // Act - Create clients for two different sink accounts
-        using CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
-        using CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        // SDK construction can request tokens before any operation is invoked.
+        using CosmosClient sink1Client = CosmosExtensionServices.CreateClient(sink1Settings, "Cosmos-nosql",
+            NullLogger.Instance, "JSON", (_, _) => new OfflineTokenCredential());
+        using CosmosClient sink2Client = CosmosExtensionServices.CreateClient(sink2Settings, "Cosmos-nosql",
+            NullLogger.Instance, "JSON", (_, _) => new OfflineTokenCredential());
 
         // Assert - Verify separate instances for different sink accounts
         Assert.IsNotNull(sink1Client);
@@ -233,7 +235,8 @@ public class CosmosMultiAccountSupportTests
         };
 
         using var keyClient = CosmosExtensionServices.CreateClient(keySettings, "Cosmos-nosql", NullLogger.Instance, "JSON");
-        using var rbacClient = CosmosExtensionServices.CreateClient(rbacSettings, "Cosmos-nosql", NullLogger.Instance, "JSON");
+        using var rbacClient = CosmosExtensionServices.CreateClient(rbacSettings, "Cosmos-nosql",
+            NullLogger.Instance, "JSON", (_, _) => new OfflineTokenCredential());
 
         Assert.AreNotSame(keyClient, rbacClient);
         Assert.AreEqual(new Uri("https://key-account.documents.azure.com:443/"), keyClient.Endpoint);

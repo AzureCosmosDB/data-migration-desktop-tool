@@ -8,6 +8,7 @@ on:
       - 'Extensions/Json/**'
       - 'Interfaces/**'
       - 'Directory.*.props'
+      - 'global.json'
       - '.github/scripts/*Cosmos*.ps1'
       - '.github/workflows/linux-cosmos-emulator-test.yml'
 
@@ -23,7 +24,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: 8.0.x
+          global-json-file: global.json
       - name: Build Cosmos tests
         run: dotnet build Extensions/Cosmos/Cosmos.DataTransfer.CosmosExtension.UnitTests/
       - name: Verify missing configuration and failed initialization
@@ -68,7 +69,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: 8.0.x
+          global-json-file: global.json
 
       - name: Wait for Cosmos Emulator and trust its certificate
         env:

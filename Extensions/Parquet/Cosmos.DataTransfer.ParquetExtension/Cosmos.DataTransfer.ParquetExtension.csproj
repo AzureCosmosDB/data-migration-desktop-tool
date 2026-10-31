@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
@@ -10,7 +10,6 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
 		<PackageReference Include="Parquet.Net" />
 		<PackageReference Include="System.ComponentModel.Composition" />
-		<PackageReference Include="System.Text.Json" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\Extensions\AwsS3\Cosmos.DataTransfer.AwsS3Storage\Cosmos.DataTransfer.AwsS3Storage.csproj" />
@@ -26,7 +25,7 @@
 			Projects="$(MSBuildProjectFile)"
 			Targets="Publish"
 			Properties="Configuration=$(Configuration);
-									PublishProfile=PublishToExtensionsFolder;
+									PublishProfile=FolderProfile;
 									BuildProjectReferences=false;
 									PublishingToExtensionsFolder=true" />
 	</Target>
