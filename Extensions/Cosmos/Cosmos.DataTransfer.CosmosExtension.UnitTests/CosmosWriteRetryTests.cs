@@ -2,10 +2,15 @@ using System.Collections.Concurrent;
 using System.Dynamic;
 using System.Net;
 using System.Text;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.ComponentModel.Composition.Hosting;
+using Cosmos.DataTransfer.Core;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using Polly.Retry;
 
@@ -14,6 +19,225 @@ namespace Cosmos.DataTransfer.CosmosExtension.UnitTests;
 [TestClass]
 public class CosmosWriteRetryTests
 {
+    [DataTestMethod]
+    [DataRow(DataWriteMode.Delete)]
+    [DataRow(DataWriteMode.DeleteStream)]
+    [DataRow(DataWriteMode.InsertStream)]
+    [DataRow(DataWriteMode.UpsertStream)]
+    public async Task Write_PartitionKey_PreservesJsonScalarTypes(DataWriteMode mode)
+    {
+        var values = new (object? Value, PartitionKey Expected)[]
+        {
+            ("123", new PartitionKey("123")), (123, new PartitionKey(123d)),
+            (123L, new PartitionKey(123d)), (1.25, new PartitionKey(1.25)),
+            (1.25m, new PartitionKey(1.25)), (true, new PartitionKey(true)),
+            (false, new PartitionKey(false)), (null, PartitionKey.Null)
+        };
+        foreach (var (value, expected) in values)
+        {
+            dynamic item = new ExpandoObject();
+            item.id = "test";
+            item.nested = new ExpandoObject();
+            item.nested.pk = value;
+            var container = CreateContainer(mode, () => SuccessStatus(mode));
+            var result = await CosmosDataSinkExtension.AddItemAsync(container.Object, item, "/nested/pk", mode,
+                CosmosDataSinkExtension.GetRetryPolicy(0, 200), NullLogger.Instance, CancellationToken.None);
+            Assert.AreEqual(expected, container.Invocations.Single().Arguments[1]);
+            Assert.AreEqual(1, result.ItemCount);
+        }
+        dynamic missing = new ExpandoObject();
+        missing.id = "test";
+        var missingContainer = CreateContainer(mode, () => SuccessStatus(mode));
+        await CosmosDataSinkExtension.AddItemAsync(missingContainer.Object, missing, "/missing", mode,
+            CosmosDataSinkExtension.GetRetryPolicy(0, 200), NullLogger.Instance, CancellationToken.None);
+        Assert.AreEqual(PartitionKey.None, missingContainer.Invocations.Single().Arguments[1]);
+    }
+
+    [DataTestMethod]
+    [DataRow(DataWriteMode.Delete)]
+    [DataRow(DataWriteMode.DeleteStream)]
+    public async Task Write_SessionNotAvailable404_IsNotSuccessfulDeletion(DataWriteMode mode)
+    {
+        var responses = new List<TrackedResponse>();
+        var container = CreateContainer(mode, () => HttpStatusCode.NotFound, responses: responses, subStatus: 1002);
+        var exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => WriteAsync(container.Object, mode));
+        Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
+        Assert.AreEqual(1002, exception.SubStatusCode);
+        Assert.AreEqual(1, container.Invocations.Count);
+        AssertDisposed(container, responses);
+    }
+
+    [DataTestMethod]
+    [DynamicData(nameof(WriteModes))]
+    public async Task WriteBatch_PermanentFailure_CancelsLongWaitAndReportsPartialSuccess(DataWriteMode mode)
+    {
+        int calls = 0;
+        bool waiting = false;
+        var responses = new List<TrackedResponse>();
+        var logger = new RecordingLogger();
+        var container = CreateContainer(mode, () => ++calls switch
+        {
+            1 => SuccessStatus(mode),
+            2 => HttpStatusCode.TooManyRequests,
+            _ => HttpStatusCode.Forbidden
+        }, () => "4294967294", responses);
+        var policy = CosmosDataSinkExtension.GetRetryPolicy(5, 200, (attempt, exception) =>
+        {
+            waiting = true;
+            return CosmosDataSinkExtension.GetRetryDelay(exception, attempt, 200);
+        });
+        int reported = -1;
+        int reports = 0;
+        var batch = Enumerable.Range(0, 3).Select(_ => new ExpandoObject()).ToArray();
+        var task = CosmosDataSinkExtension.WriteBatchAsync(container.Object, batch, "/id", mode, policy, logger,
+            count => { reported = count; reports++; }, CancellationToken.None);
+        if (IsStream(mode))
+        {
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => task.WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+        else
+        {
+            var exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => task.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.AreEqual(HttpStatusCode.Forbidden, exception.StatusCode);
+        }
+        Assert.IsTrue(waiting);
+        Assert.AreEqual(3, calls);
+        Assert.AreEqual(1, reported);
+        Assert.AreEqual(1, reports);
+        Assert.IsTrue(logger.Messages.Any(m => m.Contains("1 confirmed successful writes out of 3")));
+        AssertDisposed(container, responses);
+    }
+
+    [TestMethod]
+    public async Task WriteBatch_Failure_DrainsSdkCallsAndPreservesOriginalException()
+    {
+        var failure = new CosmosException("private-payload", HttpStatusCode.Forbidden, 0, "activity", 0);
+        int calls = 0;
+        bool drained = false;
+        var container = new Mock<Container>();
+        container.Setup(c => c.CreateItemAsync(It.IsAny<ExpandoObject>(), It.IsAny<PartitionKey?>(),
+                It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+            .Returns<ExpandoObject, PartitionKey?, ItemRequestOptions, CancellationToken>(async (_, _, _, token) =>
+            {
+                if (Interlocked.Increment(ref calls) == 2)
+                    throw failure;
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, token);
+                    throw new AssertFailedException("Expected cancellation.");
+                }
+                finally
+                {
+                    await Task.Yield();
+                    drained = true;
+                }
+            });
+        var task = CosmosDataSinkExtension.WriteBatchAsync(container.Object,
+            new[] { new ExpandoObject(), new ExpandoObject() }, "/id", DataWriteMode.Insert,
+            CosmosDataSinkExtension.GetRetryPolicy(0, 200), NullLogger.Instance, _ => { }, CancellationToken.None);
+        var actual = await Assert.ThrowsExceptionAsync<CosmosException>(() => task.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.AreSame(failure, actual);
+        Assert.IsTrue(drained);
+    }
+
+    [DataTestMethod]
+    [DataRow(DataWriteMode.Insert)]
+    [DataRow(DataWriteMode.InsertStream)]
+    public async Task WriteBatch_CallerCancellation_ReportsCompletedWrites(DataWriteMode mode)
+    {
+        using var cancellation = new CancellationTokenSource();
+        int calls = 0;
+        var container = CreateContainer(mode, () => ++calls == 1 ? SuccessStatus(mode) : HttpStatusCode.TooManyRequests);
+        var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var policy = CosmosDataSinkExtension.GetRetryPolicy(5, 200, (_, _) =>
+        {
+            waiting.SetResult();
+            return TimeSpan.FromDays(1);
+        });
+        int reported = -1;
+        var task = CosmosDataSinkExtension.WriteBatchAsync(container.Object,
+            new[] { new ExpandoObject(), new ExpandoObject() }, "/id", mode,
+            policy, NullLogger.Instance, count => reported = count, cancellation.Token);
+        await waiting.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        cancellation.Cancel();
+        await AssertCanceled(task);
+        Assert.AreEqual(1, reported);
+        Assert.AreEqual(2, calls);
+    }
+
+    [DataTestMethod]
+    [DataRow(DataWriteMode.Insert)]
+    [DataRow(DataWriteMode.InsertStream)]
+    public void RunCommand_ExhaustedCosmosWrite_DoesNotLogRawException(DataWriteMode mode)
+    {
+        var logger = new RecordingLogger();
+        var factory = new Mock<ILoggerFactory>();
+        factory.Setup(f => f.CreateLogger(It.IsAny<string>())).Returns(logger);
+        var source = new Mock<IDataSourceExtension>();
+        source.SetupGet(s => s.DisplayName).Returns("test-source");
+        var sink = new Mock<IDataSinkExtension>();
+        sink.SetupGet(s => s.DisplayName).Returns("Cosmos-nosql");
+        var container = CreateContainer(mode, () => HttpStatusCode.TooManyRequests);
+        sink.Setup(s => s.WriteAsync(It.IsAny<IAsyncEnumerable<IDataItem>>(), It.IsAny<IConfiguration>(),
+                source.Object, It.IsAny<ILogger>(), It.IsAny<CancellationToken>()))
+            .Returns<IAsyncEnumerable<IDataItem>, IConfiguration, IDataSourceExtension, ILogger, CancellationToken>(
+                (_, _, _, sinkLogger, token) => CosmosDataSinkExtension.WriteItemsAsync(container.Object,
+                    new[] { new ExpandoObject() }.ToAsyncEnumerable(),
+                    new CosmosSinkSettings { WriteMode = mode, PartitionKeyPath = "/id", MaxRetryCount = 0 },
+                    sinkLogger, token));
+        var loader = new Mock<IExtensionLoader>();
+        loader.Setup(l => l.LoadExtensions<IDataSourceExtension>(It.IsAny<CompositionContainer>()))
+            .Returns(new List<IDataSourceExtension> { source.Object });
+        loader.Setup(l => l.LoadExtensions<IDataSinkExtension>(It.IsAny<CompositionContainer>()))
+            .Returns(new List<IDataSinkExtension> { sink.Object });
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Source"] = "test-source", ["Sink"] = "Cosmos-nosql"
+        }).Build();
+        var handler = new RunCommand.CommandHandler(loader.Object, config, factory.Object);
+
+        int exitCode = handler.Invoke(new InvocationContext(new RootCommand().Parse(Array.Empty<string>())));
+
+        Assert.AreEqual(1, exitCode);
+        Assert.IsTrue(logger.Messages.Any(m => m.Contains("exhausted 0 additional application retries")));
+        Assert.IsTrue(logger.Messages.Any(m => m.Contains($"Data transfer failed: Cosmos sink {mode} failed with status 429")));
+        Assert.IsFalse(logger.Messages.Any(m => m.Contains("private-payload")));
+        Assert.IsTrue(logger.Exceptions.All(e => e == null));
+    }
+
+    [TestMethod]
+    public async Task WriteItems_FailedSecondBatch_ReportsTotalAndRetainsSafeFailure()
+    {
+        int calls = 0;
+        var logger = new RecordingLogger();
+        var container = CreateContainer(DataWriteMode.InsertStream, () =>
+            ++calls <= 3 ? HttpStatusCode.Created : HttpStatusCode.TooManyRequests);
+        var failure = await Assert.ThrowsExceptionAsync<DataTransferException>(() =>
+            CosmosDataSinkExtension.WriteItemsAsync(container.Object,
+                Enumerable.Range(0, 6).Select(_ => new ExpandoObject()).ToAsyncEnumerable(),
+                new CosmosSinkSettings { BatchSize = 2, MaxRetryCount = 0, WriteMode = DataWriteMode.InsertStream, PartitionKeyPath = "/id" },
+                logger, CancellationToken.None));
+
+        Assert.AreEqual(4, calls);
+        Assert.IsTrue(logger.Messages.Any(m => m.Contains("3 successful writes out of 4 records in started batches")));
+        Assert.IsInstanceOfType<CosmosException>(failure.InnerException);
+        StringAssert.Contains(failure.InnerException!.ToString(), "private-payload");
+        Assert.IsFalse(failure.Message.Contains("private-payload"));
+        Assert.IsFalse(failure.ToString().Contains("private-payload"));
+        Assert.IsFalse(logger.Messages.Any(m => m.Contains("total records in")));
+    }
+
+    [TestMethod]
+    public async Task WriteItems_EmptyInput_ReportsSuccess()
+    {
+        var container = new Mock<Container>(MockBehavior.Strict);
+        var logger = new RecordingLogger();
+        await CosmosDataSinkExtension.WriteItemsAsync(container.Object, Array.Empty<ExpandoObject>().ToAsyncEnumerable(),
+            new CosmosSinkSettings(), logger, CancellationToken.None);
+        Assert.IsTrue(logger.Messages.Any(m => m.Contains("Added 0 total records")));
+        Assert.AreEqual(0, container.Invocations.Count);
+    }
+
     public static IEnumerable<object[]> WriteModes =>
         Enum.GetValues<DataWriteMode>().Select(mode => new object[] { mode });
 
@@ -409,7 +633,7 @@ public class CosmosWriteRetryTests
 
     private static Mock<Container> CreateContainer(DataWriteMode mode, Func<HttpStatusCode> nextStatus,
         Func<string?>? retryAfter = null, List<TrackedResponse>? responses = null,
-        List<string>? payloads = null, Action<CancellationToken>? onCall = null)
+        List<string>? payloads = null, Action<CancellationToken>? onCall = null, int subStatus = 0)
     {
         var container = new Mock<Container>(MockBehavior.Strict);
         Task<ResponseMessage> StreamResponse()
@@ -423,6 +647,7 @@ public class CosmosWriteRetryTests
             }
             onCall?.Invoke((CancellationToken)invocation.Arguments.Last());
             var response = new TrackedResponse(nextStatus());
+            response.Headers.Set("x-ms-substatus", subStatus.ToString(System.Globalization.CultureInfo.InvariantCulture));
             var hint = retryAfter == null ? "1" : retryAfter();
             if (hint != null)
                 response.Headers.Set("x-ms-retry-after-ms", hint);
@@ -435,7 +660,7 @@ public class CosmosWriteRetryTests
             var status = nextStatus();
             if ((int)status >= 400)
             {
-                var exception = new CosmosException("private-payload", status, 0, "activity", 0);
+                var exception = new CosmosException("private-payload", status, subStatus, "activity", 0);
                 var hint = retryAfter == null ? "1" : retryAfter();
                 if (hint != null)
                     exception.Headers.Set("x-ms-retry-after-ms", hint);
@@ -488,10 +713,13 @@ public class CosmosWriteRetryTests
 
     private sealed class TrackedResponse : ResponseMessage
     {
-        public MemoryStream Body { get; } = new(Encoding.UTF8.GetBytes("{}"));
+        public MemoryStream Body { get; } = new(Encoding.UTF8.GetBytes("{\"message\":\"private-payload\"}"));
         public bool Disposed { get; private set; }
 
-        public TrackedResponse(HttpStatusCode status) : base(status) => Content = Body;
+        public TrackedResponse(HttpStatusCode status) : base(status)
+        {
+            Content = Body;
+        }
 
         protected override void Dispose(bool disposing)
         {

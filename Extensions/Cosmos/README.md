@@ -324,14 +324,30 @@ instead of retrying early.
 Cancellation interrupts application waits and is passed to SDK calls. Each
 stream attempt gets a fresh complete payload; owned request streams and
 responses are disposed even on failure. Successful items are counted once.
-Delete-not-found is treated as success for both delete modes, including when
-the typed SDK throws 404. Non-429 failures are not retried by this application
-layer; existing stream error results remain failures, and thrown errors
-propagate without an `AggregateException` continuation wrapper.
+Partition keys retain their JSON scalar types (string, number, boolean, null,
+or undefined) rather than converting numbers and booleans to strings.
+Delete-not-found is treated as success for both delete modes only for a 404 with
+substatus zero (or an absent stream substatus). Session-related 404s such as
+404/1002 remain failures. Non-429 failures are not retried by this application
+layer.
+
+When a batch encounters a permanent failure or exhausts retries, DMT cancels
+the other calls and retry waits in that batch, drains their tasks, and propagates
+the original failure rather than a sibling cancellation. It does not shorten a
+service delay and retry early. Confirmed successes in the failed batch are
+counted once, and both batch progress and cumulative totals for started batches
+are reported before failure or cancellation propagates. Unconfirmed outcomes
+are not claimed to be failures or successes: cancellation cannot undo writes
+already accepted by the service.
 
 After retry exhaustion, the sink logs the write mode, status, and number of
 additional application retries, then propagates the final 429. These messages
 do not include document payloads, IDs, credentials, or raw exception bodies.
+At the sink transfer boundary, Cosmos failures are wrapped in a
+`DataTransferException` with a safe status/substatus message and the original
+exception retained as `InnerException` for programmatic inspection. Core logs
+only that safe message, not the exception object or its inner diagnostics.
+Ordinary file, HTTP, and JSON source failures keep their original diagnostics.
 Each additional attempt can itself incur SDK retries, so `MaxRetryCount` is
 **not an elapsed-time budget**. Large values can still make migrations take a
 long time. Retries do not guarantee completion against insufficient throughput;
