@@ -25,6 +25,11 @@ access. Source diagnostics identify the container and blob without connection
 strings, URL credentials, or signed URL queries; service failures include the HTTP
 status when available.
 
+Malformed or non-HTTP locations containing possible URL user-info are withheld
+from diagnostics. Exhausted transport retries (including nested aggregate read
+failures) receive the same sanitized diagnostics; cancellation is not converted
+into a read failure.
+
 An existing blob containing valid empty JSON (`[]`) remains a successful empty
 input for the JSON formatter. Source-read failure handling does not guarantee
 destination-file atomicity or rollback of records already written.

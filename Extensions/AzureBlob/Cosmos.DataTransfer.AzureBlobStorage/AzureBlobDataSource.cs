@@ -93,20 +93,28 @@ public class AzureBlobDataSource : IComposableDataSource
         {
             return new UriBuilder(uri) { UserName = "", Password = "", Query = "", Fragment = "" }.Uri.AbsoluteUri;
         }
+        // Do not guess user-info boundaries when a location cannot be safely parsed.
+        if (value.Contains('@'))
+            return "[redacted location]";
         return value.Split('?', '#')[0];
     }
 
     private static bool IsReadFailure(Exception error) =>
-        error is RequestFailedException or IOException or HttpRequestException or AuthenticationFailedException;
+        error is RequestFailedException or IOException or HttpRequestException or AuthenticationFailedException ||
+        error is AggregateException aggregate && aggregate.InnerExceptions.Count > 0 &&
+        aggregate.InnerExceptions.All(IsReadFailure);
 
     private static IOException ReadFailure(Exception error, string location)
     {
-        int? status = error switch
+        IEnumerable<Exception> failures = error is AggregateException aggregate
+            ? aggregate.Flatten().InnerExceptions
+            : [error];
+        int? status = failures.Select(failure => failure switch
         {
-            RequestFailedException request => request.Status,
+            RequestFailedException request => (int?)request.Status,
             HttpRequestException request => (int?)request.StatusCode,
             _ => null
-        };
+        }).LastOrDefault(status => status.HasValue);
         var detail = status.HasValue ? $" (HTTP {status})" : "";
         // SDK messages, response bodies and inner exceptions may contain signed URLs.
         return new IOException($"Failed to read Azure Blob source {location}{detail}. Check that the blob exists and that the configured credentials have read access.");

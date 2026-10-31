@@ -58,6 +58,28 @@ public class AzureBlobSourceFailureTests
     }
 
     [DataTestMethod]
+    [DataRow("https://user:{0}@example.invalid:bad/source.json?sig={0}", "BlobName")]
+    [DataRow("https://user:{0}@example.invalid:bad/input?sig={0}", "ContainerName")]
+    [DataRow("ftp://user:{0}@example.invalid/source.json?sig={0}", "BlobName")]
+    [DataRow("ftp://user:{0}@example.invalid/input?sig={0}", "ContainerName")]
+    [DataRow("//user:{0}@example.invalid/source.json?sig={0}", "BlobName")]
+    [DataRow("custom:user:{0}@example.invalid/source.json?sig={0}", "BlobName")]
+    public async Task ReadSourceAsync_UnsafeLocationFallback_DoesNotExposeCredentials(string location, string setting)
+    {
+        var (source, _) = CreateSource("missing");
+        var config = new ConfigurationBuilder().AddConfiguration(CreateConfig())
+            .AddInMemoryCollection(new Dictionary<string, string?> { [setting] = string.Format(location, Secret) })
+            .Build();
+        var logger = new RecordingLogger();
+        var error = await Assert.ThrowsExceptionAsync<FileNotFoundException>(async () =>
+            await source.ReadSourceAsync(config, logger).ToListAsync());
+
+        StringAssert.Contains(error.Message, "not found");
+        AssertSafe(error.ToString());
+        AssertSafe(string.Join("\n", logger.Messages));
+    }
+
+    [DataTestMethod]
     [DataRow("argument")]
     [DataRow("uri")]
     [DataRow("authentication")]
@@ -87,6 +109,9 @@ public class AzureBlobSourceFailureTests
     [DataRow("body-service-error")]
     [DataRow("body-io-error")]
     [DataRow("body-http-error")]
+    [DataRow("exists-aggregate")]
+    [DataRow("open-aggregate")]
+    [DataRow("body-aggregate")]
     public async Task JsonPipeline_UnavailableSource_ThrowsRatherThanWritingEmptySuccess(string scenario)
     {
         var (source, _) = CreateSource(scenario);
@@ -104,16 +129,21 @@ public class AzureBlobSourceFailureTests
             StringAssert.Contains(error.Message, "403");
         if (scenario == "deleted-before-open")
             StringAssert.Contains(error.Message, "404");
+        if (scenario.EndsWith("aggregate"))
+            StringAssert.Contains(error.Message, "503");
         AssertSafe(error.ToString());
     }
 
     [DataTestMethod]
-    [DataRow("memory")]
-    [DataRow("array")]
-    [DataRow("sync")]
-    public async Task ReadSourceAsync_DeferredReadFailure_IsSafeAndDisposesStream(string readMethod)
+    [DataRow("memory", "body-service-error")]
+    [DataRow("array", "body-service-error")]
+    [DataRow("sync", "body-service-error")]
+    [DataRow("memory", "body-aggregate")]
+    [DataRow("array", "body-aggregate")]
+    [DataRow("sync", "body-aggregate")]
+    public async Task ReadSourceAsync_DeferredReadFailure_IsSafeAndDisposesStream(string readMethod, string scenario)
     {
-        var (source, _) = CreateSource("body-service-error");
+        var (source, _) = CreateSource(scenario);
         var streams = await source.ReadSourceAsync(CreateConfig(), NullLogger.Instance).ToListAsync();
         await using var stream = streams.Single()!;
         var buffer = new byte[1];
@@ -166,13 +196,18 @@ public class AzureBlobSourceFailureTests
     }
 
     [DataTestMethod]
-    [DataRow("exists")]
-    [DataRow("open")]
-    [DataRow("read")]
-    public async Task ReadSourceAsync_OperationCancellation_Propagates(string stage)
+    [DataRow("exists", false)]
+    [DataRow("open", false)]
+    [DataRow("read", false)]
+    [DataRow("exists", true)]
+    [DataRow("open", true)]
+    [DataRow("read", true)]
+    public async Task ReadSourceAsync_OperationCancellation_Propagates(string stage, bool aggregate)
     {
         using var cancellation = new CancellationTokenSource();
-        var failure = new OperationCanceledException(cancellation.Token);
+        Exception failure = new OperationCanceledException(cancellation.Token);
+        if (aggregate)
+            failure = new AggregateException(new IOException("Read failed."), new AggregateException(failure));
         var blob = new Mock<BlockBlobClient>(MockBehavior.Strict);
         if (stage == "exists")
             blob.Setup(b => b.ExistsAsync(cancellation.Token)).ThrowsAsync(failure);
@@ -186,14 +221,30 @@ public class AzureBlobSourceFailureTests
                     .ReturnsAsync(new FailingReadStream(failure));
         }
         var source = new AzureBlobDataSource(_ => blob.Object);
-        var error = await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+        async Task ReadAsync()
         {
             await foreach (var stream in source.ReadSourceAsync(CreateConfig(), NullLogger.Instance, cancellation.Token))
             {
                 await using var owned = stream!;
                 Assert.AreEqual(1, await owned.ReadAsync(new byte[1], cancellation.Token));
             }
-        });
+        }
+        Exception error = aggregate
+            ? await Assert.ThrowsExceptionAsync<AggregateException>(ReadAsync)
+            : await Assert.ThrowsExceptionAsync<OperationCanceledException>(ReadAsync);
+        Assert.AreSame(failure, error);
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ReadSourceAsync_NonReadAggregate_Propagates(bool empty)
+    {
+        var failure = empty ? new AggregateException() : new AggregateException(
+            new IOException("Read failed."), new InvalidOperationException("Unexpected failure."));
+        var source = new AzureBlobDataSource(_ => throw failure);
+        var error = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
+            await source.ReadSourceAsync(CreateConfig(), NullLogger.Instance).ToListAsync());
         Assert.AreSame(failure, error);
     }
 
@@ -205,6 +256,9 @@ public class AzureBlobSourceFailureTests
     [DataRow("body-service-error", 1, -1)]
     [DataRow("body-io-error", 1, -1)]
     [DataRow("body-http-error", 1, -1)]
+    [DataRow("exists-aggregate", 1, -1)]
+    [DataRow("open-aggregate", 1, -1)]
+    [DataRow("body-aggregate", 1, -1)]
     [DataRow("empty", 0, 0)]
     [DataRow("valid", 0, 1)]
     public async Task InvokeAsync_RealBlobJsonPipeline_ReportsFailureOrValidSuccess(string scenario, int exitCode, int count)
@@ -273,17 +327,22 @@ public class AzureBlobSourceFailureTests
         var exists = blob.Setup(b => b.ExistsAsync(It.IsAny<CancellationToken>()));
         if (scenario == "exists-forbidden")
             exists.ThrowsAsync(new RequestFailedException(403, Secret));
+        else if (scenario == "exists-aggregate")
+            exists.ThrowsAsync(CreateAggregateReadFailure());
         else
             exists.ReturnsAsync(Response.FromValue(scenario != "missing", Mock.Of<Response>()));
         var open = blob.Setup(b => b.OpenReadAsync(It.IsAny<BlobOpenReadOptions>(), It.IsAny<CancellationToken>()));
         if (scenario is "open-forbidden" or "deleted-before-open")
             open.ThrowsAsync(new RequestFailedException(scenario == "open-forbidden" ? 403 : 404, Secret));
+        else if (scenario == "open-aggregate")
+            open.ThrowsAsync(CreateAggregateReadFailure());
         else if (scenario.StartsWith("body-"))
         {
             Exception failure = scenario switch
             {
                 "body-service-error" => new RequestFailedException(503, Secret),
                 "body-http-error" => new HttpRequestException(Secret),
+                "body-aggregate" => CreateAggregateReadFailure(),
                 _ => new IOException(Secret)
             };
             open.ReturnsAsync(new FailingReadStream(failure));
@@ -292,6 +351,10 @@ public class AzureBlobSourceFailureTests
             open.ReturnsAsync(new MemoryStream(Encoding.UTF8.GetBytes(scenario == "valid" ? "[{\"id\":\"one\"}]" : "[]")));
         return (new AzureBlobDataSource(_ => blob.Object), blob);
     }
+
+    private static AggregateException CreateAggregateReadFailure() => new(
+        $"Retry failed: {Secret}", new HttpRequestException(Secret),
+        new AggregateException(new IOException(Secret), new RequestFailedException(503, Secret)));
 
     private static void AssertSafe(string text)
     {
