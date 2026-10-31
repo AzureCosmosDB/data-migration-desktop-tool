@@ -3,7 +3,14 @@ using Cosmos.DataTransfer.Common.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Azure.Cosmos;
 using System.Net;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.ComponentModel.Composition.Hosting;
+using Cosmos.DataTransfer.Core;
 using Cosmos.DataTransfer.Interfaces;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -198,6 +205,7 @@ public class CosmosDataSourceExtensionTests
         {
             ["ConnectionString"] = connectionString,
             ["ConnectionMode"] = "Gateway",
+            ["UseDefaultCredentials"] = "true",
             ["AllowBulkExecution"] = "false",
             ["Database"] = database.Id,
             ["Container"] = containerName
@@ -219,6 +227,7 @@ public class CosmosDataSourceExtensionTests
         var container = database.GetContainer(containerName);
         foreach (var mode in new[] { DataWriteMode.Insert, DataWriteMode.Upsert, DataWriteMode.InsertStream, DataWriteMode.UpsertStream })
         {
+            Console.WriteLine($"{containerName}: testing {mode} with pooled HTTP transport.");
             string GetId(int index) => separateNullId && cases[index].key.Equals(PartitionKey.Null)
                 ? $"{mode}-null"
                 : mode.ToString();
@@ -272,6 +281,7 @@ public class CosmosDataSourceExtensionTests
         var (_, database, connectionString) = GetSetup();
         var config = TestHelpers.CreateConfig(new Dictionary<string,string>() {
             { "UseRbacAuth", "false" },
+            { "UseDefaultCredentials", "true" },
             { "ConnectionString", connectionString },
             { "ConnectionMode", "Gateway" },
             { "AllowBulkExecution", "false" },
@@ -305,6 +315,61 @@ public class CosmosDataSourceExtensionTests
         await jsonSink.FormatDataAsync(fetched.ToAsyncEnumerable(), writer, config, NullLogger.Instance);
         var res = Encoding.UTF8.GetString(writer.ToArray());
         Assert.AreEqual("[{\"partitionKey\":\"pk\",\"id\":\"1\",\"long\":638676324052177500}]", res);
+
+        foreach (var preAuthenticate in new[] { false, true })
+        {
+            await RunSequentialOperationsAsync(connectionString, database.Id,
+                config["Container"]!, preAuthenticate);
+        }
+    }
+
+    private static async Task RunSequentialOperationsAsync(
+        string connectionString, string database, string sourceContainer, bool preAuthenticate)
+    {
+        var source = new CosmosDataSourceExtension();
+        var sink = new CosmosDataSinkExtension();
+        using var catalog = new CompositionContainer();
+        var loader = new Mock<IExtensionLoader>();
+        loader.Setup(l => l.BuildExtensionCatalog(It.IsAny<string>())).Returns(catalog);
+        loader.Setup(l => l.LoadExtensions<IDataSourceExtension>(catalog)).Returns([source]);
+        loader.Setup(l => l.LoadExtensions<IDataSinkExtension>(catalog)).Returns([sink]);
+        var values = new Dictionary<string, string?>();
+        foreach (var side in new[] { "SourceSettings", "SinkSettings" })
+        {
+            values[$"{side}:ConnectionString"] = connectionString;
+            values[$"{side}:Database"] = database;
+            values[$"{side}:ConnectionMode"] = "Gateway";
+            values[$"{side}:LimitToEndpoint"] = "true";
+            values[$"{side}:UseDefaultCredentials"] = "true";
+            values[$"{side}:PreAuthenticate"] = preAuthenticate.ToString();
+            values[$"{side}:AllowBulkExecution"] = "false";
+        }
+        values["SourceSettings:Container"] = sourceContainer;
+        values["SinkSettings:PartitionKeyPath"] = "/partitionKey";
+        // Reuse two destinations across pre-auth variants to stay within the current emulator's partition limit.
+        values["SinkSettings:WriteMode"] = "Upsert";
+        for (var i = 0; i < 2; i++)
+        {
+            values[$"Operations:{i}:SinkSettings:Container"] = $"operation-{i}";
+        }
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+        using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+        var command = new RunCommand.CommandHandler(loader.Object, configuration, loggerFactory)
+        {
+            Source = source.DisplayName,
+            Sink = sink.DisplayName,
+        };
+        var context = new InvocationContext(new RootCommand().Parse(Array.Empty<string>()));
+        Assert.AreEqual(0, await command.InvokeAsync(context), "Sequential Cosmos Operations must succeed.");
+        for (var i = 0; i < 2; i++)
+        {
+            var outputConfig = new ConfigurationBuilder()
+                .AddConfiguration(configuration.GetSection("SinkSettings"))
+                .AddConfiguration(configuration.GetSection($"Operations:{i}:SinkSettings")).Build();
+            var output = await source.ReadAsync(outputConfig, NullLogger.Instance).ToArrayAsync();
+            Assert.AreEqual(1, output.Length);
+            Assert.AreEqual(638676324052177500L, output[0].GetValue("long"));
+        }
     }
 
     [TestMethod]

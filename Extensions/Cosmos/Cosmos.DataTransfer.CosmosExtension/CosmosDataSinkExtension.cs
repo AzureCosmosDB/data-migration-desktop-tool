@@ -143,7 +143,7 @@ namespace Cosmos.DataTransfer.CosmosExtension
             var settings = config.Get<CosmosSinkSettings>();
             settings.Validate();
 
-            var client = CosmosExtensionServices.CreateClient(settings!, DisplayName, logger, dataSource.DisplayName);
+            using var client = CosmosExtensionServices.CreateClient(settings!, DisplayName, logger, dataSource.DisplayName);
 
             Container container;
             if (settings!.UseRbacAuth)
