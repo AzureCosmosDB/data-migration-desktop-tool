@@ -1,5 +1,10 @@
 using System.Text;
 using System.Security.AccessControl;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Net.Sockets;
+using System.Runtime.Versioning;
+using System.Security.Principal;
 using Cosmos.DataTransfer.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -96,7 +101,7 @@ public class FileDataSinkFailureTests
         await File.WriteAllTextAsync(Destination, Original);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
-        var sink = new FileDataSink { OpenFile = (_, _) => throw new AssertFailedException("Opened canceled output") };
+        var sink = new FileDataSink { OpenFile = (_, _, _) => throw new AssertFailedException("Opened canceled output") };
         await Assert.ThrowsExceptionAsync<OperationCanceledException>(() =>
             WriteAsync(sink, _ => throw new AssertFailedException("Called canceled formatter"), token: cancellation.Token, append: append));
         AssertUnchanged(Destination, true);
@@ -112,7 +117,7 @@ public class FileDataSinkFailureTests
         using var cancellation = new CancellationTokenSource();
         var sink = new FileDataSink
         {
-            OpenFile = (name, mode) => new FaultingFileStream(name, mode) { AfterClose = cancellation.Cancel }
+            OpenFile = (name, mode, _) => new FaultingFileStream(name, mode) { AfterClose = cancellation.Cancel }
         };
         await Assert.ThrowsExceptionAsync<OperationCanceledException>(() =>
             WriteAsync(sink, stream => stream.WriteAsync("done"u8.ToArray()).AsTask(), token: cancellation.Token));
@@ -128,7 +133,7 @@ public class FileDataSinkFailureTests
         FaultingFileStream? file = null;
         var sink = new FileDataSink
         {
-            OpenFile = (name, mode) => file = new FaultingFileStream(name, mode) { FailWrites = true }
+            OpenFile = (name, mode, _) => file = new FaultingFileStream(name, mode) { FailWrites = true }
         };
         await Assert.ThrowsExceptionAsync<IOException>(() =>
             WriteAsync(sink, stream => stream.WriteAsync("partial"u8.ToArray()).AsTask(), compression));
@@ -146,7 +151,7 @@ public class FileDataSinkFailureTests
         var path = await PrepareAsync(compression, existing);
         var sink = new FileDataSink
         {
-            OpenFile = (name, mode) => new FaultingFileStream(name, mode) { FailClose = true }
+            OpenFile = (name, mode, _) => new FaultingFileStream(name, mode) { FailClose = true }
         };
         await Assert.ThrowsExceptionAsync<IOException>(() =>
             WriteAsync(sink, stream => stream.WriteAsync("complete"u8.ToArray()).AsTask(), compression));
@@ -162,7 +167,7 @@ public class FileDataSinkFailureTests
     {
         var path = await PrepareAsync(compression, true);
         FaultingFileStream? file = null;
-        var sink = new FileDataSink { OpenFile = (name, mode) => file = new FaultingFileStream(name, mode) };
+        var sink = new FileDataSink { OpenFile = (name, mode, _) => file = new FaultingFileStream(name, mode) };
         await Assert.ThrowsExceptionAsync<IOException>(() => WriteAsync(sink, async stream =>
         {
             await stream.WriteAsync("complete"u8.ToArray());
@@ -181,7 +186,7 @@ public class FileDataSinkFailureTests
         var failure = new IOException("source failure");
         var sink = new FileDataSink
         {
-            OpenFile = (name, mode) => new FaultingFileStream(name, mode) { FailClose = true }
+            OpenFile = (name, mode, _) => new FaultingFileStream(name, mode) { FailClose = true }
         };
         var error = await Assert.ThrowsExceptionAsync<IOException>(() =>
             WriteAsync(sink, _ => throw failure, logger: logger.Object));
@@ -199,7 +204,7 @@ public class FileDataSinkFailureTests
         string? temporaryPath = null;
         var sink = new FileDataSink
         {
-            OpenFile = (name, mode) =>
+            OpenFile = (name, mode, _) =>
             {
                 temporaryPath = name;
                 return new FaultingFileStream(name, mode)
@@ -234,7 +239,7 @@ public class FileDataSinkFailureTests
     public async Task Overwrite_OpenFailure_PreservesDestination()
     {
         await File.WriteAllTextAsync(Destination, Original);
-        var sink = new FileDataSink { OpenFile = (_, _) => throw new UnauthorizedAccessException("Synthetic open failure") };
+        var sink = new FileDataSink { OpenFile = (_, _, _) => throw new UnauthorizedAccessException("Synthetic open failure") };
         await Assert.ThrowsExceptionAsync<UnauthorizedAccessException>(() =>
             WriteAsync(sink, _ => throw new AssertFailedException("Called formatter after open failure")));
         AssertUnchanged(Destination, true);
@@ -277,8 +282,10 @@ public class FileDataSinkFailureTests
         }
     }
 
-    [TestMethod]
-    public async Task Overwrite_UnixPermissions_ArePreserved()
+    [DataTestMethod]
+    [DataRow(UnixFileMode.UserRead | UnixFileMode.UserWrite)]
+    [DataRow(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead)]
+    public async Task Overwrite_UnixPermissions_ArePreserved(UnixFileMode mode)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -286,7 +293,6 @@ public class FileDataSinkFailureTests
             return;
         }
         await File.WriteAllTextAsync(Destination, Original);
-        var mode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         File.SetUnixFileMode(Destination, mode);
         await WriteAsync(new FileDataSink(), stream =>
         {
@@ -295,6 +301,89 @@ public class FileDataSinkFailureTests
             return stream.WriteAsync("done"u8.ToArray()).AsTask();
         });
         Assert.AreEqual(mode, File.GetUnixFileMode(Destination));
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task Overwrite_UnixStaging_IsPrivateAtCreation(bool existing)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Unix creation permissions are not available on Windows.");
+            return;
+        }
+        if (existing)
+        {
+            await File.WriteAllTextAsync(Destination, Original);
+            File.SetUnixFileMode(Destination, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        UnixFileMode? createdMode = null;
+        var sink = new FileDataSink
+        {
+            OpenFile = (name, mode, permissions) =>
+            {
+                var file = FileDataSink.OpenFileStream(name, mode, permissions);
+                if (!OperatingSystem.IsWindows())
+                    createdMode = File.GetUnixFileMode(name);
+                return file;
+            }
+        };
+        await WriteAsync(sink, stream => stream.WriteAsync("private output"u8.ToArray()).AsTask());
+        Assert.AreEqual(UnixFileMode.UserRead | UnixFileMode.UserWrite, createdMode);
+        Assert.AreEqual(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(Destination));
+        AssertNoTemporaryFiles();
+    }
+
+    [DataTestMethod]
+    [DataRow("fifo")]
+    [DataRow("socket")]
+    public async Task Overwrite_UnixSpecialFile_IsRejectedBeforeStaging(string type)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Unix special files are not available on Windows.");
+            return;
+        }
+        using var socket = type == "socket" ? new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified) : null;
+        if (socket != null)
+            socket.Bind(new UnixDomainSocketEndPoint(Destination));
+        else
+        {
+            var start = new ProcessStartInfo("mkfifo") { UseShellExecute = false };
+            start.ArgumentList.Add(Destination);
+            using var process = Process.Start(start)!;
+            await process.WaitForExitAsync();
+            Assert.AreEqual(0, process.ExitCode, "Could not create the disposable FIFO fixture.");
+        }
+
+        Assert.IsFalse(UnixFileSystem.IsRegularFile(Destination));
+        var sink = new FileDataSink
+        {
+            OpenFile = (_, _, _) => throw new AssertFailedException("Special-file validation must precede staging.")
+        };
+        var error = await Assert.ThrowsExceptionAsync<IOException>(() =>
+            WriteAsync(sink, _ => throw new AssertFailedException("Special-file validation must precede formatting.")));
+        StringAssert.Contains(error.Message, "special-file destination");
+        Assert.IsFalse(UnixFileSystem.IsRegularFile(Destination), "The special file must not be replaced.");
+        AssertNoTemporaryFiles();
+    }
+
+    [TestMethod]
+    public void UnixFileInspection_Failure_IsNotTreatedAsARegularFile()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Unix file inspection is not available on Windows.");
+            return;
+        }
+        var error = Assert.ThrowsException<IOException>(() =>
+        {
+            if (!OperatingSystem.IsWindows())
+                UnixFileSystem.IsRegularFile(Destination);
+        });
+        StringAssert.Contains(error.Message, Destination);
+        Assert.IsInstanceOfType<Win32Exception>(error.InnerException);
     }
 
     [TestMethod]
@@ -310,18 +399,33 @@ public class FileDataSinkFailureTests
         var permissions = info.GetAccessControl(AccessControlSections.Access);
         permissions.SetAccessRuleProtection(isProtected: true, preserveInheritance: true);
         info.SetAccessControl(permissions);
-        var expected = info.GetAccessControl(AccessControlSections.Access).GetSecurityDescriptorSddlForm(AccessControlSections.Access);
-        await WriteAsync(new FileDataSink(), stream =>
+        var expected = info.GetAccessControl(AccessControlSections.Access);
+        FileSecurity? createdAccessControl = null;
+        var sink = new FileDataSink
         {
-            if (OperatingSystem.IsWindows())
+            OpenFile = (name, mode, security) =>
             {
-                var staged = new FileInfo(((FileStream)stream).Name).GetAccessControl(AccessControlSections.Access);
-                Assert.AreEqual(expected, staged.GetSecurityDescriptorSddlForm(AccessControlSections.Access));
+                var file = FileDataSink.OpenFileStream(name, mode, security);
+                if (OperatingSystem.IsWindows())
+                    createdAccessControl = new FileInfo(name).GetAccessControl(AccessControlSections.Access);
+                return file;
             }
-            return stream.WriteAsync("done"u8.ToArray()).AsTask();
-        });
-        Assert.AreEqual(expected, info.GetAccessControl(AccessControlSections.Access)
-            .GetSecurityDescriptorSddlForm(AccessControlSections.Access));
+        };
+        await WriteAsync(sink, stream => stream.WriteAsync("done"u8.ToArray()).AsTask());
+        Assert.IsNotNull(createdAccessControl, "The destination DACL must be supplied at file creation.");
+        AssertSameAccess(expected, createdAccessControl);
+        AssertSameAccess(expected, info.GetAccessControl(AccessControlSections.Access));
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void AssertSameAccess(FileSecurity expected, FileSecurity actual)
+    {
+        Assert.AreEqual(expected.AreAccessRulesProtected, actual.AreAccessRulesProtected);
+        static object[] Rules(FileSecurity security) => security.GetAccessRules(true, true, typeof(SecurityIdentifier))
+            .Cast<FileSystemAccessRule>()
+            .Select(rule => (object)(rule.IdentityReference.Value, rule.FileSystemRights, rule.AccessControlType,
+                rule.InheritanceFlags, rule.PropagationFlags)).ToArray();
+        CollectionAssert.AreEqual(Rules(expected), Rules(actual));
     }
 
     [DataTestMethod]

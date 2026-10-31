@@ -44,14 +44,19 @@ space for the entire new output alongside any old destination. Existing files
 are replaced, not truncated in place: Windows replacement preserves destination
 metadata supported by `File.Replace`; on Unix, permission bits are copied to the
 new file, but file identity, ownership, timestamps, and hard-link relationships
-are not guaranteed to be preserved. Existing destination access permissions
-(Windows DACL or Unix mode bits) are applied to staging before writing data.
-Read-only destinations and symbolic-link/reparse-point destinations are rejected
+are not guaranteed to be preserved. Unix staging is created atomically with
+owner-only read/write permissions (`0600`, subject to the process umask), before
+applying an existing destination's mode bits. New Unix output files retain those
+owner-only permissions. On Windows an existing destination's DACL is supplied at
+staging-file creation, rather than applied afterward.
+Read-only destinations, symbolic-link/reparse-point destinations, and Unix
+special files (including FIFOs, sockets, and devices) are rejected
 with an error; links and their targets are left unchanged. To overwrite a link's
 target, explicitly configure the regular target file path instead.
 Ordinary same-path file source/destination migrations read the original before
 replacement. Directory sources do not read `.tmp` staging files. Do not have
-multiple processes modify the destination during a migration.
+multiple processes modify the destination during a migration. Unix special-file
+checks inspect metadata without opening the destination.
 
 Temporary files are removed on handled failure. If cleanup fails, the error log
 identifies the temporary path for manual removal without hiding the original

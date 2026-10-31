@@ -8,8 +8,7 @@ namespace Cosmos.DataTransfer.Common;
 
 public class FileDataSink : IComposableDataSink
 {
-    internal Func<string, FileMode, Stream> OpenFile { get; init; } =
-        (path, mode) => File.Open(path, mode, FileAccess.Write);
+    internal Func<string, FileMode, byte[]?, Stream> OpenFile { get; init; } = OpenFileStream;
 
     public async Task WriteToTargetAsync(Func<Stream, Task> writeToStream, IConfiguration config, IDataSourceExtension dataSource, ILogger logger, CancellationToken cancellationToken = default)
     {
@@ -22,7 +21,7 @@ public class FileDataSink : IComposableDataSink
         {
             try
             {
-                await WriteAndCloseAsync(OpenFile(destination, FileMode.Append), settings.Compression, writeToStream, logger);
+                await WriteAndCloseAsync(OpenFile(destination, FileMode.Append, null), settings.Compression, writeToStream, logger);
                 cancellationToken.ThrowIfCancellationRequested();
             }
             catch (Exception ex)
@@ -39,23 +38,15 @@ public class FileDataSink : IComposableDataSink
         try
         {
             ValidateDestination(destination);
-            var file = OpenFile(temporaryPath, FileMode.CreateNew);
+            byte[]? permissions = OperatingSystem.IsWindows() && File.Exists(destination)
+                ? new FileInfo(destination).GetAccessControl(AccessControlSections.Access).GetSecurityDescriptorBinaryForm()
+                : null;
+            var file = OpenFile(temporaryPath, FileMode.CreateNew, permissions);
             temporaryCreated = true;
             await WriteAndCloseAsync(file, settings.Compression, async writer =>
             {
-                if (File.Exists(destination))
-                {
-                    if (OperatingSystem.IsWindows())
-                    {
-                        var permissions = new FileSecurity();
-                        permissions.SetSecurityDescriptorBinaryForm(
-                            new FileInfo(destination).GetAccessControl(AccessControlSections.Access).GetSecurityDescriptorBinaryForm(),
-                            AccessControlSections.Access);
-                        new FileInfo(temporaryPath).SetAccessControl(permissions);
-                    }
-                    else
-                        File.SetUnixFileMode(temporaryPath, File.GetUnixFileMode(destination));
-                }
+                if (!OperatingSystem.IsWindows() && File.Exists(destination))
+                    File.SetUnixFileMode(temporaryPath, File.GetUnixFileMode(destination));
                 await writeToStream(writer);
             }, logger);
             cancellationToken.ThrowIfCancellationRequested();
@@ -97,11 +88,29 @@ public class FileDataSink : IComposableDataSink
         yield return new FileSinkSettings();
     }
 
+    internal static Stream OpenFileStream(string path, FileMode mode, byte[]? permissions)
+    {
+        if (OperatingSystem.IsWindows() && permissions != null)
+        {
+            var security = new FileSecurity();
+            security.SetSecurityDescriptorBinaryForm(permissions, AccessControlSections.Access);
+            return new FileInfo(path).Create(mode, FileSystemRights.Write, FileShare.None,
+                4096, FileOptions.None, security);
+        }
+
+        var options = new FileStreamOptions { Mode = mode, Access = FileAccess.Write, Share = FileShare.None };
+        if (!OperatingSystem.IsWindows() && mode == FileMode.CreateNew)
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        return new FileStream(path, options);
+    }
+
     private static void ValidateDestination(string destination)
     {
         var info = new FileInfo(destination);
         if (info.LinkTarget != null || (info.Exists && info.Attributes.HasFlag(FileAttributes.ReparsePoint)))
             throw new IOException($"Overwrite output cannot replace a symbolic link or reparse point: '{destination}'. Use a regular destination file.");
+        if (!OperatingSystem.IsWindows() && info.Exists && !UnixFileSystem.IsRegularFile(destination))
+            throw new IOException($"Overwrite output requires a regular file; special-file destination '{destination}' will not be replaced.");
         if (info.Exists && info.IsReadOnly)
             throw new UnauthorizedAccessException($"Overwrite output cannot replace a read-only file: '{destination}'.");
     }
