@@ -20,8 +20,8 @@ public static class MongoBsonMapper
             Guid guid => new BsonBinaryData(guid, GuidRepresentation.CSharpLegacy),
             BsonValue bson => bson,
             IDictionary<string, object?> document => ToDocument(document),
-            IDictionary dictionary => new BsonDocument(dictionary.Cast<DictionaryEntry>()
-                .Select(entry => new BsonElement((string)entry.Key, ToValue(entry.Value)))),
+            IDictionary dictionary => new BsonDocument(dictionary.Keys.Cast<string>()
+                .Select(key => new BsonElement(key, ToValue(dictionary[key])))),
             IEnumerable array when value is not string and not byte[] =>
                 new BsonArray(array.Cast<object?>().Select(ToValue)),
             _ => BsonValue.Create(value)

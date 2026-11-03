@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -34,6 +35,41 @@ public class DriverCompatibilityTests
         Assert.AreEqual(guid, item.GetValue("standard"));
         var nested = (Dictionary<string, object?>)item.GetValue("nested")!;
         CollectionAssert.AreEqual(new object[] { guid }, (List<object?>)nested["ids"]!);
+    }
+
+    [TestMethod]
+    public void TypedDictionaryMapping_PreservesPreUpgradeBehavior()
+    {
+        var values = new Dictionary<string, object?>
+        {
+            ["nested"] = new Dictionary<string, int> { ["count"] = 42 }
+        };
+
+        var beforeUpgrade = new BsonDocument(values);
+        var afterUpgrade = MongoBsonMapper.ToDocument(values);
+
+        Assert.AreEqual(42, beforeUpgrade["nested"]["count"].AsInt32);
+        Assert.AreEqual(beforeUpgrade, afterUpgrade);
+    }
+
+    [TestMethod]
+    public void TypedDictionaryMapping_PreservesRecursiveLegacyGuids()
+    {
+        var guid = Guid.Parse("00112233-4455-6677-8899-aabbccddeeff");
+        var document = MongoBsonMapper.ToDocument(new Dictionary<string, object?>
+        {
+            ["nested"] = new Dictionary<string, Guid> { ["id"] = guid },
+            ["array"] = new[] { new Dictionary<string, Guid> { ["id"] = guid } },
+            ["empty"] = new Dictionary<string, int>(),
+            ["hashtable"] = new Hashtable { ["id"] = guid }
+        });
+
+        var expected = new BsonBinaryData(guid, GuidRepresentation.CSharpLegacy);
+        Assert.AreEqual(expected, document["nested"]["id"]);
+        CollectionAssert.AreEqual(guid.ToByteArray(), document["nested"]["id"].AsBsonBinaryData.Bytes);
+        Assert.AreEqual(expected, document["array"][0]["id"]);
+        Assert.AreEqual(new BsonDocument(), document["empty"]);
+        Assert.AreEqual(expected, document["hashtable"]["id"]);
     }
 
     [TestMethod]
