@@ -6,6 +6,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 $package = (Resolve-Path -LiteralPath $PackagePath).Path
+& "$PSScriptRoot/Assert-PackageDependencies.ps1" -PackagePath $package
 $executable = Join-Path $package $(if ($IsWindows) { 'dmt.exe' } else { 'dmt' })
 $expectedRuntime = ([xml](Get-Content -LiteralPath "$PSScriptRoot/../../Directory.Build.props" -Raw)).Project.PropertyGroup.RuntimeFrameworkVersion
 $runtimeJson = Get-Content -LiteralPath (Join-Path $package 'runtime-info.json') -Raw
@@ -62,7 +63,26 @@ try {
     if (@(Get-ChildItem -LiteralPath $scratch -Filter '.dmt-*.tmp' -Force).Count -ne 0) {
         throw 'Published overwrite migration left temporary output behind.'
     }
-    Write-Host "Published application passed: .NET $expectedRuntime; 15 sources; 15 sinks; JSON round trip."
+    $parquetPath = Join-Path $scratch 'output.parquet'
+    $parquetJson = '[{"id":"one","value":42},{"id":"two","value":-1}]'
+    $parquetJson | Set-Content -LiteralPath $inputPath -Encoding utf8NoBOM
+    @{
+        Source = 'JSON'; Sink = 'Parquet'
+        SourceSettings = @{ FilePath = $inputPath }
+        SinkSettings = @{ FilePath = $parquetPath }
+    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $settingsPath -Encoding utf8NoBOM
+    & $executable run --settings $settingsPath
+    if ($LASTEXITCODE -ne 0) { throw 'Published Parquet write failed.' }
+    @{
+        Source = 'Parquet'; Sink = 'JSON'
+        SourceSettings = @{ FilePath = $parquetPath }
+        SinkSettings = @{ FilePath = $outputPath }
+    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $settingsPath -Encoding utf8NoBOM
+    & $executable run --settings $settingsPath
+    if ($LASTEXITCODE -ne 0) { throw 'Published Parquet read failed.' }
+    & "$PSScriptRoot/Assert-JsonRoundTrip.ps1" -ExpectedJson $parquetJson `
+        -ActualJson (Get-Content -LiteralPath $outputPath -Raw)
+    Write-Host "Published application passed: .NET $expectedRuntime; 15 sources; 15 sinks; JSON and Parquet round trips."
 } finally {
     Remove-Item -LiteralPath $scratch -Recurse -Force
 }

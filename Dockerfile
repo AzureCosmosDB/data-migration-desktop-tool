@@ -159,6 +159,7 @@ RUN dotnet publish \
     -p:Version=${BUILD_VERSION}
 
 RUN cp Core/Cosmos.DataTransfer.Core/bin/Release/net10.0/${RUNTIME}/dmt.runtimeconfig.json /app/${RUNTIME}/runtime-info.json
+RUN cp Core/Cosmos.DataTransfer.Core/obj/Release/net10.0/${RUNTIME}/dmt.deps.json /app/${RUNTIME}/dependency-info.json
 
 # Runtime stage - explicit Ubuntu 24.04 base includes ICU, OpenSSL and CA roots.
 FROM mcr.microsoft.com/dotnet/runtime-deps:10.0.14-noble AS runtime

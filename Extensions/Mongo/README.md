@@ -2,6 +2,16 @@
 
 The MongoDB data transfer extension provides source and sink capabilities for reading from and writing to a MongoDB database.
 
+For the upcoming DMT 4.0.0 release, the modern MongoDB and Vector extensions use
+MongoDB.Driver 3.9.0 and require **MongoDB server 4.2 or newer**. This is necessary
+for the patched compression dependency's binary compatibility. MONGODB-CR and
+TLS 1.0/1.1 are no longer supported. Encryption and AWS authentication remain
+included and registered; Windows ARM64 still lacks the upstream native
+libmongocrypt needed for client-side field-level decryption. CLR GUIDs retain
+DMT's previous CSharpLegacy representation, including nested values and custom
+IDs. See [runtime support and dependency servicing](../../docs/runtime-support.md)
+for platform limitations and release gates.
+
 > **Note**: When specifying the MongoDB extension as the Source or Sink property in configuration, utilize the name **MongoDB**.
 > 
 > **Note for MongoDB Wire Version 2 Users**: If you're connecting to a MongoDB instance that uses wire version 2 (such as older CosmosDB MongoDB API instances that use the `documents.azure.com` endpoint), use the **MongoDB-Legacy (Wire v2)** extension instead. See the [MongoDB Legacy Extension](#mongodb-legacy-extension-wire-version-2) section below for details.
@@ -239,4 +249,3 @@ The sink settings require the following additional parameters:
     "DestPropEmbedding": ""
 }
 ```
-

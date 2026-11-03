@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build and test .NET projects
@@ -19,7 +22,7 @@ jobs:
       with:
         global-json-file: global.json
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore -warnaserror:NU1608,NU1900,NU1901,NU1902,NU1903,NU1904
     - name: Build
       run: dotnet build --no-restore
     - name: Test

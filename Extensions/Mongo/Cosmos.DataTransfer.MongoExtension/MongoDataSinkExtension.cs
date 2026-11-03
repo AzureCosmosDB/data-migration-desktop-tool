@@ -28,7 +28,7 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
             await foreach (var item in dataItems.WithCancellation(cancellationToken))
             {
                 var dict = item.BuildDynamicObjectTree();
-                var bsonDoc = new BsonDocument(dict);
+                var bsonDoc = MongoBsonMapper.ToDocument(dict);
                 
                 // Map the specified field to _id if IdFieldName is provided
                 if (!string.IsNullOrEmpty(settings.IdFieldName) && dict != null)
@@ -39,7 +39,7 @@ public class MongoDataSinkExtension : IDataSinkExtensionWithSettings
                         var idValue = item.GetValue(sourceField);
                         if (idValue != null)
                         {
-                            bsonDoc["_id"] = BsonValue.Create(idValue);
+                            bsonDoc["_id"] = MongoBsonMapper.ToValue(idValue);
                         }
                     }
                 }

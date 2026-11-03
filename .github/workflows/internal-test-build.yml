@@ -87,6 +87,25 @@ jobs:
       - name: Verify runtime, MEF discovery and JSON migration
         shell: pwsh
         run: ./.github/scripts/Test-PublishedApp.ps1 -PackagePath package
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Exercise serviced dependencies on the native runtime
+        shell: pwsh
+        run: |
+          foreach ($extension in @('Mongo', 'Parquet', 'SqlServer')) {
+            dotnet test "Extensions/$extension/Cosmos.DataTransfer.${extension}Extension.UnitTests" `
+              --configuration Release --filter 'FullyQualifiedName~CompatibilityTests' `
+              --logger trx --results-directory TestResults
+            if ($LASTEXITCODE -ne 0) { throw "$extension dependency compatibility tests failed." }
+          }
+      - name: Upload native dependency results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dependencies-${{ matrix.runtime }}
+          path: TestResults/
+          if-no-files-found: error
 
   smoke-container:
     name: Build and smoke container (no publication)
@@ -94,7 +113,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build local image
-        run: docker build --tag dmt-smoke .
+        run: docker build --build-arg BUILD_VERSION=0.0.${{ github.run_number }} --tag dmt-smoke .
+      - name: Verify container application version selection
+        shell: pwsh
+        run: ./.github/scripts/Test-ContainerBuildVersion.ps1
       - name: Verify runtime and extension discovery
         run: |
           docker run --rm --entrypoint cat dmt-smoke /app/runtime-info.json > runtime-info.json
@@ -111,3 +133,26 @@ jobs:
           printf '%s' '{"Source":"JSON","Sink":"JSON","SourceSettings":{"FilePath":"/data/input.json"},"SinkSettings":{"FilePath":"/data/output.json"}}' > "$RUNNER_TEMP/dmt-smoke/config/settings.json"
           docker run --rm --user "$(id -u):$(id -g)" -v "$RUNNER_TEMP/dmt-smoke/config:/config:ro" -v "$RUNNER_TEMP/dmt-smoke/data:/data" dmt-smoke run --settings /config/settings.json
           jq -e '. == [{"id":"one","value":42},{"id":"two","value":-1}]' "$RUNNER_TEMP/dmt-smoke/data/output.json"
+      - name: Migrate synthetic Parquet inside the container
+        run: |
+          printf '%s' '{"Source":"JSON","Sink":"Parquet","SourceSettings":{"FilePath":"/data/input.json"},"SinkSettings":{"FilePath":"/data/output.parquet"}}' > "$RUNNER_TEMP/dmt-smoke/config/settings.json"
+          docker run --rm --user "$(id -u):$(id -g)" -v "$RUNNER_TEMP/dmt-smoke/config:/config:ro" -v "$RUNNER_TEMP/dmt-smoke/data:/data" dmt-smoke run --settings /config/settings.json
+          printf '%s' '{"Source":"Parquet","Sink":"JSON","SourceSettings":{"FilePath":"/data/output.parquet"},"SinkSettings":{"FilePath":"/data/parquet-output.json"}}' > "$RUNNER_TEMP/dmt-smoke/config/settings.json"
+          docker run --rm --user "$(id -u):$(id -g)" -v "$RUNNER_TEMP/dmt-smoke/config:/config:ro" -v "$RUNNER_TEMP/dmt-smoke/data:/data" dmt-smoke run --settings /config/settings.json
+          jq -e '. == [{"id":"one","value":42},{"id":"two","value":-1}]' "$RUNNER_TEMP/dmt-smoke/data/parquet-output.json"
+      - name: Inspect actual container dependency binaries
+        shell: pwsh
+        run: |
+          $container = docker create dmt-smoke
+          if ($LASTEXITCODE -ne 0) { throw 'Could not create inspection container.' }
+          try {
+            docker cp "${container}:/app" container-package
+            if ($LASTEXITCODE -ne 0) { throw 'Could not extract container binaries.' }
+            ./.github/scripts/Assert-PackageDependencies.ps1 -PackagePath container-package
+            $deps = Get-Content container-package/dependency-info.json -Raw | ConvertFrom-Json -AsHashtable
+            if (-not $deps.libraries.ContainsKey('dmt/0.0.${{ github.run_number }}')) {
+              throw 'Container application version does not match BUILD_VERSION.'
+            }
+          } finally {
+            docker rm $container
+          }

@@ -16,6 +16,10 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
 		<PackageReference Include="MongoDB.Driver" />
+		<PackageReference Include="MongoDB.Driver.Authentication.AWS" />
+		<PackageReference Include="MongoDB.Driver.Encryption" />
+		<PackageReference Include="SharpCompress" />
+		<PackageReference Include="Snappier" />
 		<PackageReference Include="System.ComponentModel.Composition" />
 	</ItemGroup>
 
